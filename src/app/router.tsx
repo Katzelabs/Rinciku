@@ -1,0 +1,28 @@
+import { createBrowserRouter } from 'react-router';
+import { aiChatRoutes } from '@/features/ai-chat';
+import { authRoutes } from '@/features/auth';
+import { budgetsRoutes } from '@/features/budgets';
+import { categoriesRoutes } from '@/features/categories';
+import { dashboardRoutes } from '@/features/dashboard';
+import { essentialsRoutes } from '@/features/essentials';
+import { expensesRoutes } from '@/features/expenses';
+import { ErrorBoundary } from './error-boundary';
+import { NotFound } from './not-found';
+import { RootLayout } from './root-layout';
+
+export const router = createBrowserRouter([
+  {
+    element: <RootLayout />,
+    errorElement: <ErrorBoundary />,
+    children: [
+      ...authRoutes,
+      ...dashboardRoutes,
+      ...expensesRoutes,
+      ...essentialsRoutes,
+      ...categoriesRoutes,
+      ...budgetsRoutes,
+      ...aiChatRoutes,
+      { path: '*', element: <NotFound /> },
+    ],
+  },
+]);

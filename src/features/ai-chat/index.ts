@@ -1,0 +1,1 @@
+export { aiChatRoutes } from './routes';
