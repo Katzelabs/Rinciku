@@ -7,7 +7,9 @@ export interface AuthContextValue {
   loading: boolean;
 }
 
-export const AuthContext = createContext<AuthContextValue | undefined>(undefined);
+export const AuthContext = createContext<AuthContextValue | undefined>(
+  undefined
+);
 
 export function useAuth(): AuthContextValue {
   const ctx = useContext(AuthContext);

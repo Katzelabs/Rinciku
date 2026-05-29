@@ -20,9 +20,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setLoading(false);
     });
 
-    const { data: subscription } = supabase.auth.onAuthStateChange((_event, next) => {
-      setSession(next);
-    });
+    const { data: subscription } = supabase.auth.onAuthStateChange(
+      (_event, next) => {
+        setSession(next);
+      }
+    );
 
     return () => {
       cancelled = true;
@@ -31,7 +33,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ session, user: session?.user ?? null, loading }}>
+    <AuthContext.Provider
+      value={{ session, user: session?.user ?? null, loading }}
+    >
       {children}
     </AuthContext.Provider>
   );

@@ -17,11 +17,15 @@ function resolveError(error: unknown): { title: string; message: string } {
   if (isRouteErrorResponse(error)) {
     return {
       title: `${error.status} ${error.statusText}`,
-      message: typeof error.data === 'string' ? error.data : 'Something went wrong.',
+      message:
+        typeof error.data === 'string' ? error.data : 'Something went wrong.',
     };
   }
   if (error instanceof Error) {
     return { title: 'Something went wrong', message: error.message };
   }
-  return { title: 'Something went wrong', message: 'An unknown error occurred.' };
+  return {
+    title: 'Something went wrong',
+    message: 'An unknown error occurred.',
+  };
 }
