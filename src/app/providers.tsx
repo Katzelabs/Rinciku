@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { TooltipProvider } from '@/components/ui/tooltip';
 import { AuthProvider } from '@/features/auth';
 
 interface ProvidersProps {
@@ -6,5 +7,9 @@ interface ProvidersProps {
 }
 
 export function Providers({ children }: ProvidersProps) {
-  return <AuthProvider>{children}</AuthProvider>;
+  return (
+    <AuthProvider>
+      <TooltipProvider>{children}</TooltipProvider>
+    </AuthProvider>
+  );
 }

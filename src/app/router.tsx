@@ -1,4 +1,5 @@
 import { createBrowserRouter } from 'react-router';
+import { AppShell } from '@/components/shared/app-shell';
 import { aiChatRoutes } from '@/features/ai-chat';
 import { authRoutes } from '@/features/auth';
 import { budgetsRoutes } from '@/features/budgets';
@@ -16,12 +17,17 @@ export const router = createBrowserRouter([
     errorElement: <ErrorBoundary />,
     children: [
       ...authRoutes,
-      ...dashboardRoutes,
-      ...expensesRoutes,
-      ...essentialsRoutes,
-      ...categoriesRoutes,
-      ...budgetsRoutes,
-      ...aiChatRoutes,
+      {
+        element: <AppShell />,
+        children: [
+          ...dashboardRoutes,
+          ...expensesRoutes,
+          ...essentialsRoutes,
+          ...categoriesRoutes,
+          ...budgetsRoutes,
+          ...aiChatRoutes,
+        ],
+      },
       { path: '*', element: <NotFound /> },
     ],
   },
