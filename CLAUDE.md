@@ -6,6 +6,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **Rinciku** ("rincian keuanganku" — my financial details) is an AI-powered personal finance web app for users with mixed IDR/USD income and variable monthly expenses. The differentiator vs. typical finance apps is **in-the-moment AI purchase consultation** grounded in the user's real budget state (income, essentials baseline, spending so far, days left in month) — not generic advice. See `docs/PROJECT_BRIEF.md` for the full product brief, MVP feature list, and target user.
 
+Ongoing work is tracked in `docs/tasks/` — see the **Task tracking** section.
+
 The codebase is an early scaffold: feature folders and routes exist as empty stubs (`actions.ts`, `api.ts`, etc. are placeholder files). When implementing a feature, populate these stub files rather than inventing a new structure.
 
 ## Commands
@@ -72,6 +74,23 @@ Supabase (PostgreSQL + Auth + RLS) — local config scaffolded in `supabase/conf
 ### AI
 
 Claude API for the purchase-consultation chat feature (`features/ai-chat`). The product brief pins a specific Sonnet model ID, but use the current latest Sonnet 4.x ID when actually wiring it up.
+
+## Task tracking
+
+`docs/tasks/` is the source of truth for ongoing work and progress. Layout mirrors `src/features/`:
+
+```
+docs/tasks/<feature>/README.md      — feature overview + task index with status
+docs/tasks/<feature>/NN-<slug>.md   — one file per task (NN = two-digit order, e.g. 01-supabase-wiring.md)
+```
+
+Each task file starts with a `**Status:**` line (`not-started | in-progress | blocked | done`) followed by `## Goal`, `## Acceptance criteria` (checklist), and `## Notes` (append-only log).
+
+When working with Claude:
+
+- **Read** a task file when the user references it (by feature, number, or slug). Use it for context, acceptance criteria, and current progress — don't pre-load tasks otherwise.
+- **Update** the task's status, checklist, and `## Notes` as work progresses on it.
+- **Create** a new task file (and a feature folder + `README.md` if the feature is new to `docs/tasks/`) when the user asks to track new work. Pick the next `NN` prefix for that feature.
 
 ## Code style
 
