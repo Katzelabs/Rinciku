@@ -9,6 +9,7 @@ import {
   Wallet,
 } from 'lucide-react';
 import { Link, NavLink, Outlet, useMatch } from 'react-router';
+import { AccountMenu } from '@/components/shared/account-menu';
 import { Separator } from '@/components/ui/separator';
 import {
   Sidebar,
@@ -25,8 +26,6 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from '@/components/ui/sidebar';
-import { useAuth } from '@/features/auth';
-
 interface NavItem {
   title: string;
   to: string;
@@ -141,19 +140,12 @@ function NavItem({ item }: { item: NavItem }) {
 }
 
 function AppTopbar() {
-  const { user } = useAuth();
-
   return (
     <header className='sticky top-0 z-10 flex h-14 shrink-0 items-center gap-2 border-b bg-background px-4'>
       <SidebarTrigger />
       <Separator orientation='vertical' className='mr-2 h-4' />
       <div className='flex-1' />
-      {user?.email ? (
-        <span className='hidden text-sm text-muted-foreground sm:inline'>
-          {user.email}
-        </span>
-      ) : null}
-      <div data-slot='account-menu' />
+      <AccountMenu />
     </header>
   );
 }

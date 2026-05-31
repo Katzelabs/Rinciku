@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import type { Session } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
 import { AuthContext } from '../hooks/use-auth';
@@ -41,6 +41,18 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const userId = session?.user.id ?? null;
 
+  const loadProfile = useCallback(async (uid: string) => {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', uid)
+      .maybeSingle();
+    if (error) {
+      console.error('Failed to load profile', error);
+    }
+    setProfileEntry({ userId: uid, profile: data ?? null });
+  }, []);
+
   useEffect(() => {
     if (!userId) return;
 
@@ -64,6 +76,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
     };
   }, [userId]);
 
+  const refreshProfile = useCallback(async () => {
+    if (!userId) return;
+    await loadProfile(userId);
+  }, [userId, loadProfile]);
+
   const profileMatchesUser = userId !== null && profileEntry?.userId === userId;
   const profile = profileMatchesUser ? profileEntry!.profile : null;
   const profileLoading = userId !== null && !profileMatchesUser;
@@ -76,6 +93,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         user: session?.user ?? null,
         profile,
         loading,
+        refreshProfile,
       }}
     >
       {children}

@@ -2,6 +2,7 @@ import { createBrowserRouter } from 'react-router';
 import { AppShell } from '@/components/shared/app-shell';
 import { aiChatRoutes } from '@/features/ai-chat';
 import {
+  authRoutes,
   guestRoutes,
   onboardingRoutes,
   requireAuthLoader,
@@ -34,6 +35,7 @@ export const router = createBrowserRouter([
           ...categoriesRoutes,
           ...budgetsRoutes,
           ...aiChatRoutes,
+          ...authRoutes,
         ],
       },
       { path: '*', element: <NotFound /> },

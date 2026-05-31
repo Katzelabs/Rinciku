@@ -4,7 +4,8 @@ Email/password auth, profile onboarding, and account settings. Supabase wiring i
 
 | # | Task | Status |
 |---|---|---|
-| 01 | [sign-up-page](01-sign-up-page.md) | not-started |
-| 02 | [sign-in-page](02-sign-in-page.md) | not-started |
-| 03 | [profile-onboarding](03-profile-onboarding.md) | not-started |
-| 04 | [account-settings](04-account-settings.md) | not-started |
+| 01 | [sign-up-page](01-sign-up-page.md) | done |
+| 02 | [sign-in-page](02-sign-in-page.md) | done |
+| 03 | [profile-onboarding](03-profile-onboarding.md) | done |
+| 04 | [account-settings](04-account-settings.md) | done |
+| 05 | [sign-up-hardening](05-sign-up-hardening.md) | done |
