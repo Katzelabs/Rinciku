@@ -365,6 +365,7 @@ export type Database = {
           month_start_day: number;
           monthly_income_idr: number;
           monthly_income_usd: number;
+          onboarded_at: string | null;
           updated_at: string;
         };
         Insert: {
@@ -376,6 +377,7 @@ export type Database = {
           month_start_day?: number;
           monthly_income_idr?: number;
           monthly_income_usd?: number;
+          onboarded_at?: string | null;
           updated_at?: string;
         };
         Update: {
@@ -387,6 +389,7 @@ export type Database = {
           month_start_day?: number;
           monthly_income_idr?: number;
           monthly_income_usd?: number;
+          onboarded_at?: string | null;
           updated_at?: string;
         };
         Relationships: [];

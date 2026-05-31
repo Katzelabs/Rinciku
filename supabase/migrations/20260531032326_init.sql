@@ -124,6 +124,7 @@ alter table "public"."messages" enable row level security;
     "monthly_income_idr" numeric(15,2) not null default 0,
     "monthly_income_usd" numeric(15,2) not null default 0,
     "month_start_day" smallint not null default 1,
+    "onboarded_at" timestamp with time zone,
     "created_at" timestamp with time zone not null default now(),
     "updated_at" timestamp with time zone not null default now()
       );

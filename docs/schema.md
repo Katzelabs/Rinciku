@@ -149,6 +149,7 @@ Notes:
 | `monthly_income_idr` | `numeric(15,2) not null default 0` | gross monthly IDR income |
 | `monthly_income_usd` | `numeric(15,2) not null default 0` | gross monthly USD income |
 | `month_start_day` | `smallint not null default 1` | `check (between 1 and 28)` — day of month the budget cycle resets |
+| `onboarded_at` | `timestamptz` | nullable; set to `now()` when the onboarding form is submitted. The `<RequireOnboarded>` route guard redirects to `/onboarding` while this is null. |
 | `created_at` | `timestamptz not null default now()` | |
 | `updated_at` | `timestamptz not null default now()` | maintained by `set_updated_at` trigger |
 
@@ -605,4 +606,4 @@ Documented here so future-Claude does not assume they exist:
 
 ---
 
-*Last updated: 2026-05-29. Next step (separate task): convert this doc into `supabase/migrations/0001_init.sql` via the `new-migration` skill.*
+*Last updated: 2026-05-30. Next step (separate task): convert this doc into `supabase/migrations/0001_init.sql` via the `new-migration` skill.*

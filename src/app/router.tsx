@@ -1,7 +1,13 @@
 import { createBrowserRouter } from 'react-router';
 import { AppShell } from '@/components/shared/app-shell';
 import { aiChatRoutes } from '@/features/ai-chat';
-import { authRoutes } from '@/features/auth';
+import {
+  guestRoutes,
+  onboardingRoutes,
+  requireAuthLoader,
+  requireGuestLoader,
+  requireOnboardedLoader,
+} from '@/features/auth';
 import { budgetsRoutes } from '@/features/budgets';
 import { categoriesRoutes } from '@/features/categories';
 import { dashboardRoutes } from '@/features/dashboard';
@@ -16,9 +22,11 @@ export const router = createBrowserRouter([
     element: <RootLayout />,
     errorElement: <ErrorBoundary />,
     children: [
-      ...authRoutes,
+      { loader: requireGuestLoader, children: guestRoutes },
+      { loader: requireAuthLoader, children: onboardingRoutes },
       {
         element: <AppShell />,
+        loader: requireOnboardedLoader,
         children: [
           ...dashboardRoutes,
           ...expensesRoutes,

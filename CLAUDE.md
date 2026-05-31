@@ -69,7 +69,17 @@ Enabled via `@rolldown/plugin-babel` + `babel-plugin-react-compiler` in `vite.co
 
 ### Backend
 
-Supabase (PostgreSQL + Auth + RLS) — local config scaffolded in `supabase/config.toml` (`project_id = "rinciku"`, Postgres 17, API on `:54321`, DB on `:54322`). No migrations or client wiring yet. Data access goes through each feature's `api.ts`.
+Supabase (PostgreSQL + Auth + RLS) — local config scaffolded in `supabase/config.toml` (`project_id = "rinciku"`, Postgres 17, API on `:54321`, DB on `:54322`). Data access goes through each feature's `api.ts`.
+
+**Schema is declarative.** `supabase/schemas/*.sql` is the source of truth (registered in `config.toml` under `schema_paths`). `supabase/migrations/*.sql` are generated artifacts — never hand-edit them. The full design lives in `docs/schema.md`.
+
+Workflow during pre-release dev (no shared/remote DB yet):
+
+1. Edit the relevant `supabase/schemas/NN_*.sql` file (and `docs/schema.md` if the change is design-level).
+2. Delete the existing migration(s) in `supabase/migrations/` and regenerate a single rolling init with `supabase db diff -f init`. Keeping one migration avoids churn until the schema stabilizes.
+3. `supabase db reset` to wipe local and reapply.
+
+Once the app is deployed or the DB is shared, this rule flips: `db reset` is destructive, so changes must land as *new* additive migrations on top of the existing history (still generated via `supabase db diff -f <name>` against an edited schema).
 
 ### AI
 

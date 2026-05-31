@@ -11,6 +11,7 @@ create table public.profiles (
   monthly_income_usd  numeric(15,2) not null default 0,
   month_start_day     smallint     not null default 1
     check (month_start_day between 1 and 28),
+  onboarded_at        timestamptz,
   created_at          timestamptz  not null default now(),
   updated_at          timestamptz  not null default now()
 );
