@@ -6,6 +6,6 @@ Core transaction logging. Manual entry first; image-based AI extraction lands la
 |---|---|---|
 | 01 | [expenses-api](01-expenses-api.md) | not-started |
 | 02 | [fx-conversion-helper](02-fx-conversion-helper.md) | not-started |
-| 03 | [expense-form](03-expense-form.md) | not-started |
-| 04 | [expenses-list-page](04-expenses-list-page.md) | not-started |
+| 03 | [expense-form](03-expense-form.md) | in-progress |
+| 04 | [expenses-list-page](04-expenses-list-page.md) | done |
 | 05 | [expense-attachments-upload](05-expense-attachments-upload.md) | not-started |
