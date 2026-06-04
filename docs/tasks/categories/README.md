@@ -4,6 +4,6 @@ CRUD over the three-tier (fixed / needs / wants) category set. Default categorie
 
 | # | Task | Status |
 |---|---|---|
-| 01 | [categories-api](01-categories-api.md) | not-started |
-| 02 | [categories-page](02-categories-page.md) | not-started |
-| 03 | [category-form](03-category-form.md) | not-started |
+| 01 | [categories-api](01-categories-api.md) | done |
+| 02 | [categories-page](02-categories-page.md) | done |
+| 03 | [category-form](03-category-form.md) | done |

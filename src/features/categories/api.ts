@@ -7,6 +7,11 @@ type Result<T> = {
   error: PostgrestError | null;
 };
 
+type CategoryFields = Pick<Tables<'categories'>, 'name' | 'tier' | 'icon' | 'color'>;
+
+export type CreateCategoryInput = CategoryFields & { user_id: string };
+export type UpdateCategoryPatch = Partial<CategoryFields>;
+
 export async function listCategories(): Promise<Result<Tables<'categories'>[]>> {
   const { data, error } = await supabase
     .from('categories')
@@ -16,4 +21,33 @@ export async function listCategories(): Promise<Result<Tables<'categories'>[]>> 
     .order('sort_order', { ascending: true })
     .order('name', { ascending: true });
   return { data, error };
+}
+
+export async function createCategory(
+  input: CreateCategoryInput
+): Promise<Result<Tables<'categories'>>> {
+  const { data, error } = await supabase
+    .from('categories')
+    .insert(input)
+    .select('*')
+    .single();
+  return { data, error };
+}
+
+export async function updateCategory(
+  id: string,
+  patch: UpdateCategoryPatch
+): Promise<Result<Tables<'categories'>>> {
+  const { data, error } = await supabase
+    .from('categories')
+    .update(patch)
+    .eq('id', id)
+    .select('*')
+    .single();
+  return { data, error };
+}
+
+export async function deleteCategory(id: string): Promise<Result<null>> {
+  const { error } = await supabase.from('categories').delete().eq('id', id);
+  return { data: null, error };
 }
