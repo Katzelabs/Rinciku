@@ -1,0 +1,145 @@
+import { useEffect, useState } from 'react';
+import { Card, CardContent } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
+import { cn } from '@/lib/utils';
+import { getFxRate } from '@/lib/fx';
+import type { CategoryTier } from '@/features/categories/hooks/use-categories';
+import { listEssentials } from '../api';
+import { computeBaseline, type Baseline } from '../lib/baseline';
+
+const TIER_LABELS: Record<CategoryTier, string> = {
+  fixed: 'Fixed',
+  needs: 'Needs',
+  wants: 'Wants',
+};
+
+const IDR_FORMATTER = new Intl.NumberFormat('id-ID', {
+  style: 'currency',
+  currency: 'IDR',
+  maximumFractionDigits: 0,
+});
+
+type Props = {
+  variant: 'footer' | 'card';
+  refreshKey?: number;
+  className?: string;
+};
+
+type Response = {
+  key: string;
+  baseline: Baseline | null;
+  error: string | null;
+};
+
+export function MonthlyBaselineSummary({
+  variant,
+  refreshKey = 0,
+  className,
+}: Props) {
+  const fetchKey = String(refreshKey);
+  const [response, setResponse] = useState<Response | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    Promise.all([listEssentials(), getFxRate('USD', 'IDR')])
+      .then(([{ data, error }, fxRate]) => {
+        if (cancelled) return;
+        if (error) {
+          setResponse({ key: fetchKey, baseline: null, error: error.message });
+          return;
+        }
+        setResponse({
+          key: fetchKey,
+          baseline: computeBaseline(data ?? [], fxRate),
+          error: null,
+        });
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        setResponse({
+          key: fetchKey,
+          baseline: null,
+          error: err instanceof Error ? err.message : 'Unknown error',
+        });
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [fetchKey]);
+
+  const isLoading = response?.key !== fetchKey;
+  const error = response?.error ?? null;
+  const baseline = response?.baseline ?? null;
+
+  if (variant === 'footer') {
+    if (isLoading) {
+      return (
+        <div className={cn('flex justify-end', className)}>
+          <Skeleton className='h-5 w-48' />
+        </div>
+      );
+    }
+    if (error || !baseline) {
+      return (
+        <p className={cn('text-right text-sm text-destructive', className)}>
+          Could not load baseline.
+        </p>
+      );
+    }
+    return (
+      <p className={cn('text-right text-sm', className)}>
+        <span className='text-muted-foreground'>Monthly baseline: </span>
+        <span className='font-semibold'>
+          {IDR_FORMATTER.format(baseline.total_idr)}
+        </span>
+      </p>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <Card className={className}>
+        <CardContent className='space-y-3 pt-6'>
+          <Skeleton className='h-6 w-40' />
+          <Skeleton className='h-4 w-32' />
+          <Skeleton className='h-4 w-32' />
+          <Skeleton className='h-4 w-32' />
+        </CardContent>
+      </Card>
+    );
+  }
+  if (error || !baseline) {
+    return (
+      <Card className={className}>
+        <CardContent className='pt-6 text-sm text-destructive'>
+          Could not load baseline.
+        </CardContent>
+      </Card>
+    );
+  }
+  return (
+    <Card className={className}>
+      <CardContent className='space-y-3 pt-6'>
+        <div>
+          <p className='text-sm text-muted-foreground'>Monthly baseline</p>
+          <p className='text-2xl font-semibold'>
+            {IDR_FORMATTER.format(baseline.total_idr)}
+          </p>
+        </div>
+        <ul className='space-y-1 text-sm'>
+          {(['fixed', 'needs', 'wants'] as const).map((tier) => (
+            <li
+              key={tier}
+              className='flex items-center justify-between text-muted-foreground'
+            >
+              <span>{TIER_LABELS[tier]}</span>
+              <span className='font-medium text-foreground'>
+                {IDR_FORMATTER.format(baseline.by_tier[tier])}
+              </span>
+            </li>
+          ))}
+        </ul>
+      </CardContent>
+    </Card>
+  );
+}

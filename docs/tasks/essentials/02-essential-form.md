@@ -1,4 +1,4 @@
-**Status:** not-started
+**Status:** done
 
 ## Goal
 
@@ -13,3 +13,5 @@ Reusable create/edit form for one essential line item.
 - [ ] Submit calls the appropriate api.ts function; surfaces errors via toast; calls `onSuccess`.
 
 ## Notes
+
+- Form accepts a `notes` field per spec, but the `essentials` DB table has no `notes` column today (see `database.types.ts`). The form input is wired but not persisted — submit payload omits it. Follow-up: either add `notes text` to `supabase/schemas/05_essentials.sql` and regenerate, or drop the field.

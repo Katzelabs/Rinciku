@@ -1,4 +1,4 @@
-**Status:** not-started
+**Status:** done
 
 ## Goal
 
@@ -13,3 +13,7 @@ A reusable, IDR-normalized summary of monthly essentials — used in the essenti
 - [ ] Loading and error states present.
 
 ## Notes
+
+- `computeBaseline` lives in `src/features/essentials/lib/baseline.ts` (not co-located with the component) because `react-refresh/only-export-components` flags non-component exports from component files. Import from `@/features/essentials/lib/baseline` (or via the component for convenience).
+- Self-fetches via `listEssentials()` + `getFxRate('USD','IDR')`. Pass `refreshKey={n}` to force a refetch after mutations (see `pages/essentials.tsx`).
+- `is_active = false` rows are excluded from the baseline.

@@ -4,7 +4,7 @@ Monthly non-negotiable line items (rent, internet, groceries, etc.). The summed 
 
 | # | Task | Status |
 |---|---|---|
-| 01 | [essentials-api](01-essentials-api.md) | not-started |
-| 02 | [essential-form](02-essential-form.md) | not-started |
-| 03 | [essentials-page](03-essentials-page.md) | not-started |
-| 04 | [monthly-baseline-summary](04-monthly-baseline-summary.md) | not-started |
+| 01 | [essentials-api](01-essentials-api.md) | done |
+| 02 | [essential-form](02-essential-form.md) | done |
+| 03 | [essentials-page](03-essentials-page.md) | done |
+| 04 | [monthly-baseline-summary](04-monthly-baseline-summary.md) | done |
