@@ -66,6 +66,7 @@ schema_paths = [
   "./schemas/15_budgets.sql",
   "./schemas/16_conversations.sql",
   "./schemas/17_messages.sql",
+  "./schemas/80_dashboard_functions.sql",
   "./schemas/90_storage_policies.sql",
   "./schemas/99_handle_new_user.sql",
 ]
