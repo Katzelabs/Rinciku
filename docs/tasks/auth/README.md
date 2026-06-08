@@ -9,3 +9,4 @@ Email/password auth, profile onboarding, and account settings. Supabase wiring i
 | 03 | [profile-onboarding](03-profile-onboarding.md) | done |
 | 04 | [account-settings](04-account-settings.md) | done |
 | 05 | [sign-up-hardening](05-sign-up-hardening.md) | done |
+| 06 | [base-currency-rewire](06-base-currency-rewire.md) | not-started |

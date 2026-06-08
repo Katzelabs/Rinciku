@@ -8,3 +8,4 @@ Monthly non-negotiable line items (rent, internet, groceries, etc.). The summed 
 | 02 | [essential-form](02-essential-form.md) | done |
 | 03 | [essentials-page](03-essentials-page.md) | done |
 | 04 | [monthly-baseline-summary](04-monthly-baseline-summary.md) | done |
+| 05 | [currency-display-only](05-currency-display-only.md) | not-started |
