@@ -504,6 +504,7 @@ export type Database = {
           p_start_at: string
         }
         Returns: {
+          income_received_this_cycle: number
           spent_total: number
           tier_fixed: number
           tier_needs: number

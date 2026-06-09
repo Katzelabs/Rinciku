@@ -12,7 +12,8 @@ export type TierTotals = Record<CategoryTier, number>;
 export type MonthlySummary = {
   cycle: Cycle;
   base_currency: CurrencyCode;
-  income_total: number;
+  expected_monthly_income: number;
+  income_received: number;
   spent_total: number;
   remaining: number;
   days_left: number;
@@ -58,12 +59,16 @@ export async function getMonthlySummary(
   };
   const spent_total = round2(Number(summaryRes.data.spent_total ?? 0));
 
-  const income_total = round2(
+  const expected_monthly_income = round2(
     convertToBase(
       Number(profile.expected_monthly_income ?? 0),
       (profile.expected_monthly_income_currency ?? 'IDR') as CurrencyCode,
       base
     ).amount_base
+  );
+
+  const income_received = round2(
+    Number(summaryRes.data.income_received_this_cycle ?? 0)
   );
 
   const baseline = computeBaseline(essentialsRes.data ?? [], base);
@@ -73,14 +78,15 @@ export async function getMonthlySummary(
     Math.max(0, baseline_total - essentialsSpent)
   );
 
-  const remaining = round2(income_total - spent_total);
+  const remaining = round2(expected_monthly_income - spent_total);
   const days_left = getDaysLeft(cycle, now);
 
   return {
     data: {
       cycle,
       base_currency: base,
-      income_total,
+      expected_monthly_income,
+      income_received,
       spent_total,
       remaining,
       days_left,

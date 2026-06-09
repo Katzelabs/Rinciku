@@ -11,10 +11,11 @@ create or replace function public.dashboard_monthly_summary(
   p_base     text,
   p_rates    jsonb
 ) returns table (
-  spent_total numeric,
-  tier_fixed  numeric,
-  tier_needs  numeric,
-  tier_wants  numeric
+  spent_total                numeric,
+  tier_fixed                 numeric,
+  tier_needs                 numeric,
+  tier_wants                 numeric,
+  income_received_this_cycle numeric
 )
 language sql
 stable
@@ -24,7 +25,7 @@ as $$
   with base_rate as (
     select (p_rates ->> p_base)::numeric as r
   ),
-  converted as (
+  converted_expenses as (
     select
       c.tier,
       e.amount * (p_rates ->> e.currency)::numeric / nullif((select r from base_rate), 0) as amount_base
@@ -33,13 +34,34 @@ as $$
     where e.user_id = (select auth.uid())
       and e.occurred_at >= p_start_at
       and e.occurred_at <  p_end_at
+  ),
+  converted_incomes as (
+    select
+      i.amount * (p_rates ->> i.currency)::numeric / nullif((select r from base_rate), 0) as amount_base
+    from public.incomes i
+    where i.user_id = (select auth.uid())
+      and i.occurred_at >= p_start_at
+      and i.occurred_at <  p_end_at
+  ),
+  expense_aggs as (
+    select
+      coalesce(sum(amount_base), 0)                              as spent_total,
+      coalesce(sum(amount_base) filter (where tier = 'fixed'), 0) as tier_fixed,
+      coalesce(sum(amount_base) filter (where tier = 'needs'), 0) as tier_needs,
+      coalesce(sum(amount_base) filter (where tier = 'wants'), 0) as tier_wants
+    from converted_expenses
+  ),
+  income_aggs as (
+    select coalesce(sum(amount_base), 0) as income_received_this_cycle
+    from converted_incomes
   )
   select
-    coalesce(sum(amount_base), 0)                              as spent_total,
-    coalesce(sum(amount_base) filter (where tier = 'fixed'), 0) as tier_fixed,
-    coalesce(sum(amount_base) filter (where tier = 'needs'), 0) as tier_needs,
-    coalesce(sum(amount_base) filter (where tier = 'wants'), 0) as tier_wants
-  from converted;
+    e.spent_total,
+    e.tier_fixed,
+    e.tier_needs,
+    e.tier_wants,
+    i.income_received_this_cycle
+  from expense_aggs e, income_aggs i;
 $$;
 
 grant execute on function public.dashboard_monthly_summary(timestamptz, timestamptz, text, jsonb)

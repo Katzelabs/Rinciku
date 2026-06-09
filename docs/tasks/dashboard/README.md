@@ -8,4 +8,4 @@ Read-only monthly overview: income, spent so far, days remaining in cycle, tier 
 | 02 | [dashboard-page](02-dashboard-page.md) | done |
 | 03 | [needs-vs-wants-breakdown](03-needs-vs-wants-breakdown.md) | done |
 | 04 | [budget-health-indicator](04-budget-health-indicator.md) | done |
-| 05 | [income-received-vs-expected](05-income-received-vs-expected.md) | not-started |
+| 05 | [income-received-vs-expected](05-income-received-vs-expected.md) | done |

@@ -94,8 +94,13 @@ export function DashboardPage() {
 
       <div className='grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4'>
         <SummaryCard
-          label='Income (this cycle)'
-          value={formatCurrency(summary.income_total, base)}
+          label='Received this cycle'
+          value={formatCurrency(summary.income_received, base)}
+          secondary={
+            summary.expected_monthly_income > 0
+              ? `Expected baseline: ${formatCurrency(summary.expected_monthly_income, base)}`
+              : undefined
+          }
         />
         <SummaryCard
           label='Spent so far'
@@ -145,11 +150,13 @@ function SummaryCard({
   label,
   value,
   hint,
+  secondary,
   tone,
 }: {
   label: string;
   value: string;
   hint?: string;
+  secondary?: string;
   tone?: 'negative';
 }) {
   return (
@@ -164,6 +171,11 @@ function SummaryCard({
         >
           {value}
         </p>
+        {secondary ? (
+          <p className='text-xs text-muted-foreground tabular-nums'>
+            {secondary}
+          </p>
+        ) : null}
         {hint ? (
           <p className='text-xs text-muted-foreground'>{hint}</p>
         ) : null}
