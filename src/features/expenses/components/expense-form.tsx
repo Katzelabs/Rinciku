@@ -42,6 +42,7 @@ import {
   useCategories,
 } from '@/features/categories/hooks/use-categories';
 
+import { AttachmentDropzone } from '@/components/shared/attachment-dropzone';
 import {
   createAttachment,
   createExpense,
@@ -52,7 +53,13 @@ import {
   uploadAttachment,
 } from '../api';
 import { expenseSchema, type ExpenseInput } from '../schemas';
-import { AttachmentDropzone } from './attachment-dropzone';
+
+const EXPENSE_ALLOWED_MIME = new Set([
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+  'image/heic',
+]);
 
 const TIER_LABELS: Record<'fixed' | 'needs' | 'wants', string> = {
   fixed: 'Fixed',
@@ -364,6 +371,12 @@ export function ExpenseForm({
               value={attachment}
               onChange={setAttachment}
               disabled={isSubmitting}
+              accept='image/jpeg,image/png,image/webp,image/heic'
+              allowedMime={EXPENSE_ALLOWED_MIME}
+              hintLabel='Drop a receipt image or click to browse'
+              hintFormats='JPG, PNG, WEBP, or HEIC · 10 MB max'
+              invalidTypeMessage='Image must be JPG, PNG, WEBP, or HEIC.'
+              oversizedMessage='Image must be 10 MB or smaller.'
             />
           </Field>
         )}

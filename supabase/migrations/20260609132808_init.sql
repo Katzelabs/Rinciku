@@ -98,6 +98,42 @@ alter table "public"."expense_attachments" enable row level security;
 alter table "public"."expenses" enable row level security;
 
 
+  create table "public"."income_attachments" (
+    "id" uuid not null default gen_random_uuid(),
+    "user_id" uuid not null,
+    "income_id" uuid,
+    "storage_path" text not null,
+    "doc_type" text,
+    "mime_type" text,
+    "file_size_bytes" integer,
+    "ai_raw_extraction" jsonb,
+    "ai_confidence" numeric(3,2),
+    "confirmed" boolean not null default false,
+    "created_at" timestamp with time zone not null default now(),
+    "updated_at" timestamp with time zone not null default now()
+      );
+
+
+alter table "public"."income_attachments" enable row level security;
+
+
+  create table "public"."incomes" (
+    "id" uuid not null default gen_random_uuid(),
+    "user_id" uuid not null,
+    "amount" numeric(15,2) not null,
+    "currency" text not null,
+    "occurred_at" timestamp with time zone not null default now(),
+    "note" text,
+    "source" text not null default 'manual'::text,
+    "attachment_id" uuid,
+    "created_at" timestamp with time zone not null default now(),
+    "updated_at" timestamp with time zone not null default now()
+      );
+
+
+alter table "public"."incomes" enable row level security;
+
+
   create table "public"."messages" (
     "id" uuid not null default gen_random_uuid(),
     "conversation_id" uuid not null,
@@ -175,6 +211,22 @@ CREATE INDEX expenses_user_occurred_at_idx ON public.expenses USING btree (user_
 
 CREATE INDEX expenses_user_source_idx ON public.expenses USING btree (user_id, source);
 
+CREATE INDEX income_attachments_income_id_idx ON public.income_attachments USING btree (income_id);
+
+CREATE UNIQUE INDEX income_attachments_pkey ON public.income_attachments USING btree (id);
+
+CREATE INDEX income_attachments_user_confirmed_idx ON public.income_attachments USING btree (user_id, confirmed);
+
+CREATE INDEX income_attachments_user_id_idx ON public.income_attachments USING btree (user_id);
+
+CREATE UNIQUE INDEX incomes_pkey ON public.incomes USING btree (id);
+
+CREATE INDEX incomes_user_id_idx ON public.incomes USING btree (user_id);
+
+CREATE INDEX incomes_user_occurred_at_idx ON public.incomes USING btree (user_id, occurred_at DESC);
+
+CREATE INDEX incomes_user_source_idx ON public.incomes USING btree (user_id, source);
+
 CREATE INDEX messages_conversation_created_idx ON public.messages USING btree (conversation_id, created_at);
 
 CREATE UNIQUE INDEX messages_pkey ON public.messages USING btree (id);
@@ -194,6 +246,10 @@ alter table "public"."essentials" add constraint "essentials_pkey" PRIMARY KEY u
 alter table "public"."expense_attachments" add constraint "expense_attachments_pkey" PRIMARY KEY using index "expense_attachments_pkey";
 
 alter table "public"."expenses" add constraint "expenses_pkey" PRIMARY KEY using index "expenses_pkey";
+
+alter table "public"."income_attachments" add constraint "income_attachments_pkey" PRIMARY KEY using index "income_attachments_pkey";
+
+alter table "public"."incomes" add constraint "incomes_pkey" PRIMARY KEY using index "incomes_pkey";
 
 alter table "public"."messages" add constraint "messages_pkey" PRIMARY KEY using index "messages_pkey";
 
@@ -298,6 +354,42 @@ alter table "public"."expenses" validate constraint "expenses_source_check";
 alter table "public"."expenses" add constraint "expenses_user_id_fkey" FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE not valid;
 
 alter table "public"."expenses" validate constraint "expenses_user_id_fkey";
+
+alter table "public"."income_attachments" add constraint "income_attachments_ai_confidence_check" CHECK (((ai_confidence >= (0)::numeric) AND (ai_confidence <= (1)::numeric))) not valid;
+
+alter table "public"."income_attachments" validate constraint "income_attachments_ai_confidence_check";
+
+alter table "public"."income_attachments" add constraint "income_attachments_doc_type_check" CHECK ((doc_type = ANY (ARRAY['receipt'::text, 'transfer'::text, 'invoice'::text, 'ewallet'::text, 'unknown'::text]))) not valid;
+
+alter table "public"."income_attachments" validate constraint "income_attachments_doc_type_check";
+
+alter table "public"."income_attachments" add constraint "income_attachments_income_id_fkey" FOREIGN KEY (income_id) REFERENCES public.incomes(id) ON DELETE CASCADE not valid;
+
+alter table "public"."income_attachments" validate constraint "income_attachments_income_id_fkey";
+
+alter table "public"."income_attachments" add constraint "income_attachments_user_id_fkey" FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE not valid;
+
+alter table "public"."income_attachments" validate constraint "income_attachments_user_id_fkey";
+
+alter table "public"."incomes" add constraint "incomes_amount_check" CHECK ((amount > (0)::numeric)) not valid;
+
+alter table "public"."incomes" validate constraint "incomes_amount_check";
+
+alter table "public"."incomes" add constraint "incomes_attachment_id_fkey" FOREIGN KEY (attachment_id) REFERENCES public.income_attachments(id) ON DELETE SET NULL not valid;
+
+alter table "public"."incomes" validate constraint "incomes_attachment_id_fkey";
+
+alter table "public"."incomes" add constraint "incomes_currency_check" CHECK ((currency = ANY (ARRAY['IDR'::text, 'USD'::text, 'EUR'::text, 'JPY'::text, 'GBP'::text, 'SGD'::text, 'MYR'::text, 'AUD'::text, 'CAD'::text, 'CNY'::text, 'KRW'::text, 'HKD'::text, 'THB'::text, 'PHP'::text, 'INR'::text, 'VND'::text]))) not valid;
+
+alter table "public"."incomes" validate constraint "incomes_currency_check";
+
+alter table "public"."incomes" add constraint "incomes_source_check" CHECK ((source = ANY (ARRAY['manual'::text, 'chat'::text, 'image'::text]))) not valid;
+
+alter table "public"."incomes" validate constraint "incomes_source_check";
+
+alter table "public"."incomes" add constraint "incomes_user_id_fkey" FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE not valid;
+
+alter table "public"."incomes" validate constraint "incomes_user_id_fkey";
 
 alter table "public"."messages" add constraint "messages_attachment_id_fkey" FOREIGN KEY (attachment_id) REFERENCES public.expense_attachments(id) ON DELETE SET NULL not valid;
 
@@ -655,6 +747,90 @@ grant truncate on table "public"."expenses" to "service_role";
 
 grant update on table "public"."expenses" to "service_role";
 
+grant delete on table "public"."income_attachments" to "anon";
+
+grant insert on table "public"."income_attachments" to "anon";
+
+grant references on table "public"."income_attachments" to "anon";
+
+grant select on table "public"."income_attachments" to "anon";
+
+grant trigger on table "public"."income_attachments" to "anon";
+
+grant truncate on table "public"."income_attachments" to "anon";
+
+grant update on table "public"."income_attachments" to "anon";
+
+grant delete on table "public"."income_attachments" to "authenticated";
+
+grant insert on table "public"."income_attachments" to "authenticated";
+
+grant references on table "public"."income_attachments" to "authenticated";
+
+grant select on table "public"."income_attachments" to "authenticated";
+
+grant trigger on table "public"."income_attachments" to "authenticated";
+
+grant truncate on table "public"."income_attachments" to "authenticated";
+
+grant update on table "public"."income_attachments" to "authenticated";
+
+grant delete on table "public"."income_attachments" to "service_role";
+
+grant insert on table "public"."income_attachments" to "service_role";
+
+grant references on table "public"."income_attachments" to "service_role";
+
+grant select on table "public"."income_attachments" to "service_role";
+
+grant trigger on table "public"."income_attachments" to "service_role";
+
+grant truncate on table "public"."income_attachments" to "service_role";
+
+grant update on table "public"."income_attachments" to "service_role";
+
+grant delete on table "public"."incomes" to "anon";
+
+grant insert on table "public"."incomes" to "anon";
+
+grant references on table "public"."incomes" to "anon";
+
+grant select on table "public"."incomes" to "anon";
+
+grant trigger on table "public"."incomes" to "anon";
+
+grant truncate on table "public"."incomes" to "anon";
+
+grant update on table "public"."incomes" to "anon";
+
+grant delete on table "public"."incomes" to "authenticated";
+
+grant insert on table "public"."incomes" to "authenticated";
+
+grant references on table "public"."incomes" to "authenticated";
+
+grant select on table "public"."incomes" to "authenticated";
+
+grant trigger on table "public"."incomes" to "authenticated";
+
+grant truncate on table "public"."incomes" to "authenticated";
+
+grant update on table "public"."incomes" to "authenticated";
+
+grant delete on table "public"."incomes" to "service_role";
+
+grant insert on table "public"."incomes" to "service_role";
+
+grant references on table "public"."incomes" to "service_role";
+
+grant select on table "public"."incomes" to "service_role";
+
+grant trigger on table "public"."incomes" to "service_role";
+
+grant truncate on table "public"."incomes" to "service_role";
+
+grant update on table "public"."incomes" to "service_role";
+
 grant delete on table "public"."messages" to "anon";
 
 grant insert on table "public"."messages" to "anon";
@@ -962,6 +1138,80 @@ with check ((user_id = ( SELECT auth.uid() AS uid)));
 
 
 
+  create policy "income_attachments: delete own"
+  on "public"."income_attachments"
+  as permissive
+  for delete
+  to authenticated
+using ((user_id = ( SELECT auth.uid() AS uid)));
+
+
+
+  create policy "income_attachments: insert own"
+  on "public"."income_attachments"
+  as permissive
+  for insert
+  to authenticated
+with check ((user_id = ( SELECT auth.uid() AS uid)));
+
+
+
+  create policy "income_attachments: select own"
+  on "public"."income_attachments"
+  as permissive
+  for select
+  to authenticated
+using ((user_id = ( SELECT auth.uid() AS uid)));
+
+
+
+  create policy "income_attachments: update own"
+  on "public"."income_attachments"
+  as permissive
+  for update
+  to authenticated
+using ((user_id = ( SELECT auth.uid() AS uid)))
+with check ((user_id = ( SELECT auth.uid() AS uid)));
+
+
+
+  create policy "incomes: delete own"
+  on "public"."incomes"
+  as permissive
+  for delete
+  to authenticated
+using ((user_id = ( SELECT auth.uid() AS uid)));
+
+
+
+  create policy "incomes: insert own"
+  on "public"."incomes"
+  as permissive
+  for insert
+  to authenticated
+with check ((user_id = ( SELECT auth.uid() AS uid)));
+
+
+
+  create policy "incomes: select own"
+  on "public"."incomes"
+  as permissive
+  for select
+  to authenticated
+using ((user_id = ( SELECT auth.uid() AS uid)));
+
+
+
+  create policy "incomes: update own"
+  on "public"."incomes"
+  as permissive
+  for update
+  to authenticated
+using ((user_id = ( SELECT auth.uid() AS uid)))
+with check ((user_id = ( SELECT auth.uid() AS uid)));
+
+
+
   create policy "messages: delete own"
   on "public"."messages"
   as permissive
@@ -1038,6 +1288,10 @@ CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.expense_attachments FOR EA
 
 CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.expenses FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
 
+CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.income_attachments FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
+
+CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.incomes FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
+
 CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.profiles FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
 
 CREATE TRIGGER on_auth_user_created AFTER INSERT ON auth.users FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
@@ -1076,6 +1330,42 @@ using (((bucket_id = 'expense-attachments'::text) AND ((storage.foldername(name)
   for update
   to authenticated
 using (((bucket_id = 'expense-attachments'::text) AND ((storage.foldername(name))[1] = (( SELECT auth.uid() AS uid))::text)));
+
+
+
+  create policy "income-attachments: delete own"
+  on "storage"."objects"
+  as permissive
+  for delete
+  to authenticated
+using (((bucket_id = 'income-attachments'::text) AND ((storage.foldername(name))[1] = (( SELECT auth.uid() AS uid))::text)));
+
+
+
+  create policy "income-attachments: insert own"
+  on "storage"."objects"
+  as permissive
+  for insert
+  to authenticated
+with check (((bucket_id = 'income-attachments'::text) AND ((storage.foldername(name))[1] = (( SELECT auth.uid() AS uid))::text)));
+
+
+
+  create policy "income-attachments: select own"
+  on "storage"."objects"
+  as permissive
+  for select
+  to authenticated
+using (((bucket_id = 'income-attachments'::text) AND ((storage.foldername(name))[1] = (( SELECT auth.uid() AS uid))::text)));
+
+
+
+  create policy "income-attachments: update own"
+  on "storage"."objects"
+  as permissive
+  for update
+  to authenticated
+using (((bucket_id = 'income-attachments'::text) AND ((storage.foldername(name))[1] = (( SELECT auth.uid() AS uid))::text)));
 
 
 

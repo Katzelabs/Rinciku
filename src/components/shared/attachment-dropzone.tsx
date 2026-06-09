@@ -1,35 +1,43 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ImagePlus, X } from 'lucide-react';
+import { FileText, ImagePlus, X } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
-const ALLOWED_MIME = new Set([
-  'image/jpeg',
-  'image/png',
-  'image/webp',
-  'image/heic',
-]);
-const ACCEPT_ATTR = 'image/jpeg,image/png,image/webp,image/heic';
-const MAX_BYTES = 10 * 1024 * 1024;
+const DEFAULT_MAX_BYTES = 10 * 1024 * 1024;
 
 type AttachmentDropzoneProps = {
   value: File | null;
   onChange: (file: File | null) => void;
   disabled?: boolean;
+  accept: string;
+  allowedMime: ReadonlySet<string>;
+  maxBytes?: number;
+  hintLabel?: string;
+  hintFormats?: string;
+  invalidTypeMessage?: string;
+  oversizedMessage?: string;
 };
 
 export function AttachmentDropzone({
   value,
   onChange,
   disabled,
+  accept,
+  allowedMime,
+  maxBytes = DEFAULT_MAX_BYTES,
+  hintLabel = 'Drop a file or click to browse',
+  hintFormats,
+  invalidTypeMessage = 'File type is not allowed.',
+  oversizedMessage,
 }: AttachmentDropzoneProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const isImage = value?.type.startsWith('image/');
   const previewUrl = useMemo(
-    () => (value ? URL.createObjectURL(value) : null),
-    [value]
+    () => (value && isImage ? URL.createObjectURL(value) : null),
+    [value, isImage]
   );
 
   useEffect(() => {
@@ -38,12 +46,15 @@ export function AttachmentDropzone({
   }, [previewUrl]);
 
   function acceptFile(file: File) {
-    if (!ALLOWED_MIME.has(file.type)) {
-      toast.error('Image must be JPG, PNG, WEBP, or HEIC.');
+    if (!allowedMime.has(file.type)) {
+      toast.error(invalidTypeMessage);
       return;
     }
-    if (file.size > MAX_BYTES) {
-      toast.error('Image must be 10 MB or smaller.');
+    if (file.size > maxBytes) {
+      toast.error(
+        oversizedMessage ??
+          `File must be ${Math.round(maxBytes / 1024 / 1024)} MB or smaller.`
+      );
       return;
     }
     onChange(file);
@@ -68,14 +79,23 @@ export function AttachmentDropzone({
     if (inputRef.current) inputRef.current.value = '';
   }
 
-  if (value && previewUrl) {
+  if (value) {
     return (
       <div className='flex items-center gap-3 rounded-md border border-input bg-background p-3'>
-        <img
-          src={previewUrl}
-          alt={value.name}
-          className='h-20 w-20 rounded-md object-cover'
-        />
+        {previewUrl ? (
+          <img
+            src={previewUrl}
+            alt={value.name}
+            className='h-20 w-20 rounded-md object-cover'
+          />
+        ) : (
+          <div className='flex h-20 w-20 items-center justify-center rounded-md bg-muted'>
+            <FileText
+              className='size-8 text-muted-foreground'
+              aria-hidden='true'
+            />
+          </div>
+        )}
         <div className='min-w-0 flex-1'>
           <p className='truncate text-sm font-medium'>{value.name}</p>
           <p className='text-xs text-muted-foreground'>
@@ -123,16 +143,14 @@ export function AttachmentDropzone({
       )}
     >
       <ImagePlus className='size-6 text-muted-foreground' aria-hidden='true' />
-      <p className='text-sm font-medium'>
-        Drop a receipt image or click to browse
-      </p>
-      <p className='text-xs text-muted-foreground'>
-        JPG, PNG, WEBP, or HEIC · 10 MB max
-      </p>
+      <p className='text-sm font-medium'>{hintLabel}</p>
+      {hintFormats && (
+        <p className='text-xs text-muted-foreground'>{hintFormats}</p>
+      )}
       <input
         ref={inputRef}
         type='file'
-        accept={ACCEPT_ATTR}
+        accept={accept}
         className='sr-only'
         onChange={handleFileInput}
         disabled={disabled}

@@ -6,6 +6,6 @@ Depends on `foundation/05-base-currency-and-cleanup.md` for the schema/FX/curren
 
 | # | Task | Status |
 |---|---|---|
-| 01 | [schema](01-schema.md) | not-started |
-| 02 | [api-and-attachments](02-api-and-attachments.md) | not-started |
-| 03 | [pages-and-forms](03-pages-and-forms.md) | not-started |
+| 01 | [schema](01-schema.md) | done |
+| 02 | [api-and-attachments](02-api-and-attachments.md) | done |
+| 03 | [pages-and-forms](03-pages-and-forms.md) | done |

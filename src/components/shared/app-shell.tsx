@@ -6,6 +6,7 @@ import {
   Receipt,
   Sparkles,
   Tag,
+  TrendingUp,
   Wallet,
 } from 'lucide-react';
 import { Link, NavLink, Outlet, useMatch } from 'react-router';
@@ -36,6 +37,7 @@ interface NavItem {
 const navItems: NavItem[] = [
   { title: 'Dashboard', to: '/', icon: LayoutDashboard, end: true },
   { title: 'Expenses', to: '/expenses', icon: Receipt },
+  { title: 'Incomes', to: '/incomes', icon: TrendingUp },
   { title: 'Essentials', to: '/essentials', icon: Wallet },
   { title: 'Categories', to: '/categories', icon: Tag },
 ];

@@ -15,13 +15,15 @@
 5. [`essentials`](#5-essentials) — monthly non-negotiable line items
 6. [`expenses`](#6-expenses) — core transaction table
 7. [`expense_attachments`](#7-expense_attachments) — AI-extracted document metadata
-8. [`budgets`](#8-budgets) — monthly snapshot per category per month
-9. [`conversations`](#9-conversations) — AI chat threads
-10. [`messages`](#10-messages) — chat messages with token accounting
-11. [Storage — `expense-attachments` bucket](#11-storage--expense-attachments-bucket)
-12. [Helper functions & triggers](#12-helper-functions--triggers)
-13. [Indexes summary](#13-indexes-summary)
-14. [Out of scope (v1)](#14-out-of-scope-v1)
+8. [`incomes`](#8-incomes) — manual income log (parallel to expenses)
+9. [`income_attachments`](#9-income_attachments) — AI-extracted income document metadata
+10. [`budgets`](#10-budgets) — monthly snapshot per category per month
+11. [`conversations`](#11-conversations) — AI chat threads
+12. [`messages`](#12-messages) — chat messages with token accounting
+13. [Storage — attachment buckets](#13-storage--attachment-buckets)
+14. [Helper functions & triggers](#14-helper-functions--triggers)
+15. [Indexes summary](#15-indexes-summary)
+16. [Out of scope (v1)](#16-out-of-scope-v1)
 
 When working on a single table, use `Read(offset, limit)` to jump to its section instead of loading the whole file.
 
@@ -99,7 +101,7 @@ Why `(select auth.uid())` not `auth.uid()` — Postgres treats the subselect as 
 - Every `user_id` column gets a btree index (RLS injects it into every `WHERE`).
 - Every foreign key column gets an index (avoid sequential scans on cascade / join).
 - Hot query paths get a composite index (e.g. `expenses (user_id, occurred_at desc)`).
-- Full list in [§13 Indexes summary](#13-indexes-summary).
+- Full list in [§15 Indexes summary](#15-indexes-summary).
 
 ### Generated columns
 `expenses.amount_idr` is a `GENERATED ALWAYS AS ... STORED` column so dashboard aggregations never recompute the FX conversion. Stored generated columns are indexable and back-fill on insert without trigger logic.
@@ -129,10 +131,17 @@ expenses ◀────────┐                    │
    ▼              │                    │
 expense_attachments ◀──────────────────┘
                   (messages.attachment_id, nullable)
+
+incomes ◀─────────┐
+   │              │
+   │ 1:1 (nullable both ways)
+   ▼              │
+income_attachments
 ```
 
 Notes:
 - `expenses` ↔ `expense_attachments` is **circular**: an expense has an optional `attachment_id`; an attachment has an optional `expense_id`. Resolution flow is in [§7](#7-expense_attachments).
+- `incomes` ↔ `income_attachments` is the same circular pattern — see [§9](#9-income_attachments).
 - `messages.attachment_id` lets a chat message reference the original uploaded image (e.g. "here is the receipt") before the user confirms it into an expense.
 
 ---
@@ -343,7 +352,81 @@ Deleting an `expense_attachments` row does **not** delete the underlying storage
 
 ---
 
-## 8. `budgets`
+## 8. `incomes`
+
+Manual income log. Parallel to `expenses` minus categories — v1 leaves incomes uncategorized (multi-source templates are v2; see [§16](#16-out-of-scope-v1)). Every received-money event lands here so the dashboard can sum **received this cycle** alongside the `profiles.expected_monthly_income` baseline.
+
+### Columns
+
+| column | type | notes |
+|---|---|---|
+| `id` | `uuid` pk | |
+| `user_id` | `uuid not null` | `references auth.users(id) on delete cascade` |
+| `amount` | `numeric(15,2) not null` | `check (amount > 0)` — entered amount in the base in effect at write time |
+| `currency` | `text not null` | `check (currency in (<16 codes>))` — the base in effect when this row was written |
+| `occurred_at` | `timestamptz not null default now()` | when the income was received |
+| `note` | `text` | freeform memo (e.g. "May salary", "side gig invoice #42") |
+| `source` | `text not null default 'manual'` | `check (source in ('manual','chat','image'))` — provenance |
+| `attachment_id` | `uuid` | `references income_attachments(id) on delete set null` — see circular FK note below |
+| `created_at`, `updated_at` | `timestamptz` | standard |
+
+### Constraints
+- `pk (id)`
+- `fk (user_id) -> auth.users(id) on delete cascade`
+- `fk (attachment_id) -> income_attachments(id) on delete set null`
+
+### Indexes
+- `incomes (user_id)` — RLS
+- `incomes (user_id, occurred_at desc)` — dashboard timeline / "this month" queries
+- `incomes (user_id, source)` — analytics on chat vs image vs manual
+
+### RLS
+Standard pattern on `user_id`.
+
+### Circular FK with `income_attachments`
+Identical pattern to `expenses` ↔ `expense_attachments` — see [§6](#6-expenses) and [§9](#9-income_attachments). Both ends nullable; the FK on `incomes.attachment_id` uses `on delete set null`, the FK on `income_attachments.income_id` cascades.
+
+---
+
+## 9. `income_attachments`
+
+Uploaded document + (eventually) Claude Vision extraction metadata. Identical shape to `expense_attachments` — same `doc_type` allow-list kept on purpose so the AI extraction pipeline can be polymorphic across both tables. May exist before an income is created (image-logging flow: upload → AI extracts → user reviews → income created → link).
+
+### Columns
+
+| column | type | notes |
+|---|---|---|
+| `id` | `uuid` pk | |
+| `user_id` | `uuid not null` | `references auth.users(id) on delete cascade` |
+| `income_id` | `uuid` | `references incomes(id) on delete cascade` — nullable until the user confirms the extraction |
+| `storage_path` | `text not null` | matches `{user_id}/{year}-{month}/{uuid}.{ext}` in the `income-attachments` bucket |
+| `doc_type` | `text` | `check (doc_type in ('receipt','transfer','invoice','ewallet','unknown'))` — kept identical to expense_attachments |
+| `mime_type` | `text` | e.g. `'image/jpeg'`, `'application/pdf'` |
+| `file_size_bytes` | `int` | |
+| `ai_raw_extraction` | `jsonb` | full Claude Vision response |
+| `ai_confidence` | `numeric(3,2)` | `check (ai_confidence between 0 and 1)` |
+| `confirmed` | `boolean not null default false` | true once the user accepts the extraction into an income |
+| `created_at`, `updated_at` | `timestamptz` | standard |
+
+### Constraints
+- `pk (id)`
+- `fk (user_id) -> auth.users(id) on delete cascade`
+- `fk (income_id) -> incomes(id) on delete cascade` — added via `ALTER TABLE` after both tables exist (circular FK)
+
+### Indexes
+- `income_attachments (user_id)` — RLS
+- `income_attachments (user_id, confirmed)` — surface pending uploads in chat UI
+- `income_attachments (income_id)` — reverse lookup from an income
+
+### RLS
+Standard pattern on `user_id`. Inserts with `income_id = null` are allowed — the pre-confirmation upload step is normal.
+
+### Cleanup
+Same caveat as `expense_attachments`: deleting a row does **not** delete the underlying storage object. App must call `storage.from('income-attachments').remove([path])` first, then delete the row.
+
+---
+
+## 10. `budgets`
 
 Monthly snapshot per category per month. One row per `(user_id, category_id, period_year, period_month)`.
 
@@ -380,9 +463,9 @@ Standard pattern on `user_id`.
 
 ---
 
-## 9. `conversations`
+## 11. `conversations`
 
-One row per AI chat thread. Each thread is a sequence of [`messages`](#10-messages).
+One row per AI chat thread. Each thread is a sequence of [`messages`](#12-messages).
 
 ### Columns
 
@@ -409,7 +492,7 @@ Standard pattern on `user_id`.
 
 ---
 
-## 10. `messages`
+## 12. `messages`
 
 One row per message. Designed for Supabase Realtime row-level subscriptions filtered by `conversation_id`.
 
@@ -448,25 +531,27 @@ Standard pattern on `user_id` (not joined through `conversations` — that's why
 
 ---
 
-## 11. Storage — `expense-attachments` bucket
+## 13. Storage — attachment buckets
 
-### Bucket config
+Two parallel private buckets, one per transactional family. Bucket configs and RLS policies mirror each other; the only deltas are the bucket id and the allowed mime types.
 
-| setting | value |
-|---|---|
-| name | `expense-attachments` |
-| public | **false** (private) |
-| file size limit | `10485760` (10 MB) |
-| allowed mime types | `image/jpeg`, `image/png`, `image/webp`, `image/heic` |
+### Buckets
 
-### Path pattern
+| bucket | public | size limit | allowed mime types |
+|---|---|---|---|
+| `expense-attachments` | false | 10 MB (`10485760`) | `image/jpeg`, `image/png`, `image/webp`, `image/heic` |
+| `income-attachments`  | false | 10 MB (`10485760`) | `image/jpeg`, `image/png`, `image/webp`, `image/heic`, `application/pdf` |
+
+PDF is allowed on the income bucket because payslips and invoices commonly arrive as PDFs.
+
+### Path pattern (both buckets)
 ```
 {user_id}/{YYYY}-{MM}/{uuid}.{ext}
 ```
 Example: `8c4f.../2026-05/3b21....jpg`. The first path segment is always the owner's `auth.uid()`, which storage RLS uses for ownership checks.
 
 ### RLS on `storage.objects`
-Four policies on the `expense-attachments` bucket. All check that the first path segment matches the caller's id.
+Four policies per bucket. All check that the first path segment matches the caller's id. The `income-attachments` policies are an exact mirror of the `expense-attachments` ones, swapping the `bucket_id` literal.
 
 ```sql
 create policy "expense-attachments: select own"
@@ -475,36 +560,24 @@ create policy "expense-attachments: select own"
     bucket_id = 'expense-attachments'
     and (storage.foldername(name))[1] = (select auth.uid())::text
   );
+-- ...insert / update / delete follow the same shape, with the matching action.
 
-create policy "expense-attachments: insert own"
-  on storage.objects for insert to authenticated
-  with check (
-    bucket_id = 'expense-attachments'
-    and (storage.foldername(name))[1] = (select auth.uid())::text
-  );
-
-create policy "expense-attachments: update own"
-  on storage.objects for update to authenticated
+create policy "income-attachments: select own"
+  on storage.objects for select to authenticated
   using (
-    bucket_id = 'expense-attachments'
+    bucket_id = 'income-attachments'
     and (storage.foldername(name))[1] = (select auth.uid())::text
   );
-
-create policy "expense-attachments: delete own"
-  on storage.objects for delete to authenticated
-  using (
-    bucket_id = 'expense-attachments'
-    and (storage.foldername(name))[1] = (select auth.uid())::text
-  );
+-- ...insert / update / delete follow the same shape.
 ```
 
 ### Notes
-- Use **signed URLs** (`createSignedUrl`) for displaying images — the bucket is private, public URLs will not work.
-- Deleting an `expense_attachments` row does NOT delete the storage object. App must remove the object first, then the row. (v2: add `after delete` trigger or Edge Function for atomic cleanup.)
+- Use **signed URLs** (`createSignedUrl`) for displaying images — the buckets are private, public URLs will not work.
+- Deleting an `expense_attachments` / `income_attachments` row does NOT delete the underlying storage object. App must remove the object first, then the row. (v2: add `after delete` trigger or Edge Function for atomic cleanup.)
 
 ---
 
-## 12. Helper functions & triggers
+## 14. Helper functions & triggers
 
 ### `public.set_updated_at()`
 Generic `BEFORE UPDATE` trigger function that sets `new.updated_at = now()`. Attached to every table with an `updated_at` column.
@@ -523,7 +596,7 @@ create trigger set_updated_at before update on public.<t>
   for each row execute function public.set_updated_at();
 ```
 
-Attached to: `profiles`, `categories`, `essentials`, `expenses`, `expense_attachments`, `budgets`, `conversations`. (Not `messages` — immutable.)
+Attached to: `profiles`, `categories`, `essentials`, `expenses`, `expense_attachments`, `incomes`, `income_attachments`, `budgets`, `conversations`. (Not `messages` — immutable.)
 
 ### `public.handle_new_user()`
 `AFTER INSERT ON auth.users` trigger. Creates a profile row and seeds default categories.
@@ -565,7 +638,7 @@ create trigger on_auth_user_created
 
 ---
 
-## 13. Indexes summary
+## 15. Indexes summary
 
 Every PK is implicitly indexed. Non-PK indexes:
 
@@ -582,6 +655,12 @@ Every PK is implicitly indexed. Non-PK indexes:
 | `(user_id)` | `expense_attachments` | RLS |
 | `(user_id, confirmed)` | `expense_attachments` | pending uploads |
 | `(expense_id)` | `expense_attachments` | reverse lookup |
+| `(user_id)` | `incomes` | RLS |
+| `(user_id, occurred_at desc)` | `incomes` | dashboard timeline / "received this cycle" |
+| `(user_id, source)` | `incomes` | provenance analytics |
+| `(user_id)` | `income_attachments` | RLS |
+| `(user_id, confirmed)` | `income_attachments` | pending uploads |
+| `(income_id)` | `income_attachments` | reverse lookup |
 | `(user_id)` | `budgets` | RLS |
 | `(user_id, period_year, period_month)` | `budgets` | "this month's budgets" |
 | `(user_id, last_message_at desc nulls last)` | `conversations` | sidebar list |
@@ -592,7 +671,7 @@ Every PK is implicitly indexed. Non-PK indexes:
 
 ---
 
-## 14. Out of scope (v1)
+## 16. Out of scope (v1)
 
 Documented here so future-Claude does not assume they exist:
 

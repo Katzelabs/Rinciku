@@ -14,6 +14,7 @@ import { categoriesRoutes } from '@/features/categories';
 import { dashboardRoutes } from '@/features/dashboard';
 import { essentialsRoutes } from '@/features/essentials';
 import { expensesRoutes } from '@/features/expenses';
+import { incomesRoutes } from '@/features/incomes';
 import { ErrorBoundary } from './error-boundary';
 import { NotFound } from './not-found';
 import { RootLayout } from './root-layout';
@@ -31,6 +32,7 @@ export const router = createBrowserRouter([
         children: [
           ...dashboardRoutes,
           ...expensesRoutes,
+          ...incomesRoutes,
           ...essentialsRoutes,
           ...categoriesRoutes,
           ...budgetsRoutes,

@@ -298,6 +298,106 @@ export type Database = {
           },
         ]
       }
+      income_attachments: {
+        Row: {
+          ai_confidence: number | null
+          ai_raw_extraction: Json | null
+          confirmed: boolean
+          created_at: string
+          doc_type: string | null
+          file_size_bytes: number | null
+          id: string
+          income_id: string | null
+          mime_type: string | null
+          storage_path: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          ai_confidence?: number | null
+          ai_raw_extraction?: Json | null
+          confirmed?: boolean
+          created_at?: string
+          doc_type?: string | null
+          file_size_bytes?: number | null
+          id?: string
+          income_id?: string | null
+          mime_type?: string | null
+          storage_path: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          ai_confidence?: number | null
+          ai_raw_extraction?: Json | null
+          confirmed?: boolean
+          created_at?: string
+          doc_type?: string | null
+          file_size_bytes?: number | null
+          id?: string
+          income_id?: string | null
+          mime_type?: string | null
+          storage_path?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "income_attachments_income_id_fkey"
+            columns: ["income_id"]
+            isOneToOne: false
+            referencedRelation: "incomes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      incomes: {
+        Row: {
+          amount: number
+          attachment_id: string | null
+          created_at: string
+          currency: string
+          id: string
+          note: string | null
+          occurred_at: string
+          source: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          attachment_id?: string | null
+          created_at?: string
+          currency: string
+          id?: string
+          note?: string | null
+          occurred_at?: string
+          source?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          attachment_id?: string | null
+          created_at?: string
+          currency?: string
+          id?: string
+          note?: string | null
+          occurred_at?: string
+          source?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "incomes_attachment_id_fkey"
+            columns: ["attachment_id"]
+            isOneToOne: false
+            referencedRelation: "income_attachments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       messages: {
         Row: {
           attachment_id: string | null
