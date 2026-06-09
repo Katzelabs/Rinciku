@@ -54,7 +54,7 @@ When working on a single table, use `Read(offset, limit)` to jump to its section
   `'IDR','USD','EUR','JPY','GBP','SGD','MYR','AUD','CAD','CNY','KRW','HKD','THB','PHP','INR','VND'`.
 - Base currency is picked by the user at onboarding and **changeable in settings** (see `auth/06-base-currency-rewire.md` for the settings UX + base-change confirmation modal).
 - Every transactional row (`expenses`, `essentials`, `budgets`) writes `(amount, currency)` in the **base in effect at write time**. Historical rows are not retroactively rewritten when the user changes base later — their `currency` field preserves the base that was active when the row was logged.
-- FX conversion happens at read time via a JS rate map (frozen snapshot for now — see `src/lib/fx.ts` and `foundation/06-live-fx-source.md`). The dashboard SQL function `dashboard_monthly_summary(p_start_at, p_end_at, p_base, p_rates)` aggregates by `sum(amount * (p_rates ->> currency)::numeric)`, pivoting per-row through IDR.
+- FX conversion happens at read time via a JS rate map in `src/lib/fx.ts`. The map is fetched live from `open.er-api.com` (no API key, daily updates), cached in `localStorage` under `rinciku.fx.v1` with a 24h TTL, and falls back to a frozen 2026-06-09 stub when the network and cache both miss. The dashboard SQL function `dashboard_monthly_summary(p_start_at, p_end_at, p_base, p_rates)` aggregates by `sum(amount * (p_rates ->> currency)::numeric)`, pivoting per-row through IDR — its `p_rates` jsonb argument is whatever `src/lib/fx.ts` resolved at call time.
 
 ### Enums-as-text
 Same reasoning as currency. Applies to:
@@ -675,7 +675,7 @@ Every PK is implicitly indexed. Non-PK indexes:
 
 Documented here so future-Claude does not assume they exist:
 
-- **Live FX source** — v1 ships a frozen rate snapshot in `src/lib/fx.ts` (dated 2026-06-09). `foundation/06-live-fx-source.md` covers swapping in a live source (e.g. exchangerate API + cache).
+- **Server-side FX caching / cross-device rate sync** — v1 fetches `open.er-api.com` from the browser and caches in `localStorage` (see `src/lib/fx.ts`). An Edge Function + Supabase-side rate table would let multiple devices share one fetch per day; only worth doing if we migrate to a keyed source or want stable cross-device totals.
 - **`exchange_rates` table** — historical totals reconvert at read time via the runtime rate map; the per-row rate snapshot is gone. A separate rates table (daily timestamped rows) would only be needed if/when we want stable historical totals immune to live-rate movement — v2.
 - **Income source templates** — v1 has a single `expected_monthly_income` on `profiles`. Multi-source income templates ("salary in USD + side gig in IDR") are v2.
 - **Recurring expenses** — listed in PROJECT_BRIEF.md v2 features. Would add a `recurring_expenses` template table + a scheduled job.

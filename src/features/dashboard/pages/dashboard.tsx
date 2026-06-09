@@ -9,6 +9,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
+import { FxBanner } from '@/components/shared/fx-banner';
 import { cn } from '@/lib/utils';
 import { getCycleLabel } from '@/lib/cycle';
 import { formatCurrency } from '@/lib/format';
@@ -91,6 +92,8 @@ export function DashboardPage() {
         <p className='text-sm text-muted-foreground'>Cycle: {cycleLabel}</p>
         <h1 className='text-2xl font-semibold'>Dashboard</h1>
       </div>
+
+      <FxBanner />
 
       <div className='grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4'>
         <SummaryCard
