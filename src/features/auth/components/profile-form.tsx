@@ -14,15 +14,8 @@ import {
   InputGroupAddon,
   InputGroupInput,
 } from '@/components/ui/input-group';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import { CurrencySelect } from '@/components/shared/currency-select';
 import { CURRENCY_CODES, type CurrencyCode } from '@/lib/fx';
-import { CURRENCY_NAMES } from '@/lib/currency-meta';
 import { onboardingSchema, type OnboardingInput } from '../schemas';
 import type { Profile } from '../types';
 
@@ -95,22 +88,11 @@ export function ProfileForm({
               <FieldDescription>
                 Used to display dashboard totals.
               </FieldDescription>
-              <Select value={field.value} onValueChange={field.onChange}>
-                <SelectTrigger
-                  id='profile-base-currency'
-                  className='w-full'
-                  aria-invalid={fieldState.invalid || undefined}
-                >
-                  <SelectValue placeholder='Select currency' />
-                </SelectTrigger>
-                <SelectContent>
-                  {CURRENCY_CODES.map((code) => (
-                    <SelectItem key={code} value={code}>
-                      {code} — {CURRENCY_NAMES[code]}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <CurrencySelect
+                id='profile-base-currency'
+                value={field.value}
+                onChange={field.onChange}
+              />
               <FieldError
                 errors={fieldState.error ? [fieldState.error] : undefined}
               />
@@ -126,8 +108,8 @@ export function ProfileForm({
                 Expected monthly income
               </FieldLabel>
               <FieldDescription>
-                Use 0 if your income varies a lot — the dashboard will hide the
-                expected baseline.
+                Your typical monthly income. If you have multiple streams, enter
+                your main one — log others on the Incomes page.
               </FieldDescription>
               <InputGroup>
                 <InputGroupAddon>

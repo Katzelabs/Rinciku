@@ -1,4 +1,15 @@
+import { useState } from 'react';
 import { toast } from 'sonner';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import {
   Card,
   CardContent,
@@ -13,8 +24,9 @@ import type { OnboardingInput } from '../schemas';
 
 export function AccountPage() {
   const { user, profile, refreshProfile } = useAuth();
+  const [pending, setPending] = useState<OnboardingInput | null>(null);
 
-  async function handleSave(values: OnboardingInput) {
+  async function persist(values: OnboardingInput) {
     if (!user) return;
     try {
       await upsertProfile(user.id, values);
@@ -24,6 +36,21 @@ export function AccountPage() {
       console.error('Failed to update profile', error);
       toast.error('Could not update your profile. Please try again.');
     }
+  }
+
+  async function handleSave(values: OnboardingInput) {
+    if (values.base_currency !== profile?.base_currency) {
+      setPending(values);
+      return;
+    }
+    await persist(values);
+  }
+
+  async function handleConfirm() {
+    if (!pending) return;
+    const values = pending;
+    setPending(null);
+    await persist(values);
   }
 
   return (
@@ -43,6 +70,28 @@ export function AccountPage() {
           />
         </CardContent>
       </Card>
+      <AlertDialog
+        open={!!pending}
+        onOpenChange={(open) => {
+          if (!open) setPending(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Change base currency?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Historical totals will be displayed in the new currency going
+              forward. Past row data is not modified.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirm}>
+              Confirm
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
