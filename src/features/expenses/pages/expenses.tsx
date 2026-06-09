@@ -12,7 +12,7 @@ import {
 } from '@/components/ui/dialog';
 import { Spinner } from '@/components/ui/spinner';
 import { supabase } from '@/lib/supabase';
-import { RATES_TO_IDR, type CurrencyCode } from '@/lib/fx';
+import { ensureRates, getCurrentRates, type CurrencyCode } from '@/lib/fx';
 import { useAuth } from '@/features/auth';
 import type { CategoryTier } from '@/features/categories/hooks/use-categories';
 import {
@@ -84,17 +84,21 @@ export function ExpensesPage() {
     const toIso = to.toISOString();
     const endExclusiveIso = new Date(to.getTime() + 1).toISOString();
 
-    Promise.all([
-      listExpenses({ from: fromIso, to: toIso }),
-      supabase
-        .rpc('dashboard_monthly_summary', {
-          p_start_at: fromIso,
-          p_end_at: endExclusiveIso,
-          p_base: baseCurrency,
-          p_rates: RATES_TO_IDR,
-        })
-        .single(),
-    ]).then(([listRes, summaryRes]) => {
+    ensureRates()
+      .then(() =>
+        Promise.all([
+          listExpenses({ from: fromIso, to: toIso }),
+          supabase
+            .rpc('dashboard_monthly_summary', {
+              p_start_at: fromIso,
+              p_end_at: endExclusiveIso,
+              p_base: baseCurrency,
+              p_rates: getCurrentRates(),
+            })
+            .single(),
+        ])
+      )
+      .then(([listRes, summaryRes]) => {
       if (cancelled) return;
       const errorMessage =
         listRes.error?.message ?? summaryRes.error?.message ?? null;

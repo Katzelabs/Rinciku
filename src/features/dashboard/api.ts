@@ -1,6 +1,11 @@
 import type { PostgrestError } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
-import { convertToBase, RATES_TO_IDR, type CurrencyCode } from '@/lib/fx';
+import {
+  convertToBase,
+  ensureRates,
+  getCurrentRates,
+  type CurrencyCode,
+} from '@/lib/fx';
 import { getCurrentCycle, getDaysLeft, type Cycle } from '@/lib/cycle';
 import type { Profile } from '@/features/auth';
 import type { CategoryTier } from '@/features/categories/hooks/use-categories';
@@ -37,13 +42,15 @@ export async function getMonthlySummary(
   const endExclusive = new Date(cycle.end.getTime() + 1).toISOString();
   const base = (profile.base_currency ?? 'IDR') as CurrencyCode;
 
+  await ensureRates();
+
   const [summaryRes, essentialsRes] = await Promise.all([
     supabase
       .rpc('dashboard_monthly_summary', {
         p_start_at: cycle.start.toISOString(),
         p_end_at: endExclusive,
         p_base: base,
-        p_rates: RATES_TO_IDR,
+        p_rates: getCurrentRates(),
       })
       .single(),
     listEssentials(),
