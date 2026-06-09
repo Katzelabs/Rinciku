@@ -1,6 +1,6 @@
 import type { PostgrestError } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
-import { getFxRate } from '@/lib/fx';
+import { convertToBase, RATES_TO_IDR, type CurrencyCode } from '@/lib/fx';
 import { getCurrentCycle, getDaysLeft, type Cycle } from '@/lib/cycle';
 import type { Profile } from '@/features/auth';
 import type { CategoryTier } from '@/features/categories/hooks/use-categories';
@@ -11,12 +11,13 @@ export type TierTotals = Record<CategoryTier, number>;
 
 export type MonthlySummary = {
   cycle: Cycle;
-  income_idr_total: number;
-  spent_idr_total: number;
-  remaining_idr: number;
+  base_currency: CurrencyCode;
+  income_total: number;
+  spent_total: number;
+  remaining: number;
   days_left: number;
-  baseline_idr: number;
-  baseline_uncovered_idr: number;
+  baseline_total: number;
+  baseline_uncovered: number;
   by_tier: TierTotals;
 };
 
@@ -33,13 +34,15 @@ export async function getMonthlySummary(
   // cycle.end is the inclusive last instant (nextStart - 1ms); the RPC window
   // is half-open [start, end), so pass nextStart as the exclusive upper bound.
   const endExclusive = new Date(cycle.end.getTime() + 1).toISOString();
+  const base = (profile.base_currency ?? 'IDR') as CurrencyCode;
 
-  const [fxRate, summaryRes, essentialsRes] = await Promise.all([
-    getFxRate('USD', 'IDR'),
+  const [summaryRes, essentialsRes] = await Promise.all([
     supabase
       .rpc('dashboard_monthly_summary', {
-        start_at: cycle.start.toISOString(),
-        end_at: endExclusive,
+        p_start_at: cycle.start.toISOString(),
+        p_end_at: endExclusive,
+        p_base: base,
+        p_rates: RATES_TO_IDR,
       })
       .single(),
     listEssentials(),
@@ -49,36 +52,40 @@ export async function getMonthlySummary(
   if (essentialsRes.error) return { data: null, error: essentialsRes.error };
 
   const by_tier: TierTotals = {
-    fixed: round2(Number(summaryRes.data.tier_fixed_idr ?? 0)),
-    needs: round2(Number(summaryRes.data.tier_needs_idr ?? 0)),
-    wants: round2(Number(summaryRes.data.tier_wants_idr ?? 0)),
+    fixed: round2(Number(summaryRes.data.tier_fixed ?? 0)),
+    needs: round2(Number(summaryRes.data.tier_needs ?? 0)),
+    wants: round2(Number(summaryRes.data.tier_wants ?? 0)),
   };
-  const spent_idr_total = round2(Number(summaryRes.data.spent_idr_total ?? 0));
+  const spent_total = round2(Number(summaryRes.data.spent_total ?? 0));
 
-  const income_idr_total = round2(
-    Number(profile.monthly_income_idr ?? 0) +
-      Number(profile.monthly_income_usd ?? 0) * fxRate
+  const income_total = round2(
+    convertToBase(
+      Number(profile.expected_monthly_income ?? 0),
+      (profile.expected_monthly_income_currency ?? 'IDR') as CurrencyCode,
+      base
+    ).amount_base
   );
 
-  const baseline = computeBaseline(essentialsRes.data ?? [], fxRate);
-  const baseline_idr = baseline.total_idr;
+  const baseline = computeBaseline(essentialsRes.data ?? [], base);
+  const baseline_total = baseline.total_base;
   const essentialsSpent = by_tier.fixed + by_tier.needs;
-  const baseline_uncovered_idr = round2(
-    Math.max(0, baseline_idr - essentialsSpent)
+  const baseline_uncovered = round2(
+    Math.max(0, baseline_total - essentialsSpent)
   );
 
-  const remaining_idr = round2(income_idr_total - spent_idr_total);
+  const remaining = round2(income_total - spent_total);
   const days_left = getDaysLeft(cycle, now);
 
   return {
     data: {
       cycle,
-      income_idr_total,
-      spent_idr_total,
-      remaining_idr,
+      base_currency: base,
+      income_total,
+      spent_total,
+      remaining,
       days_left,
-      baseline_idr,
-      baseline_uncovered_idr,
+      baseline_total,
+      baseline_uncovered,
       by_tier,
     },
     error: null,

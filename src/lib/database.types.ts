@@ -36,9 +36,10 @@ export type Database = {
     Tables: {
       budgets: {
         Row: {
-          amount_idr: number
+          amount: number
           category_id: string
           created_at: string
+          currency: string
           id: string
           period_month: number
           period_year: number
@@ -46,9 +47,10 @@ export type Database = {
           user_id: string
         }
         Insert: {
-          amount_idr: number
+          amount: number
           category_id: string
           created_at?: string
+          currency: string
           id?: string
           period_month: number
           period_year: number
@@ -56,9 +58,10 @@ export type Database = {
           user_id: string
         }
         Update: {
-          amount_idr?: number
+          amount?: number
           category_id?: string
           created_at?: string
+          currency?: string
           id?: string
           period_month?: number
           period_year?: number
@@ -241,12 +244,10 @@ export type Database = {
       expenses: {
         Row: {
           amount: number
-          amount_idr: number | null
           attachment_id: string | null
           category_id: string | null
           created_at: string
           currency: string
-          exchange_rate_to_idr: number
           id: string
           note: string | null
           occurred_at: string
@@ -256,12 +257,10 @@ export type Database = {
         }
         Insert: {
           amount: number
-          amount_idr?: number | null
           attachment_id?: string | null
           category_id?: string | null
           created_at?: string
           currency: string
-          exchange_rate_to_idr: number
           id?: string
           note?: string | null
           occurred_at?: string
@@ -271,12 +270,10 @@ export type Database = {
         }
         Update: {
           amount?: number
-          amount_idr?: number | null
           attachment_id?: string | null
           category_id?: string | null
           created_at?: string
           currency?: string
-          exchange_rate_to_idr?: number
           id?: string
           note?: string | null
           occurred_at?: string
@@ -361,10 +358,10 @@ export type Database = {
           created_at: string
           display_name: string | null
           email: string | null
+          expected_monthly_income: number
+          expected_monthly_income_currency: string
           id: string
           month_start_day: number
-          monthly_income_idr: number
-          monthly_income_usd: number
           onboarded_at: string | null
           updated_at: string
         }
@@ -373,10 +370,10 @@ export type Database = {
           created_at?: string
           display_name?: string | null
           email?: string | null
+          expected_monthly_income?: number
+          expected_monthly_income_currency?: string
           id: string
           month_start_day?: number
-          monthly_income_idr?: number
-          monthly_income_usd?: number
           onboarded_at?: string | null
           updated_at?: string
         }
@@ -385,10 +382,10 @@ export type Database = {
           created_at?: string
           display_name?: string | null
           email?: string | null
+          expected_monthly_income?: number
+          expected_monthly_income_currency?: string
           id?: string
           month_start_day?: number
-          monthly_income_idr?: number
-          monthly_income_usd?: number
           onboarded_at?: string | null
           updated_at?: string
         }
@@ -400,12 +397,17 @@ export type Database = {
     }
     Functions: {
       dashboard_monthly_summary: {
-        Args: { end_at: string; start_at: string }
+        Args: {
+          p_base: string
+          p_end_at: string
+          p_rates: Json
+          p_start_at: string
+        }
         Returns: {
-          spent_idr_total: number
-          tier_fixed_idr: number
-          tier_needs_idr: number
-          tier_wants_idr: number
+          spent_total: number
+          tier_fixed: number
+          tier_needs: number
+          tier_wants: number
         }[]
       }
     }

@@ -11,16 +11,11 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import { getCycleLabel } from '@/lib/cycle';
+import { formatCurrency } from '@/lib/format';
 import { useAuth } from '@/features/auth';
 import { getMonthlySummary, type MonthlySummary } from '../api';
 import { BudgetHealthIndicator } from '../components/budget-health-indicator';
 import { NeedsVsWantsBreakdown } from '../components/needs-vs-wants-breakdown';
-
-const IDR_FORMATTER = new Intl.NumberFormat('id-ID', {
-  style: 'currency',
-  currency: 'IDR',
-  maximumFractionDigits: 0,
-});
 
 type Response = {
   key: string;
@@ -88,6 +83,7 @@ export function DashboardPage() {
   }
 
   const cycleLabel = getCycleLabel(summary.cycle);
+  const base = summary.base_currency;
 
   return (
     <div className='space-y-6'>
@@ -99,16 +95,16 @@ export function DashboardPage() {
       <div className='grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4'>
         <SummaryCard
           label='Income (this cycle)'
-          value={IDR_FORMATTER.format(summary.income_idr_total)}
+          value={formatCurrency(summary.income_total, base)}
         />
         <SummaryCard
           label='Spent so far'
-          value={IDR_FORMATTER.format(summary.spent_idr_total)}
+          value={formatCurrency(summary.spent_total, base)}
         />
         <SummaryCard
           label='Remaining'
-          value={IDR_FORMATTER.format(summary.remaining_idr)}
-          tone={summary.remaining_idr < 0 ? 'negative' : undefined}
+          value={formatCurrency(summary.remaining, base)}
+          tone={summary.remaining < 0 ? 'negative' : undefined}
         />
         <SummaryCard
           label='Days left'
@@ -126,7 +122,7 @@ export function DashboardPage() {
                 Fixed vs Needs vs Wants this cycle.
               </p>
             </div>
-            <NeedsVsWantsBreakdown by_tier={summary.by_tier} />
+            <NeedsVsWantsBreakdown by_tier={summary.by_tier} base={base} />
           </CardContent>
         </Card>
         <Card>

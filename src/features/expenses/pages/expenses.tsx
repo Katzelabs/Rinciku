@@ -11,6 +11,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Spinner } from '@/components/ui/spinner';
+import { convertToBase, type CurrencyCode } from '@/lib/fx';
 import { useAuth } from '@/features/auth';
 import type { CategoryTier } from '@/features/categories/hooks/use-categories';
 import {
@@ -38,6 +39,7 @@ type DialogState =
 export function ExpensesPage() {
   const { profile } = useAuth();
   const startDay = profile?.month_start_day ?? 1;
+  const baseCurrency = (profile?.base_currency ?? 'IDR') as CurrencyCode;
 
   const [cycle, setCycle] = useState<Cycle>(() =>
     getCurrentCycle(new Date(), startDay)
@@ -86,10 +88,19 @@ export function ExpensesPage() {
     });
   }, [response, tiers]);
 
-  const totalIdr = useMemo(
+  const total = useMemo(
     () =>
-      filteredRows.reduce((sum, row) => sum + Number(row.amount_idr ?? 0), 0),
-    [filteredRows]
+      filteredRows.reduce(
+        (sum, row) =>
+          sum +
+          convertToBase(
+            Number(row.amount),
+            row.currency as CurrencyCode,
+            baseCurrency
+          ).amount_base,
+        0
+      ),
+    [filteredRows, baseCurrency]
   );
 
   function refetch() {
@@ -144,7 +155,8 @@ export function ExpensesPage() {
       ) : (
         <ExpenseTable
           rows={filteredRows}
-          totalIdr={totalIdr}
+          total={total}
+          baseCurrency={baseCurrency}
           onEdit={(row) => setDialog({ kind: 'edit', row })}
           onDelete={(row) => setDialog({ kind: 'delete', row })}
         />
@@ -186,7 +198,7 @@ export function ExpensesPage() {
               defaultValues={{
                 id: dialog.row.id,
                 amount: Number(dialog.row.amount),
-                currency: dialog.row.currency as 'IDR' | 'USD',
+                currency: dialog.row.currency as CurrencyCode,
                 category_id: dialog.row.category_id ?? '',
                 occurred_at: new Date(dialog.row.occurred_at),
                 note: dialog.row.note ?? '',

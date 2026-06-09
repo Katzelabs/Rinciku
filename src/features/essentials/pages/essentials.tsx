@@ -20,6 +20,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import type { CurrencyCode } from '@/lib/fx';
 import {
   deleteEssential,
   listEssentials,
@@ -154,7 +155,7 @@ export function EssentialsPage() {
                 id: dialog.row.id,
                 name: dialog.row.name,
                 estimated_amount: Number(dialog.row.estimated_amount),
-                currency: dialog.row.currency as 'IDR' | 'USD',
+                currency: dialog.row.currency as CurrencyCode,
                 category_id: dialog.row.category_id ?? '',
                 notes: '',
               }}

@@ -1,14 +1,9 @@
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { getCycleLengthDays } from '@/lib/cycle';
+import { formatCurrency } from '@/lib/format';
 import type { MonthlySummary } from '../api';
 import { computeHealth, type HealthStatus } from '../lib/health';
-
-const IDR_FORMATTER = new Intl.NumberFormat('id-ID', {
-  style: 'currency',
-  currency: 'IDR',
-  maximumFractionDigits: 0,
-});
 
 const STATUS_STYLES: Record<HealthStatus, { label: string; badge: string }> = {
   'on-track': {
@@ -27,11 +22,12 @@ const STATUS_STYLES: Record<HealthStatus, { label: string; badge: string }> = {
 
 export type SummaryForHealth = Pick<
   MonthlySummary,
-  | 'remaining_idr'
+  | 'remaining'
   | 'days_left'
-  | 'baseline_uncovered_idr'
-  | 'spent_idr_total'
+  | 'baseline_uncovered'
+  | 'spent_total'
   | 'cycle'
+  | 'base_currency'
 >;
 
 type Props = {
@@ -43,10 +39,10 @@ export function BudgetHealthIndicator({ summary, className }: Props) {
   const totalDays = getCycleLengthDays(summary.cycle);
   const daysElapsed = Math.max(0, totalDays - summary.days_left);
   const status = computeHealth({
-    remaining: summary.remaining_idr,
+    remaining: summary.remaining,
     days_left: summary.days_left,
-    baseline_uncovered: summary.baseline_uncovered_idr,
-    spent: summary.spent_idr_total,
+    baseline_uncovered: summary.baseline_uncovered,
+    spent: summary.spent_total,
     days_elapsed: daysElapsed,
   });
   const { label, badge } = STATUS_STYLES[status];
@@ -67,18 +63,19 @@ function explain(
   summary: SummaryForHealth,
   daysElapsed: number
 ): string {
-  const remaining = IDR_FORMATTER.format(Math.max(0, summary.remaining_idr));
-  const uncovered = IDR_FORMATTER.format(summary.baseline_uncovered_idr);
+  const base = summary.base_currency;
+  const remaining = formatCurrency(Math.max(0, summary.remaining), base);
+  const uncovered = formatCurrency(summary.baseline_uncovered, base);
 
   if (status === 'over') {
-    if (summary.remaining_idr < 0) {
-      return `You're ${IDR_FORMATTER.format(Math.abs(summary.remaining_idr))} past this cycle's income.`;
+    if (summary.remaining < 0) {
+      return `You're ${formatCurrency(Math.abs(summary.remaining), base)} past this cycle's income.`;
     }
     return `Remaining ${remaining} won't cover your ${uncovered} of unpaid essentials.`;
   }
   if (status === 'watch') {
-    const burn = daysElapsed > 0 ? summary.spent_idr_total / daysElapsed : 0;
-    const projected = IDR_FORMATTER.format(burn * summary.days_left);
+    const burn = daysElapsed > 0 ? summary.spent_total / daysElapsed : 0;
+    const projected = formatCurrency(burn * summary.days_left, base);
     return `At your current pace you'd spend about ${projected} more — more than the ${remaining} left.`;
   }
   return `${remaining} left with ${summary.days_left} day${summary.days_left === 1 ? '' : 's'} to go. Keep it up.`;

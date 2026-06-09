@@ -6,7 +6,11 @@ create table public.budgets (
   category_id   uuid          not null references public.categories(id) on delete cascade,
   period_year   smallint      not null check (period_year between 2020 and 2100),
   period_month  smallint      not null check (period_month between 1 and 12),
-  amount_idr    numeric(15,2) not null check (amount_idr >= 0),
+  amount        numeric(15,2) not null check (amount >= 0),
+  currency      text          not null check (currency in (
+    'IDR','USD','EUR','JPY','GBP','SGD','MYR','AUD',
+    'CAD','CNY','KRW','HKD','THB','PHP','INR','VND'
+  )),
   created_at    timestamptz   not null default now(),
   updated_at    timestamptz   not null default now(),
   unique (user_id, category_id, period_year, period_month)

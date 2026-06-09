@@ -1,4 +1,6 @@
 import { cn } from '@/lib/utils';
+import { formatCurrency } from '@/lib/format';
+import type { CurrencyCode } from '@/lib/fx';
 import type { CategoryTier } from '@/features/categories/hooks/use-categories';
 import type { TierTotals } from '../api';
 
@@ -16,18 +18,13 @@ const TIER_COLORS: Record<CategoryTier, string> = {
   wants: '#c4a86b',
 };
 
-const IDR_FORMATTER = new Intl.NumberFormat('id-ID', {
-  style: 'currency',
-  currency: 'IDR',
-  maximumFractionDigits: 0,
-});
-
 type Props = {
   by_tier: TierTotals;
+  base: CurrencyCode;
   className?: string;
 };
 
-export function NeedsVsWantsBreakdown({ by_tier, className }: Props) {
+export function NeedsVsWantsBreakdown({ by_tier, base, className }: Props) {
   const total = by_tier.fixed + by_tier.needs + by_tier.wants;
 
   if (total <= 0) {
@@ -78,7 +75,7 @@ export function NeedsVsWantsBreakdown({ by_tier, className }: Props) {
               <span className='text-muted-foreground'>· {percent.toFixed(0)}%</span>
             </span>
             <span className='font-medium tabular-nums'>
-              {IDR_FORMATTER.format(amount)}
+              {formatCurrency(amount, base)}
             </span>
           </li>
         ))}

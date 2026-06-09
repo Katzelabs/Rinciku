@@ -1,4 +1,4 @@
-import { Controller, useForm } from 'react-hook-form';
+import { Controller, useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from '@/components/ui/button';
 import {
@@ -10,12 +10,19 @@ import {
 } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupInput,
+} from '@/components/ui/input-group';
+import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { CURRENCY_CODES, type CurrencyCode } from '@/lib/fx';
+import { CURRENCY_NAMES } from '@/lib/currency-meta';
 import { onboardingSchema, type OnboardingInput } from '../schemas';
 import type { Profile } from '../types';
 
@@ -24,6 +31,12 @@ interface ProfileFormProps {
   onSubmit: (values: OnboardingInput) => Promise<void> | void;
   submitLabel?: string;
   submittingLabel?: string;
+}
+
+function toCurrencyCode(value: string | null | undefined): CurrencyCode {
+  return (CURRENCY_CODES as readonly string[]).includes(value ?? '')
+    ? (value as CurrencyCode)
+    : 'IDR';
 }
 
 export function ProfileForm({
@@ -40,12 +53,13 @@ export function ProfileForm({
     resolver: zodResolver(onboardingSchema),
     defaultValues: {
       display_name: initialValues?.display_name ?? '',
-      base_currency: initialValues?.base_currency === 'USD' ? 'USD' : 'IDR',
-      monthly_income_idr: initialValues?.monthly_income_idr ?? 0,
-      monthly_income_usd: initialValues?.monthly_income_usd ?? 0,
+      base_currency: toCurrencyCode(initialValues?.base_currency),
+      expected_monthly_income: initialValues?.expected_monthly_income ?? 0,
       month_start_day: initialValues?.month_start_day ?? 1,
     },
   });
+
+  const baseCurrency = useWatch({ control, name: 'base_currency' });
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} noValidate>
@@ -90,8 +104,11 @@ export function ProfileForm({
                   <SelectValue placeholder='Select currency' />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value='IDR'>IDR — Rupiah</SelectItem>
-                  <SelectItem value='USD'>USD — US Dollar</SelectItem>
+                  {CURRENCY_CODES.map((code) => (
+                    <SelectItem key={code} value={code}>
+                      {code} — {CURRENCY_NAMES[code]}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
               <FieldError
@@ -102,58 +119,39 @@ export function ProfileForm({
         />
         <Controller
           control={control}
-          name='monthly_income_idr'
+          name='expected_monthly_income'
           render={({ field, fieldState }) => (
             <Field data-invalid={fieldState.invalid || undefined}>
-              <FieldLabel htmlFor='profile-income-idr'>
-                Monthly income (IDR)
+              <FieldLabel htmlFor='profile-expected-income'>
+                Expected monthly income
               </FieldLabel>
-              <Input
-                ref={field.ref}
-                name={field.name}
-                onBlur={field.onBlur}
-                value={field.value ?? ''}
-                onChange={(event) => {
-                  const next = event.target.value;
-                  field.onChange(next === '' ? undefined : Number(next));
-                }}
-                id='profile-income-idr'
-                type='number'
-                inputMode='decimal'
-                step='0.01'
-                min='0'
-                aria-invalid={fieldState.invalid || undefined}
-              />
-              <FieldError
-                errors={fieldState.error ? [fieldState.error] : undefined}
-              />
-            </Field>
-          )}
-        />
-        <Controller
-          control={control}
-          name='monthly_income_usd'
-          render={({ field, fieldState }) => (
-            <Field data-invalid={fieldState.invalid || undefined}>
-              <FieldLabel htmlFor='profile-income-usd'>
-                Monthly income (USD)
-              </FieldLabel>
-              <Input
-                ref={field.ref}
-                name={field.name}
-                onBlur={field.onBlur}
-                value={field.value ?? ''}
-                onChange={(event) => {
-                  const next = event.target.value;
-                  field.onChange(next === '' ? undefined : Number(next));
-                }}
-                id='profile-income-usd'
-                type='number'
-                inputMode='decimal'
-                step='0.01'
-                min='0'
-                aria-invalid={fieldState.invalid || undefined}
-              />
+              <FieldDescription>
+                Use 0 if your income varies a lot — the dashboard will hide the
+                expected baseline.
+              </FieldDescription>
+              <InputGroup>
+                <InputGroupAddon>
+                  <span className='text-sm font-medium text-muted-foreground'>
+                    {baseCurrency}
+                  </span>
+                </InputGroupAddon>
+                <InputGroupInput
+                  ref={field.ref}
+                  name={field.name}
+                  onBlur={field.onBlur}
+                  value={field.value ?? ''}
+                  onChange={(event) => {
+                    const next = event.target.value;
+                    field.onChange(next === '' ? undefined : Number(next));
+                  }}
+                  id='profile-expected-income'
+                  type='number'
+                  inputMode='decimal'
+                  step='0.01'
+                  min='0'
+                  aria-invalid={fieldState.invalid || undefined}
+                />
+              </InputGroup>
               <FieldError
                 errors={fieldState.error ? [fieldState.error] : undefined}
               />

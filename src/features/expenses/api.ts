@@ -1,5 +1,6 @@
 import type { PostgrestError } from '@supabase/supabase-js';
 import type { Database } from '@/lib/database.types';
+import type { CurrencyCode } from '@/lib/fx';
 import { supabase } from '@/lib/supabase';
 
 // Image-logging flow is split across two slices:
@@ -30,12 +31,11 @@ export type ListExpensesParams = {
 export type CreateExpenseInput = {
   user_id: string;
   amount: number;
-  currency: 'IDR' | 'USD';
+  currency: CurrencyCode;
   category_id: string | null;
   occurred_at: string;
   note: string | null;
   source: 'manual' | 'chat' | 'image';
-  exchange_rate_to_idr: number;
   attachment_id?: string | null;
 };
 

@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+import { CURRENCY_CODES } from '@/lib/fx';
+
 export const essentialSchema = z.object({
   name: z
     .string()
@@ -10,7 +12,7 @@ export const essentialSchema = z.object({
     .number({ message: 'Enter an estimated amount' })
     .refine((v) => !Number.isNaN(v), { message: 'Enter an estimated amount' })
     .positive('Amount must be greater than 0'),
-  currency: z.enum(['IDR', 'USD'], { message: 'Pick a currency' }),
+  currency: z.enum(CURRENCY_CODES, { message: 'Pick a currency' }),
   category_id: z.string().uuid('Pick a category'),
   notes: z
     .string()

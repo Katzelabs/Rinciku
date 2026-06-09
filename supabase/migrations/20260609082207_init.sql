@@ -5,7 +5,8 @@
     "category_id" uuid not null,
     "period_year" smallint not null,
     "period_month" smallint not null,
-    "amount_idr" numeric(15,2) not null,
+    "amount" numeric(15,2) not null,
+    "currency" text not null,
     "created_at" timestamp with time zone not null default now(),
     "updated_at" timestamp with time zone not null default now()
       );
@@ -85,8 +86,6 @@ alter table "public"."expense_attachments" enable row level security;
     "category_id" uuid,
     "amount" numeric(15,2) not null,
     "currency" text not null,
-    "exchange_rate_to_idr" numeric(18,8) not null,
-    "amount_idr" numeric(15,2) generated always as (round((amount * exchange_rate_to_idr), 2)) stored,
     "occurred_at" timestamp with time zone not null default now(),
     "note" text,
     "source" text not null default 'manual'::text,
@@ -121,8 +120,8 @@ alter table "public"."messages" enable row level security;
     "email" text,
     "display_name" text,
     "base_currency" text not null default 'IDR'::text,
-    "monthly_income_idr" numeric(15,2) not null default 0,
-    "monthly_income_usd" numeric(15,2) not null default 0,
+    "expected_monthly_income" numeric(15,2) not null default 0,
+    "expected_monthly_income_currency" text not null default 'IDR'::text,
     "month_start_day" smallint not null default 1,
     "onboarded_at" timestamp with time zone,
     "created_at" timestamp with time zone not null default now(),
@@ -200,13 +199,17 @@ alter table "public"."messages" add constraint "messages_pkey" PRIMARY KEY using
 
 alter table "public"."profiles" add constraint "profiles_pkey" PRIMARY KEY using index "profiles_pkey";
 
-alter table "public"."budgets" add constraint "budgets_amount_idr_check" CHECK ((amount_idr >= (0)::numeric)) not valid;
+alter table "public"."budgets" add constraint "budgets_amount_check" CHECK ((amount >= (0)::numeric)) not valid;
 
-alter table "public"."budgets" validate constraint "budgets_amount_idr_check";
+alter table "public"."budgets" validate constraint "budgets_amount_check";
 
 alter table "public"."budgets" add constraint "budgets_category_id_fkey" FOREIGN KEY (category_id) REFERENCES public.categories(id) ON DELETE CASCADE not valid;
 
 alter table "public"."budgets" validate constraint "budgets_category_id_fkey";
+
+alter table "public"."budgets" add constraint "budgets_currency_check" CHECK ((currency = ANY (ARRAY['IDR'::text, 'USD'::text, 'EUR'::text, 'JPY'::text, 'GBP'::text, 'SGD'::text, 'MYR'::text, 'AUD'::text, 'CAD'::text, 'CNY'::text, 'KRW'::text, 'HKD'::text, 'THB'::text, 'PHP'::text, 'INR'::text, 'VND'::text]))) not valid;
+
+alter table "public"."budgets" validate constraint "budgets_currency_check";
 
 alter table "public"."budgets" add constraint "budgets_period_month_check" CHECK (((period_month >= 1) AND (period_month <= 12))) not valid;
 
@@ -244,7 +247,7 @@ alter table "public"."essentials" add constraint "essentials_category_id_fkey" F
 
 alter table "public"."essentials" validate constraint "essentials_category_id_fkey";
 
-alter table "public"."essentials" add constraint "essentials_currency_check" CHECK ((currency = ANY (ARRAY['IDR'::text, 'USD'::text]))) not valid;
+alter table "public"."essentials" add constraint "essentials_currency_check" CHECK ((currency = ANY (ARRAY['IDR'::text, 'USD'::text, 'EUR'::text, 'JPY'::text, 'GBP'::text, 'SGD'::text, 'MYR'::text, 'AUD'::text, 'CAD'::text, 'CNY'::text, 'KRW'::text, 'HKD'::text, 'THB'::text, 'PHP'::text, 'INR'::text, 'VND'::text]))) not valid;
 
 alter table "public"."essentials" validate constraint "essentials_currency_check";
 
@@ -284,7 +287,7 @@ alter table "public"."expenses" add constraint "expenses_category_id_fkey" FOREI
 
 alter table "public"."expenses" validate constraint "expenses_category_id_fkey";
 
-alter table "public"."expenses" add constraint "expenses_currency_check" CHECK ((currency = ANY (ARRAY['IDR'::text, 'USD'::text]))) not valid;
+alter table "public"."expenses" add constraint "expenses_currency_check" CHECK ((currency = ANY (ARRAY['IDR'::text, 'USD'::text, 'EUR'::text, 'JPY'::text, 'GBP'::text, 'SGD'::text, 'MYR'::text, 'AUD'::text, 'CAD'::text, 'CNY'::text, 'KRW'::text, 'HKD'::text, 'THB'::text, 'PHP'::text, 'INR'::text, 'VND'::text]))) not valid;
 
 alter table "public"."expenses" validate constraint "expenses_currency_check";
 
@@ -312,9 +315,17 @@ alter table "public"."messages" add constraint "messages_user_id_fkey" FOREIGN K
 
 alter table "public"."messages" validate constraint "messages_user_id_fkey";
 
-alter table "public"."profiles" add constraint "profiles_base_currency_check" CHECK ((base_currency = ANY (ARRAY['IDR'::text, 'USD'::text]))) not valid;
+alter table "public"."profiles" add constraint "profiles_base_currency_check" CHECK ((base_currency = ANY (ARRAY['IDR'::text, 'USD'::text, 'EUR'::text, 'JPY'::text, 'GBP'::text, 'SGD'::text, 'MYR'::text, 'AUD'::text, 'CAD'::text, 'CNY'::text, 'KRW'::text, 'HKD'::text, 'THB'::text, 'PHP'::text, 'INR'::text, 'VND'::text]))) not valid;
 
 alter table "public"."profiles" validate constraint "profiles_base_currency_check";
+
+alter table "public"."profiles" add constraint "profiles_expected_monthly_income_check" CHECK ((expected_monthly_income >= (0)::numeric)) not valid;
+
+alter table "public"."profiles" validate constraint "profiles_expected_monthly_income_check";
+
+alter table "public"."profiles" add constraint "profiles_expected_monthly_income_currency_check" CHECK ((expected_monthly_income_currency = ANY (ARRAY['IDR'::text, 'USD'::text, 'EUR'::text, 'JPY'::text, 'GBP'::text, 'SGD'::text, 'MYR'::text, 'AUD'::text, 'CAD'::text, 'CNY'::text, 'KRW'::text, 'HKD'::text, 'THB'::text, 'PHP'::text, 'INR'::text, 'VND'::text]))) not valid;
+
+alter table "public"."profiles" validate constraint "profiles_expected_monthly_income_currency_check";
 
 alter table "public"."profiles" add constraint "profiles_id_fkey" FOREIGN KEY (id) REFERENCES auth.users(id) ON DELETE CASCADE not valid;
 
@@ -326,22 +337,31 @@ alter table "public"."profiles" validate constraint "profiles_month_start_day_ch
 
 set check_function_bodies = off;
 
-CREATE OR REPLACE FUNCTION public.dashboard_monthly_summary(start_at timestamp with time zone, end_at timestamp with time zone)
- RETURNS TABLE(spent_idr_total numeric, tier_fixed_idr numeric, tier_needs_idr numeric, tier_wants_idr numeric)
+CREATE OR REPLACE FUNCTION public.dashboard_monthly_summary(p_start_at timestamp with time zone, p_end_at timestamp with time zone, p_base text, p_rates jsonb)
+ RETURNS TABLE(spent_total numeric, tier_fixed numeric, tier_needs numeric, tier_wants numeric)
  LANGUAGE sql
  STABLE
  SET search_path TO ''
 AS $function$
+  with base_rate as (
+    select (p_rates ->> p_base)::numeric as r
+  ),
+  converted as (
+    select
+      c.tier,
+      e.amount * (p_rates ->> e.currency)::numeric / nullif((select r from base_rate), 0) as amount_base
+    from public.expenses e
+    left join public.categories c on c.id = e.category_id
+    where e.user_id = (select auth.uid())
+      and e.occurred_at >= p_start_at
+      and e.occurred_at <  p_end_at
+  )
   select
-    coalesce(sum(e.amount_idr), 0)                                 as spent_idr_total,
-    coalesce(sum(e.amount_idr) filter (where c.tier = 'fixed'), 0) as tier_fixed_idr,
-    coalesce(sum(e.amount_idr) filter (where c.tier = 'needs'), 0) as tier_needs_idr,
-    coalesce(sum(e.amount_idr) filter (where c.tier = 'wants'), 0) as tier_wants_idr
-  from public.expenses e
-  left join public.categories c on c.id = e.category_id
-  where e.user_id = (select auth.uid())
-    and e.occurred_at >= start_at
-    and e.occurred_at <  end_at;
+    coalesce(sum(amount_base), 0)                              as spent_total,
+    coalesce(sum(amount_base) filter (where tier = 'fixed'), 0) as tier_fixed,
+    coalesce(sum(amount_base) filter (where tier = 'needs'), 0) as tier_needs,
+    coalesce(sum(amount_base) filter (where tier = 'wants'), 0) as tier_wants
+  from converted;
 $function$
 ;
 

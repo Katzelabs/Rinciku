@@ -35,7 +35,7 @@ import {
 import { Spinner } from '@/components/ui/spinner';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
-import { convertToIdr } from '@/lib/fx';
+import { CURRENCY_CODES } from '@/lib/fx';
 import { useAuth } from '@/features/auth';
 import {
   groupByTier,
@@ -113,10 +113,6 @@ export function ExpenseForm({
       return;
     }
     try {
-      const { exchange_rate_to_idr } = await convertToIdr({
-        amount: values.amount,
-        currency: values.currency,
-      });
       const trimmedNote = values.note?.trim();
       const basePayload = {
         user_id: user.id,
@@ -126,7 +122,6 @@ export function ExpenseForm({
         occurred_at: toIsoDate(values.occurred_at),
         note: trimmedNote ? trimmedNote : null,
         source: 'manual' as const,
-        exchange_rate_to_idr,
       };
 
       if (mode === 'edit') {
@@ -238,8 +233,11 @@ export function ExpenseForm({
                     <SelectValue placeholder='Currency' />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value='IDR'>IDR</SelectItem>
-                    <SelectItem value='USD'>USD</SelectItem>
+                    {CURRENCY_CODES.map((code) => (
+                      <SelectItem key={code} value={code}>
+                        {code}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
                 <FieldError

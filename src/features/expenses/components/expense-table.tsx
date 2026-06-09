@@ -13,36 +13,28 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { cn } from '@/lib/utils';
+import { formatCurrency } from '@/lib/format';
+import type { CurrencyCode } from '@/lib/fx';
 import {
   getAttachmentSignedUrl,
   type ExpenseWithRelations,
 } from '../api';
 
-const IDR_FORMATTER = new Intl.NumberFormat('id-ID', {
-  style: 'currency',
-  currency: 'IDR',
-  maximumFractionDigits: 0,
-});
-
-const USD_FORMATTER = new Intl.NumberFormat('en-US', {
-  style: 'currency',
-  currency: 'USD',
-});
-
-function formatMoney(amount: number, currency: 'IDR' | 'USD') {
-  return currency === 'IDR'
-    ? IDR_FORMATTER.format(amount)
-    : USD_FORMATTER.format(amount);
-}
-
 type Props = {
   rows: ExpenseWithRelations[];
-  totalIdr: number;
+  total: number;
+  baseCurrency: CurrencyCode;
   onEdit: (row: ExpenseWithRelations) => void;
   onDelete: (row: ExpenseWithRelations) => void;
 };
 
-export function ExpenseTable({ rows, totalIdr, onEdit, onDelete }: Props) {
+export function ExpenseTable({
+  rows,
+  total,
+  baseCurrency,
+  onEdit,
+  onDelete,
+}: Props) {
   async function openAttachment(path: string) {
     const { data, error } = await getAttachmentSignedUrl(path);
     if (error || !data?.signedUrl) {
@@ -66,9 +58,8 @@ export function ExpenseTable({ rows, totalIdr, onEdit, onDelete }: Props) {
         </TableHeader>
         <TableBody>
           {rows.map((row) => {
-            const currency = row.currency as 'IDR' | 'USD';
+            const currency = row.currency as CurrencyCode;
             const amount = Number(row.amount);
-            const amountIdr = Number(row.amount_idr);
             const category = row.category;
             const attachment = row.attachment;
             return (
@@ -101,13 +92,8 @@ export function ExpenseTable({ rows, totalIdr, onEdit, onDelete }: Props) {
                 </TableCell>
                 <TableCell className='text-right whitespace-nowrap'>
                   <div className='font-medium'>
-                    {formatMoney(amount, currency)}
+                    {formatCurrency(amount, currency)}
                   </div>
-                  {currency !== 'IDR' && (
-                    <div className='text-xs text-muted-foreground'>
-                      {formatMoney(amountIdr, 'IDR')}
-                    </div>
-                  )}
                 </TableCell>
                 <TableCell
                   className={cn(
@@ -169,10 +155,10 @@ export function ExpenseTable({ rows, totalIdr, onEdit, onDelete }: Props) {
           <TableFooter>
             <TableRow>
               <TableCell colSpan={2} className='text-right'>
-                Total (IDR)
+                Total ({baseCurrency})
               </TableCell>
               <TableCell className='text-right font-semibold'>
-                {formatMoney(totalIdr, 'IDR')}
+                {formatCurrency(total, baseCurrency)}
               </TableCell>
               <TableCell colSpan={2} />
             </TableRow>

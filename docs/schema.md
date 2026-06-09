@@ -47,9 +47,12 @@ When working on a single table, use `Read(offset, limit)` to jump to its section
 
 ### Money & currency
 - Amounts: `numeric(15, 2)`.
-- Exchange rates: `numeric(18, 8)` to preserve precision over time.
-- Currency codes: text + `CHECK (currency in ('IDR','USD'))` rather than a Postgres enum, so adding a third currency later does not require an `ALTER TYPE`.
-- Base currency in v1 is **IDR**. USD amounts are always converted at log time using a snapshotted rate stored on the row (see [`expenses`](#6-expenses)).
+- Currency codes: text + `CHECK (currency in (...))` rather than a Postgres enum, so adding a new currency later does not require an `ALTER TYPE`.
+- Allow-list (replicated on every `currency` / `*_currency` column):
+  `'IDR','USD','EUR','JPY','GBP','SGD','MYR','AUD','CAD','CNY','KRW','HKD','THB','PHP','INR','VND'`.
+- Base currency is picked by the user at onboarding and **changeable in settings** (see `auth/06-base-currency-rewire.md` for the settings UX + base-change confirmation modal).
+- Every transactional row (`expenses`, `essentials`, `budgets`) writes `(amount, currency)` in the **base in effect at write time**. Historical rows are not retroactively rewritten when the user changes base later — their `currency` field preserves the base that was active when the row was logged.
+- FX conversion happens at read time via a JS rate map (frozen snapshot for now — see `src/lib/fx.ts` and `foundation/06-live-fx-source.md`). The dashboard SQL function `dashboard_monthly_summary(p_start_at, p_end_at, p_base, p_rates)` aggregates by `sum(amount * (p_rates ->> currency)::numeric)`, pivoting per-row through IDR.
 
 ### Enums-as-text
 Same reasoning as currency. Applies to:
@@ -145,9 +148,9 @@ Notes:
 | `id` | `uuid` pk | `references auth.users(id) on delete cascade` |
 | `email` | `text` | mirrored from `auth.users.email` at signup |
 | `display_name` | `text` | nullable; user fills during onboarding |
-| `base_currency` | `text not null default 'IDR'` | `check (base_currency in ('IDR','USD'))` |
-| `monthly_income_idr` | `numeric(15,2) not null default 0` | gross monthly IDR income |
-| `monthly_income_usd` | `numeric(15,2) not null default 0` | gross monthly USD income |
+| `base_currency` | `text not null default 'IDR'` | `check (base_currency in (<16 codes>))` — see [§1](#money--currency). Changeable in settings. |
+| `expected_monthly_income` | `numeric(15,2) not null default 0` | `check (>= 0)` — gross monthly income in `expected_monthly_income_currency`. `0` for variable-income users; dashboard hides the "expected baseline" widget in that case. |
+| `expected_monthly_income_currency` | `text not null default 'IDR'` | `check (... in (<16 codes>))` — the base in effect when the income was last set. Does not auto-update when `base_currency` changes; dashboard converts at read time via `convertToBase`. |
 | `month_start_day` | `smallint not null default 1` | `check (between 1 and 28)` — day of month the budget cycle resets |
 | `onboarded_at` | `timestamptz` | nullable; set to `now()` when the onboarding form is submitted. The `<RequireOnboarded>` route guard redirects to `/onboarding` while this is null. |
 | `created_at` | `timestamptz not null default now()` | |
@@ -231,7 +234,7 @@ Monthly non-negotiable line items that power the "baseline cost of living" the A
 | `category_id` | `uuid` | `references categories(id) on delete set null` — keep the essential if its category is deleted |
 | `name` | `text not null` | e.g. `'rent'`, `'rice 5kg'` |
 | `estimated_amount` | `numeric(15,2) not null` | `check (estimated_amount >= 0)` |
-| `currency` | `text not null` | `check (currency in ('IDR','USD'))` |
+| `currency` | `text not null` | `check (currency in (<16 codes>))` — the base in effect when this essential was logged |
 | `is_active` | `boolean not null default true` | drop from this month's baseline without deleting history |
 | `created_at`, `updated_at` | `timestamptz` | standard |
 
@@ -248,8 +251,8 @@ Monthly non-negotiable line items that power the "baseline cost of living" the A
 Standard pattern on `user_id`.
 
 ### Notes
-- Essentials are templates, not transactions. They are summed (`sum(estimated_amount converted to IDR)`) to produce the monthly baseline.
-- USD essentials convert using the profile's current rate at read time, not a snapshot — the baseline is a forward-looking estimate.
+- Essentials are templates, not transactions. They are summed (each row converted to the user's current base via `convertToBase`) to produce the monthly baseline.
+- Non-base-currency essentials (legacy rows written under a previous base) convert using the current FX rate map at read time, not a snapshot — the baseline is a forward-looking estimate.
 
 ---
 
@@ -264,10 +267,8 @@ The core transaction table. Every spending event lands here.
 | `id` | `uuid` pk | |
 | `user_id` | `uuid not null` | `references auth.users(id) on delete cascade` |
 | `category_id` | `uuid` | `references categories(id) on delete set null` — keep the expense if its category is deleted (becomes "uncategorized") |
-| `amount` | `numeric(15,2) not null` | `check (amount > 0)` — original entered amount |
-| `currency` | `text not null` | `check (currency in ('IDR','USD'))` |
-| `exchange_rate_to_idr` | `numeric(18,8) not null` | snapshotted at log time; `1.0` when `currency = 'IDR'` |
-| `amount_idr` | `numeric(15,2) generated always as (round(amount * exchange_rate_to_idr, 2)) stored` | base-currency amount; used for all aggregation |
+| `amount` | `numeric(15,2) not null` | `check (amount > 0)` — entered amount in the base in effect at write time |
+| `currency` | `text not null` | `check (currency in (<16 codes>))` — the base in effect when this row was written |
 | `occurred_at` | `timestamptz not null default now()` | when the spending happened (may differ from `created_at`) |
 | `note` | `text` | freeform memo |
 | `source` | `text not null default 'manual'` | `check (source in ('manual','chat','image'))` — provenance |
@@ -292,10 +293,8 @@ Standard pattern on `user_id`.
 ### Circular FK with `expense_attachments`
 `expenses.attachment_id` and `expense_attachments.expense_id` reference each other. Migration strategy: create both tables without the cross-FKs, then `ALTER TABLE ... ADD CONSTRAINT` afterwards. Both ends are nullable and both use `on delete set null` (with `expense_attachments.expense_id` cascading — see [§7](#7-expense_attachments)) so deleting either side leaves the other in a consistent state.
 
-### Notes
-- `amount_idr` is `STORED` so dashboard aggregations never recompute the FX multiplication and can be indexed if needed.
-- Historical totals are reproducible because the FX rate is frozen on the row. Live rate changes do not retroactively shift past months' spending.
-- For `currency = 'IDR'`, write `exchange_rate_to_idr = 1`. Do not special-case the multiplication in app code.
+### Row shape note
+With the base-currency model, the form always writes `amount` in the user's current `base_currency`. There is no per-row exchange rate snapshot anymore: when a user changes their base later, historical rows are reconverted at read time via the runtime FX rate map (see [§1](#money--currency) and `dashboard_monthly_summary`). This trades reproducible historical totals for a single-source-of-truth amount that no longer drifts apart from `amount * rate`.
 
 ---
 
@@ -357,7 +356,8 @@ Monthly snapshot per category per month. One row per `(user_id, category_id, per
 | `category_id` | `uuid not null` | `references categories(id) on delete cascade` — a budget without its category is meaningless |
 | `period_year` | `smallint not null` | `check (between 2020 and 2100)` |
 | `period_month` | `smallint not null` | `check (between 1 and 12)` |
-| `amount_idr` | `numeric(15,2) not null` | `check (amount_idr >= 0)` — always stored in base currency |
+| `amount` | `numeric(15,2) not null` | `check (amount >= 0)` — the budget target in `currency` |
+| `currency` | `text not null` | `check (currency in (<16 codes>))` — the base in effect when this budget was set |
 | `created_at`, `updated_at` | `timestamptz` | standard |
 
 ### Constraints
@@ -376,7 +376,7 @@ Standard pattern on `user_id`.
 ### Notes
 - Snapshot-per-month gives a historical record: "I budgeted Rp 2M for groceries in March, spent Rp 2.4M; for April I raised it to Rp 2.5M."
 - App seeds the next month's budgets by copying from the current month (UX choice, not enforced in schema).
-- Stored only in IDR — no need for FX columns here since budgets are forward-looking targets.
+- Stored in whatever base was active at write time; aggregations convert at read time via `convertToBase`.
 
 ---
 
@@ -596,7 +596,9 @@ Every PK is implicitly indexed. Non-PK indexes:
 
 Documented here so future-Claude does not assume they exist:
 
-- **`exchange_rates` table** — v1 stores the rate inline on each expense for reproducible historical totals. A separate rates table (with daily IDR↔USD rows) is a v2 addition if we add multi-currency reporting that lets the user re-base.
+- **Live FX source** — v1 ships a frozen rate snapshot in `src/lib/fx.ts` (dated 2026-06-09). `foundation/06-live-fx-source.md` covers swapping in a live source (e.g. exchangerate API + cache).
+- **`exchange_rates` table** — historical totals reconvert at read time via the runtime rate map; the per-row rate snapshot is gone. A separate rates table (daily timestamped rows) would only be needed if/when we want stable historical totals immune to live-rate movement — v2.
+- **Income source templates** — v1 has a single `expected_monthly_income` on `profiles`. Multi-source income templates ("salary in USD + side gig in IDR") are v2.
 - **Recurring expenses** — listed in PROJECT_BRIEF.md v2 features. Would add a `recurring_expenses` template table + a scheduled job.
 - **Savings goals** — v2.
 - **Multi-language category names** — v2. Would add a `categories.name_i18n jsonb` column.
@@ -606,4 +608,4 @@ Documented here so future-Claude does not assume they exist:
 
 ---
 
-*Last updated: 2026-05-30. Next step (separate task): convert this doc into `supabase/migrations/0001_init.sql` via the `new-migration` skill.*
+*Last updated: 2026-06-09. Migrations: `supabase/migrations/*_init.sql` is the regenerated rolling-init artifact; edit the declarative `supabase/schemas/*.sql` files and regen via `supabase db diff -f init`.*

@@ -35,6 +35,9 @@ export async function upsertProfile(
       {
         id: userId,
         ...input,
+        // Income is logged in whatever base is in effect at write time. Future
+        // base changes do not retroactively reinterpret this value.
+        expected_monthly_income_currency: input.base_currency,
         onboarded_at: new Date().toISOString(),
       },
       { onConflict: 'id' }

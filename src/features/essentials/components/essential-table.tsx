@@ -9,24 +9,9 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { formatCurrency } from '@/lib/format';
+import type { CurrencyCode } from '@/lib/fx';
 import { type EssentialWithCategory } from '../api';
-
-const IDR_FORMATTER = new Intl.NumberFormat('id-ID', {
-  style: 'currency',
-  currency: 'IDR',
-  maximumFractionDigits: 0,
-});
-
-const USD_FORMATTER = new Intl.NumberFormat('en-US', {
-  style: 'currency',
-  currency: 'USD',
-});
-
-function formatMoney(amount: number, currency: 'IDR' | 'USD') {
-  return currency === 'IDR'
-    ? IDR_FORMATTER.format(amount)
-    : USD_FORMATTER.format(amount);
-}
 
 type Props = {
   rows: EssentialWithCategory[];
@@ -50,7 +35,7 @@ export function EssentialTable({ rows, onAdd, onEdit, onDelete }: Props) {
         </TableHeader>
         <TableBody>
           {rows.map((row) => {
-            const currency = row.currency as 'IDR' | 'USD';
+            const currency = row.currency as CurrencyCode;
             const amount = Number(row.estimated_amount);
             const category = row.category;
             return (
@@ -80,7 +65,7 @@ export function EssentialTable({ rows, onAdd, onEdit, onDelete }: Props) {
                   )}
                 </TableCell>
                 <TableCell className='text-right font-medium whitespace-nowrap'>
-                  {formatMoney(amount, currency)}
+                  {formatCurrency(amount, currency)}
                 </TableCell>
                 <TableCell className='text-muted-foreground italic'>
                   —

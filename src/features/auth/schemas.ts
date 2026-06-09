@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+import { CURRENCY_CODES } from '@/lib/fx';
+
 export const signInSchema = z.object({
   email: z.string().email('Enter a valid email address'),
   password: z.string().min(1, 'Password is required'),
@@ -63,13 +65,10 @@ export const onboardingSchema = z.object({
     .trim()
     .min(1, 'Display name is required')
     .max(80, 'Keep it under 80 characters'),
-  base_currency: z.enum(['IDR', 'USD'], {
-    message: 'Choose IDR or USD',
+  base_currency: z.enum(CURRENCY_CODES, {
+    message: 'Pick a currency',
   }),
-  monthly_income_idr: z
-    .number({ message: 'Enter a number' })
-    .nonnegative('Must be 0 or greater'),
-  monthly_income_usd: z
+  expected_monthly_income: z
     .number({ message: 'Enter a number' })
     .nonnegative('Must be 0 or greater'),
   month_start_day: z

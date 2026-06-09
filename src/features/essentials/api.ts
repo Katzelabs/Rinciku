@@ -1,5 +1,6 @@
 import type { PostgrestError } from '@supabase/supabase-js';
 import type { Database } from '@/lib/database.types';
+import type { CurrencyCode } from '@/lib/fx';
 import { supabase } from '@/lib/supabase';
 
 type EssentialRow = Database['public']['Tables']['essentials']['Row'];
@@ -14,7 +15,7 @@ export type CreateEssentialInput = {
   user_id: string;
   name: string;
   estimated_amount: number;
-  currency: 'IDR' | 'USD';
+  currency: CurrencyCode;
   category_id: string | null;
   is_active?: boolean;
 };

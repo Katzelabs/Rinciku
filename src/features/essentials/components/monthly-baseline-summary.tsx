@@ -2,7 +2,9 @@ import { useEffect, useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
-import { getFxRate } from '@/lib/fx';
+import { formatCurrency } from '@/lib/format';
+import type { CurrencyCode } from '@/lib/fx';
+import { useAuth } from '@/features/auth';
 import type { CategoryTier } from '@/features/categories/hooks/use-categories';
 import { listEssentials } from '../api';
 import { computeBaseline, type Baseline } from '../lib/baseline';
@@ -12,12 +14,6 @@ const TIER_LABELS: Record<CategoryTier, string> = {
   needs: 'Needs',
   wants: 'Wants',
 };
-
-const IDR_FORMATTER = new Intl.NumberFormat('id-ID', {
-  style: 'currency',
-  currency: 'IDR',
-  maximumFractionDigits: 0,
-});
 
 type Props = {
   variant: 'footer' | 'card';
@@ -36,13 +32,15 @@ export function MonthlyBaselineSummary({
   refreshKey = 0,
   className,
 }: Props) {
-  const fetchKey = String(refreshKey);
+  const { profile } = useAuth();
+  const base = (profile?.base_currency ?? 'IDR') as CurrencyCode;
+  const fetchKey = `${refreshKey}-${base}`;
   const [response, setResponse] = useState<Response | null>(null);
 
   useEffect(() => {
     let cancelled = false;
-    Promise.all([listEssentials(), getFxRate('USD', 'IDR')])
-      .then(([{ data, error }, fxRate]) => {
+    listEssentials()
+      .then(({ data, error }) => {
         if (cancelled) return;
         if (error) {
           setResponse({ key: fetchKey, baseline: null, error: error.message });
@@ -50,7 +48,7 @@ export function MonthlyBaselineSummary({
         }
         setResponse({
           key: fetchKey,
-          baseline: computeBaseline(data ?? [], fxRate),
+          baseline: computeBaseline(data ?? [], base),
           error: null,
         });
       })
@@ -65,7 +63,7 @@ export function MonthlyBaselineSummary({
     return () => {
       cancelled = true;
     };
-  }, [fetchKey]);
+  }, [fetchKey, base]);
 
   const isLoading = response?.key !== fetchKey;
   const error = response?.error ?? null;
@@ -90,7 +88,7 @@ export function MonthlyBaselineSummary({
       <p className={cn('text-right text-sm', className)}>
         <span className='text-muted-foreground'>Monthly baseline: </span>
         <span className='font-semibold'>
-          {IDR_FORMATTER.format(baseline.total_idr)}
+          {formatCurrency(baseline.total_base, base)}
         </span>
       </p>
     );
@@ -123,7 +121,7 @@ export function MonthlyBaselineSummary({
         <div>
           <p className='text-sm text-muted-foreground'>Monthly baseline</p>
           <p className='text-2xl font-semibold'>
-            {IDR_FORMATTER.format(baseline.total_idr)}
+            {formatCurrency(baseline.total_base, base)}
           </p>
         </div>
         <ul className='space-y-1 text-sm'>
@@ -134,7 +132,7 @@ export function MonthlyBaselineSummary({
             >
               <span>{TIER_LABELS[tier]}</span>
               <span className='font-medium text-foreground'>
-                {IDR_FORMATTER.format(baseline.by_tier[tier])}
+                {formatCurrency(baseline.by_tier[tier], base)}
               </span>
             </li>
           ))}

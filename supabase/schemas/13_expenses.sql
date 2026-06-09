@@ -7,9 +7,10 @@ create table public.expenses (
   user_id               uuid          not null references auth.users(id) on delete cascade,
   category_id           uuid          references public.categories(id) on delete set null,
   amount                numeric(15,2) not null check (amount > 0),
-  currency              text          not null check (currency in ('IDR','USD')),
-  exchange_rate_to_idr  numeric(18,8) not null,
-  amount_idr            numeric(15,2) generated always as (round(amount * exchange_rate_to_idr, 2)) stored,
+  currency              text          not null check (currency in (
+    'IDR','USD','EUR','JPY','GBP','SGD','MYR','AUD',
+    'CAD','CNY','KRW','HKD','THB','PHP','INR','VND'
+  )),
   occurred_at           timestamptz   not null default now(),
   note                  text,
   source                text          not null default 'manual'

@@ -6,7 +6,10 @@ create table public.essentials (
   category_id      uuid          references public.categories(id) on delete set null,
   name             text          not null,
   estimated_amount numeric(15,2) not null check (estimated_amount >= 0),
-  currency         text          not null check (currency in ('IDR','USD')),
+  currency         text          not null check (currency in (
+    'IDR','USD','EUR','JPY','GBP','SGD','MYR','AUD',
+    'CAD','CNY','KRW','HKD','THB','PHP','INR','VND'
+  )),
   is_active        boolean       not null default true,
   created_at       timestamptz   not null default now(),
   updated_at       timestamptz   not null default now()

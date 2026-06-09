@@ -27,6 +27,7 @@ import {
 } from '@/components/ui/select';
 import { Spinner } from '@/components/ui/spinner';
 import { Textarea } from '@/components/ui/textarea';
+import { CURRENCY_CODES } from '@/lib/fx';
 import { useAuth } from '@/features/auth';
 import {
   groupByTier,
@@ -191,8 +192,11 @@ export function EssentialForm({
                     <SelectValue placeholder='Currency' />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value='IDR'>IDR</SelectItem>
-                    <SelectItem value='USD'>USD</SelectItem>
+                    {CURRENCY_CODES.map((code) => (
+                      <SelectItem key={code} value={code}>
+                        {code}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
                 <FieldError
