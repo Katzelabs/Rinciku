@@ -10,3 +10,9 @@ export function formatCurrency(
     currency: code,
   }).format(amount);
 }
+
+const ZERO_DECIMAL_CURRENCIES = new Set<CurrencyCode>(['JPY', 'KRW', 'VND']);
+
+export function stepForCurrency(code: CurrencyCode): '1' | '0.01' {
+  return ZERO_DECIMAL_CURRENCIES.has(code) ? '1' : '0.01';
+}

@@ -35,7 +35,8 @@ import {
 import { Spinner } from '@/components/ui/spinner';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
-import { CURRENCY_CODES } from '@/lib/fx';
+import { stepForCurrency } from '@/lib/format';
+import type { CurrencyCode } from '@/lib/fx';
 import { useAuth } from '@/features/auth';
 import {
   groupByTier,
@@ -78,7 +79,7 @@ export function ExpenseForm({
   defaultValues,
   onSuccess,
 }: ExpenseFormProps) {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const {
     data: categories,
     isLoading: categoriesLoading,
@@ -92,6 +93,12 @@ export function ExpenseForm({
     [categories]
   );
 
+  // On create, currency is locked to the user's current base. On edit, preserve
+  // the row's stored currency so historical rows are not silently rewritten.
+  const baseCurrency = (profile?.base_currency ?? 'IDR') as CurrencyCode;
+  const lockedCurrency: CurrencyCode =
+    defaultValues?.currency ?? baseCurrency;
+
   const {
     register,
     control,
@@ -101,7 +108,7 @@ export function ExpenseForm({
     resolver: zodResolver(expenseSchema),
     defaultValues: {
       amount: defaultValues?.amount ?? (undefined as unknown as number),
-      currency: defaultValues?.currency ?? 'IDR',
+      currency: lockedCurrency,
       category_id: defaultValues?.category_id ?? '',
       occurred_at: defaultValues?.occurred_at ?? new Date(),
       note: defaultValues?.note ?? '',
@@ -196,64 +203,28 @@ export function ExpenseForm({
   return (
     <form onSubmit={submit} noValidate>
       <FieldGroup>
-        <div className='grid grid-cols-1 gap-4 sm:grid-cols-3'>
-          <Field
-            data-invalid={errors.amount ? true : undefined}
-            className='sm:col-span-2'
-          >
-            <FieldLabel htmlFor='expense-amount'>Amount</FieldLabel>
-            <InputGroup>
-              <InputGroupAddon>
-                <span className='text-sm font-medium text-muted-foreground'>
-                  {currency}
-                </span>
-              </InputGroupAddon>
-              <InputGroupInput
-                id='expense-amount'
-                type='number'
-                inputMode='decimal'
-                step='0.01'
-                min='0'
-                placeholder='0.00'
-                autoFocus
-                aria-invalid={errors.amount ? true : undefined}
-                {...register('amount', { valueAsNumber: true })}
-              />
-            </InputGroup>
-            <FieldError
-              errors={errors.amount ? [errors.amount] : undefined}
+        <Field data-invalid={errors.amount ? true : undefined}>
+          <FieldLabel htmlFor='expense-amount'>Amount</FieldLabel>
+          <InputGroup>
+            <InputGroupAddon>
+              <span className='text-sm font-medium text-muted-foreground'>
+                {currency}
+              </span>
+            </InputGroupAddon>
+            <InputGroupInput
+              id='expense-amount'
+              type='number'
+              inputMode='decimal'
+              step={stepForCurrency(currency)}
+              min='0'
+              placeholder='0.00'
+              autoFocus
+              aria-invalid={errors.amount ? true : undefined}
+              {...register('amount', { valueAsNumber: true })}
             />
-          </Field>
-
-          <Controller
-            control={control}
-            name='currency'
-            render={({ field, fieldState }) => (
-              <Field data-invalid={fieldState.invalid || undefined}>
-                <FieldLabel htmlFor='expense-currency'>Currency</FieldLabel>
-                <Select value={field.value} onValueChange={field.onChange}>
-                  <SelectTrigger
-                    id='expense-currency'
-                    className='w-full'
-                    aria-invalid={fieldState.invalid || undefined}
-                  >
-                    <SelectValue placeholder='Currency' />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {CURRENCY_CODES.map((code) => (
-                      <SelectItem key={code} value={code}>
-                        {code}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <FieldError
-                  errors={fieldState.error ? [fieldState.error] : undefined}
-                />
-              </Field>
-            )}
-          />
-        </div>
+          </InputGroup>
+          <FieldError errors={errors.amount ? [errors.amount] : undefined} />
+        </Field>
 
         <Controller
           control={control}

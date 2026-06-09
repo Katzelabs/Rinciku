@@ -11,7 +11,8 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Spinner } from '@/components/ui/spinner';
-import { convertToBase, type CurrencyCode } from '@/lib/fx';
+import { supabase } from '@/lib/supabase';
+import { RATES_TO_IDR, type CurrencyCode } from '@/lib/fx';
 import { useAuth } from '@/features/auth';
 import type { CategoryTier } from '@/features/categories/hooks/use-categories';
 import {
@@ -27,6 +28,20 @@ import {
   getCycleRange,
   type Cycle,
 } from '../lib/cycle';
+
+type MonthlyTotals = {
+  spent_total: number;
+  tier_fixed: number;
+  tier_needs: number;
+  tier_wants: number;
+};
+
+const EMPTY_TOTALS: MonthlyTotals = {
+  spent_total: 0,
+  tier_fixed: 0,
+  tier_needs: 0,
+  tier_wants: 0,
+};
 
 const ALL_TIERS: CategoryTier[] = ['fixed', 'needs', 'wants'];
 
@@ -51,30 +66,57 @@ export function ExpensesPage() {
   const [deleting, setDeleting] = useState(false);
   const [refetchToken, setRefetchToken] = useState(0);
 
-  const fetchKey = `${cycle.year}-${cycle.month}-${startDay}-${refetchToken}`;
+  const fetchKey = `${cycle.year}-${cycle.month}-${startDay}-${baseCurrency}-${refetchToken}`;
   const [response, setResponse] = useState<{
     key: string;
     rows: ExpenseWithRelations[];
+    totals: MonthlyTotals;
     error: string | null;
   } | null>(null);
 
   useEffect(() => {
     let cancelled = false;
     const { from, to } = getCycleRange(cycle.year, cycle.month, startDay);
-    listExpenses({ from: from.toISOString(), to: to.toISOString() }).then(
-      ({ data, error }) => {
-        if (cancelled) return;
-        setResponse({
-          key: fetchKey,
-          rows: data ?? [],
-          error: error?.message ?? null,
-        });
-      }
-    );
+    // listExpenses uses .lte(occurred_at, to) so `to` is the inclusive last
+    // instant. The RPC window is half-open [start, end), so pass `to + 1ms`
+    // as p_end_at to keep both queries over the same set of rows.
+    const fromIso = from.toISOString();
+    const toIso = to.toISOString();
+    const endExclusiveIso = new Date(to.getTime() + 1).toISOString();
+
+    Promise.all([
+      listExpenses({ from: fromIso, to: toIso }),
+      supabase
+        .rpc('dashboard_monthly_summary', {
+          p_start_at: fromIso,
+          p_end_at: endExclusiveIso,
+          p_base: baseCurrency,
+          p_rates: RATES_TO_IDR,
+        })
+        .single(),
+    ]).then(([listRes, summaryRes]) => {
+      if (cancelled) return;
+      const errorMessage =
+        listRes.error?.message ?? summaryRes.error?.message ?? null;
+      const totals: MonthlyTotals = summaryRes.data
+        ? {
+            spent_total: Number(summaryRes.data.spent_total ?? 0),
+            tier_fixed: Number(summaryRes.data.tier_fixed ?? 0),
+            tier_needs: Number(summaryRes.data.tier_needs ?? 0),
+            tier_wants: Number(summaryRes.data.tier_wants ?? 0),
+          }
+        : EMPTY_TOTALS;
+      setResponse({
+        key: fetchKey,
+        rows: listRes.data ?? [],
+        totals,
+        error: errorMessage,
+      });
+    });
     return () => {
       cancelled = true;
     };
-  }, [fetchKey, cycle.year, cycle.month, startDay]);
+  }, [fetchKey, cycle.year, cycle.month, startDay, baseCurrency]);
 
   const loading = response?.key !== fetchKey;
   const error = response?.error ?? null;
@@ -88,20 +130,22 @@ export function ExpensesPage() {
     });
   }, [response, tiers]);
 
-  const total = useMemo(
-    () =>
-      filteredRows.reduce(
-        (sum, row) =>
-          sum +
-          convertToBase(
-            Number(row.amount),
-            row.currency as CurrencyCode,
-            baseCurrency
-          ).amount_base,
-        0
-      ),
-    [filteredRows, baseCurrency]
-  );
+  const total = useMemo(() => {
+    const totals = response?.totals ?? EMPTY_TOTALS;
+    if (tiers.size === 0) return round2(totals.spent_total);
+    // Uncategorized rows always appear in the filtered list (see filteredRows
+    // above), so they always contribute to the total. Mirror that here.
+    const uncategorized =
+      totals.spent_total -
+      totals.tier_fixed -
+      totals.tier_needs -
+      totals.tier_wants;
+    const tierSum =
+      (tiers.has('fixed') ? totals.tier_fixed : 0) +
+      (tiers.has('needs') ? totals.tier_needs : 0) +
+      (tiers.has('wants') ? totals.tier_wants : 0);
+    return round2(tierSum + uncategorized);
+  }, [response, tiers]);
 
   function refetch() {
     setRefetchToken((n) => n + 1);
@@ -245,4 +289,8 @@ export function ExpensesPage() {
       </Dialog>
     </div>
   );
+}
+
+function round2(n: number): number {
+  return Math.round(n * 100) / 100;
 }
