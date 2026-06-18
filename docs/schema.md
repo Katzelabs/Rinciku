@@ -13,6 +13,7 @@
 3. [`profiles`](#3-profiles) — per-user profile + monthly cycle config
 4. [`tiers`](#4-tiers) — user-defined spending tiers (`is_essential` flag)
 4a. [`categories`](#4a-categories) — spending categories, each pointing at a tier
+4b. [`income_categories`](#4b-income_categories) — flat income source taxonomy (no tier)
 5. [`essentials`](#5-essentials) — monthly non-negotiable line items
 6. [`expenses`](#6-expenses) — core transaction table
 7. [`expense_attachments`](#7-expense_attachments) — AI-extracted document metadata
@@ -132,6 +133,8 @@ expenses ◀────────┐                    │
 expense_attachments ◀──────────────────┘
                   (messages.attachment_id, nullable)
 
+income_categories ─┐
+                   ▼
 incomes ◀─────────┐
    │              │
    │ 1:1 (nullable both ways)
@@ -269,6 +272,40 @@ Colors and icons are chosen by the seeder; not encoded here so they can evolve w
 
 ---
 
+## 4b. `income_categories`
+
+Per-user **income source taxonomy** (e.g. Salary, Freelance, Investment). Flat — unlike spending [`categories`](#4a-categories) there is no tier, because tiers carry the `is_essential` baseline math that is meaningless for income. Referenced by [`incomes.source_id`](#8-incomes). Seeded with defaults on signup.
+
+### Columns
+
+| column | type | notes |
+|---|---|---|
+| `id` | `uuid` pk | `default gen_random_uuid()` |
+| `user_id` | `uuid not null` | `references auth.users(id) on delete cascade` |
+| `name` | `text not null` | e.g. `'Salary'`, `'Freelance'` |
+| `icon` | `text` | PascalCase lucide icon name, e.g. `'Banknote'` (see `src/features/categories/lib/icons.ts`) |
+| `color` | `text` | hex `#rrggbb`; `check (color ~ '^#[0-9a-fA-F]{6}$')` |
+| `sort_order` | `int not null default 0` | display order |
+| `is_archived` | `boolean not null default false` | hide from pickers without breaking historical incomes |
+| `created_at`, `updated_at` | `timestamptz` | standard |
+
+### Constraints
+- `pk (id)`
+- `unique (user_id, name)` — one income category per name per user; archived rows still count
+- `fk (user_id) -> auth.users(id) on delete cascade`
+
+### Indexes
+- `income_categories (user_id)` — RLS
+- `income_categories (user_id, sort_order)` — ordered picker / card list
+
+### RLS
+Standard pattern on `user_id`.
+
+### Default seed (created by `handle_new_user`)
+**Salary, Freelance, Investment, Other** — icons `Banknote / Briefcase / TrendingUp / Wallet`.
+
+---
+
 ## 5. `essentials`
 
 Monthly non-negotiable line items that power the "baseline cost of living" the AI consults against.
@@ -393,7 +430,7 @@ Deleting an `expense_attachments` row does **not** delete the underlying storage
 
 ## 8. `incomes`
 
-Manual income log. Parallel to `expenses` minus categories — v1 leaves incomes uncategorized (multi-source templates are v2; see [§16](#16-out-of-scope-v1)). Every received-money event lands here so the dashboard can sum **received this cycle** alongside the `profiles.expected_monthly_income` baseline.
+Manual income log. Parallel to `expenses`. Each income optionally points at a flat [`income_categories`](#4b-income_categories) source via `source_id` (multi-source *templates* — recurring "salary in USD + side gig in IDR" definitions — remain v2; see [§16](#16-out-of-scope-v1)). Every received-money event lands here so the dashboard can sum **received this cycle** alongside the `profiles.expected_monthly_income` baseline.
 
 ### Columns
 
@@ -401,6 +438,7 @@ Manual income log. Parallel to `expenses` minus categories — v1 leaves incomes
 |---|---|---|
 | `id` | `uuid` pk | |
 | `user_id` | `uuid not null` | `references auth.users(id) on delete cascade` |
+| `source_id` | `uuid` | `references income_categories(id) on delete set null` — nullable; deleting a source leaves the income intact but uncategorized (mirrors `expenses.category_id`) |
 | `amount` | `numeric(15,2) not null` | `check (amount > 0)` — entered amount in the base in effect at write time |
 | `currency` | `text not null` | `check (currency in (<16 codes>))` — the base in effect when this row was written |
 | `occurred_at` | `timestamptz not null default now()` | when the income was received |
@@ -412,12 +450,14 @@ Manual income log. Parallel to `expenses` minus categories — v1 leaves incomes
 ### Constraints
 - `pk (id)`
 - `fk (user_id) -> auth.users(id) on delete cascade`
+- `fk (source_id) -> income_categories(id) on delete set null`
 - `fk (attachment_id) -> income_attachments(id) on delete set null`
 
 ### Indexes
 - `incomes (user_id)` — RLS
 - `incomes (user_id, occurred_at desc)` — dashboard timeline / "this month" queries
 - `incomes (user_id, source)` — analytics on chat vs image vs manual
+- `incomes (user_id, source_id)` — per-source aggregation
 
 ### RLS
 Standard pattern on `user_id`.
@@ -638,7 +678,7 @@ create trigger set_updated_at before update on public.<t>
 Attached to: `profiles`, `tiers`, `categories`, `essentials`, `expenses`, `expense_attachments`, `incomes`, `income_attachments`, `budgets`, `conversations`. (Not `messages` — immutable.)
 
 ### `public.handle_new_user()`
-`AFTER INSERT ON auth.users` trigger. Creates a profile row, seeds 3 default tiers, and seeds default categories pointed at those tiers.
+`AFTER INSERT ON auth.users` trigger. Creates a profile row, seeds 3 default tiers, seeds default categories pointed at those tiers, and seeds 4 default income categories.
 
 ```sql
 create or replace function public.handle_new_user()
@@ -675,6 +715,13 @@ begin
     (new.id, 'subscriptions', v_wants, 'credit-card',   '#c4a86b', 1),
     (new.id, 'entertainment', v_wants, 'gamepad-2',     '#c4a86b', 2);
 
+  -- Flat income source taxonomy (no tier). PascalCase lucide icon names.
+  insert into public.income_categories (user_id, name, icon, color, sort_order) values
+    (new.id, 'Salary',     'Banknote',   '#7a8d6a', 0),
+    (new.id, 'Freelance',  'Briefcase',  '#a3a86b', 1),
+    (new.id, 'Investment', 'TrendingUp', '#6b8da3', 2),
+    (new.id, 'Other',      'Wallet',     '#8d8d8d', 3);
+
   return new;
 end;
 $$;
@@ -698,6 +745,8 @@ Every PK is implicitly indexed. Non-PK indexes:
 | `(user_id, sort_order)` | `tiers` | ordered picker / card list |
 | `(user_id)` | `categories` | RLS |
 | `(user_id, tier_id, sort_order)` | `categories` | picker / sidebar |
+| `(user_id)` | `income_categories` | RLS |
+| `(user_id, sort_order)` | `income_categories` | ordered picker / card list |
 | `(user_id)` | `essentials` | RLS |
 | `(user_id, is_active)` | `essentials` | baseline aggregation |
 | `(user_id)` | `expenses` | RLS |
@@ -710,6 +759,7 @@ Every PK is implicitly indexed. Non-PK indexes:
 | `(user_id)` | `incomes` | RLS |
 | `(user_id, occurred_at desc)` | `incomes` | dashboard timeline / "received this cycle" |
 | `(user_id, source)` | `incomes` | provenance analytics |
+| `(user_id, source_id)` | `incomes` | per-source aggregation |
 | `(user_id)` | `income_attachments` | RLS |
 | `(user_id, confirmed)` | `income_attachments` | pending uploads |
 | `(income_id)` | `income_attachments` | reverse lookup |
@@ -729,7 +779,7 @@ Documented here so future-Claude does not assume they exist:
 
 - **Server-side FX caching / cross-device rate sync** — v1 fetches `open.er-api.com` from the browser and caches in `localStorage` (see `src/lib/fx.ts`). An Edge Function + Supabase-side rate table would let multiple devices share one fetch per day; only worth doing if we migrate to a keyed source or want stable cross-device totals.
 - **`exchange_rates` table** — historical totals reconvert at read time via the runtime rate map; the per-row rate snapshot is gone. A separate rates table (daily timestamped rows) would only be needed if/when we want stable historical totals immune to live-rate movement — v2.
-- **Income source templates** — v1 has a single `expected_monthly_income` on `profiles`. Multi-source income templates ("salary in USD + side gig in IDR") are v2.
+- **Income source *templates*** — a flat income taxonomy now ships as [`income_categories`](#4b-income_categories) (tag each income with a source). What remains v2 is *recurring multi-source templates* — predefined definitions like "salary in USD on the 25th + side gig in IDR" that auto-populate expected income; v1 still has only the single `expected_monthly_income` on `profiles`.
 - **Recurring expenses** — listed in PROJECT_BRIEF.md v2 features. Would add a `recurring_expenses` template table + a scheduled job.
 - **Savings goals** — v2.
 - **Multi-language category names** — v2. Would add a `categories.name_i18n jsonb` column.
@@ -739,4 +789,4 @@ Documented here so future-Claude does not assume they exist:
 
 ---
 
-*Last updated: 2026-06-09. Migrations: `supabase/migrations/*_init.sql` is the regenerated rolling-init artifact; edit the declarative `supabase/schemas/*.sql` files and regen via `supabase db diff -f init`.*
+*Last updated: 2026-06-19. Migrations: `supabase/migrations/*_init.sql` is the regenerated rolling-init artifact; edit the declarative `supabase/schemas/*.sql` files and regen via `supabase db diff -f init`.*

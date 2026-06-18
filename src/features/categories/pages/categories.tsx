@@ -27,18 +27,19 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Spinner } from '@/components/ui/spinner';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { IncomeCategoriesPanel } from '@/features/incomes';
 import type { Tables } from '@/lib/database.types';
 
-import {
-  deleteCategory,
-  deleteTier,
-  listCategories,
-  listTiers,
-} from '../api';
+import { deleteCategory, deleteTier, listCategories, listTiers } from '../api';
 import { CategoryForm } from '../components/category-form';
 import { CategoryIcon } from '../components/category-icon';
 import { TierForm } from '../components/tier-form';
-import { groupByTier, type Tier, type TierGroup } from '../hooks/use-categories';
+import {
+  groupByTier,
+  type Tier,
+  type TierGroup,
+} from '../hooks/use-categories';
 
 type Category = Tables<'categories'>;
 
@@ -127,61 +128,82 @@ export function CategoriesPage() {
 
   return (
     <div className='space-y-6'>
-      <div className='flex items-start justify-between gap-4'>
-        <div>
-          <h1 className='text-2xl font-semibold'>Categories</h1>
-          <p className='text-sm text-muted-foreground'>
-            Organize your spending into tiers you control.
-          </p>
-        </div>
-        <Button
-          size='sm'
-          variant='outline'
-          onClick={() => setDialog({ kind: 'create-tier' })}
-        >
-          <Plus className='size-4' />
-          Add tier
-        </Button>
+      <div>
+        <h1 className='text-2xl font-semibold'>Categories</h1>
+        <p className='text-sm text-muted-foreground'>
+          Organize the money you spend and the money you earn.
+        </p>
       </div>
 
-      {error && (
-        <div className='rounded-lg border border-destructive/40 bg-destructive/5 px-4 py-3 text-sm text-destructive'>
-          {error}
-        </div>
-      )}
+      <Tabs defaultValue='spending' className='space-y-6'>
+        <TabsList>
+          <TabsTrigger value='spending'>Spending</TabsTrigger>
+          <TabsTrigger value='income'>Income</TabsTrigger>
+        </TabsList>
 
-      <div className='space-y-4'>
-        {loading ? (
-          <Card>
-            <CardHeader>
-              <CardTitle>
-                <Skeleton className='h-5 w-24' />
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <CategoryRowSkeletons />
-            </CardContent>
-          </Card>
-        ) : (
-          groups?.map((group) => (
-            <TierCard
-              key={group.tier?.id ?? '__untiered__'}
-              group={group}
-              onAddCategory={(tierId) =>
-                setDialog({ kind: 'create-category', tierId })
-              }
-              onEditTier={(row) => setDialog({ kind: 'edit-tier', row })}
-              onDeleteTier={(row) => setDialog({ kind: 'delete-tier', row })}
-              onEditCategory={(row) =>
-                setDialog({ kind: 'edit-category', row })
-              }
-              onDeleteCategory={(row) =>
-                setDialog({ kind: 'delete-category', row })
-              }
-            />
-          ))
-        )}
-      </div>
+        <TabsContent value='spending' className='space-y-6'>
+          <div className='flex items-start justify-between gap-4'>
+            <div>
+              <h2 className='text-lg font-semibold'>Spending tiers</h2>
+              <p className='text-sm text-muted-foreground'>
+                Organize your spending into tiers you control.
+              </p>
+            </div>
+            <Button
+              size='sm'
+              onClick={() => setDialog({ kind: 'create-tier' })}
+            >
+              <Plus className='size-4' />
+              Add tier
+            </Button>
+          </div>
+
+          {error && (
+            <div className='rounded-lg border border-destructive/40 bg-destructive/5 px-4 py-3 text-sm text-destructive'>
+              {error}
+            </div>
+          )}
+
+          <div className='grid grid-cols-1 items-start gap-4 md:grid-cols-2 xl:grid-cols-3'>
+            {loading ? (
+              <Card>
+                <CardHeader>
+                  <CardTitle>
+                    <Skeleton className='h-5 w-24' />
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <CategoryRowSkeletons />
+                </CardContent>
+              </Card>
+            ) : (
+              groups?.map((group) => (
+                <TierCard
+                  key={group.tier?.id ?? '__untiered__'}
+                  group={group}
+                  onAddCategory={(tierId) =>
+                    setDialog({ kind: 'create-category', tierId })
+                  }
+                  onEditTier={(row) => setDialog({ kind: 'edit-tier', row })}
+                  onDeleteTier={(row) =>
+                    setDialog({ kind: 'delete-tier', row })
+                  }
+                  onEditCategory={(row) =>
+                    setDialog({ kind: 'edit-category', row })
+                  }
+                  onDeleteCategory={(row) =>
+                    setDialog({ kind: 'delete-category', row })
+                  }
+                />
+              ))
+            )}
+          </div>
+        </TabsContent>
+
+        <TabsContent value='income'>
+          <IncomeCategoriesPanel />
+        </TabsContent>
+      </Tabs>
 
       {/* Category create / edit */}
       <Dialog

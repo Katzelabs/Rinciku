@@ -18,11 +18,7 @@ import {
   getCycleRange,
   type Cycle,
 } from '@/features/expenses/lib/cycle';
-import {
-  deleteIncome,
-  listIncomes,
-  type IncomeWithRelations,
-} from '../api';
+import { deleteIncome, listIncomes, type IncomeWithRelations } from '../api';
 import { IncomeFilters } from '../components/income-filters';
 import { IncomeForm } from '../components/income-form';
 import { IncomeTable } from '../components/income-table';
@@ -182,6 +178,7 @@ export function IncomesPage() {
               defaultValues={{
                 id: dialog.row.id,
                 amount: Number(dialog.row.amount),
+                source_id: dialog.row.source_id ?? '',
                 occurred_at: new Date(dialog.row.occurred_at),
                 note: dialog.row.note ?? '',
               }}

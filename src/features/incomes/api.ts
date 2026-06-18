@@ -1,5 +1,5 @@
 import type { PostgrestError } from '@supabase/supabase-js';
-import type { Database } from '@/lib/database.types';
+import type { Database, Tables } from '@/lib/database.types';
 import type { CurrencyCode } from '@/lib/fx';
 import { supabase } from '@/lib/supabase';
 
@@ -13,11 +13,15 @@ import { supabase } from '@/lib/supabase';
 
 type IncomeRow = Database['public']['Tables']['incomes']['Row'];
 type IncomeUpdate = Database['public']['Tables']['incomes']['Update'];
+type IncomeCategoryRow = Database['public']['Tables']['income_categories']['Row'];
 type AttachmentRow = Database['public']['Tables']['income_attachments']['Row'];
 type AttachmentUpdate =
   Database['public']['Tables']['income_attachments']['Update'];
 
 export type IncomeWithRelations = IncomeRow & {
+  // `source_id` joined relation. Named `category` (not `source`) to avoid
+  // colliding with the existing `source` provenance text column.
+  category: IncomeCategoryRow | null;
   attachment: AttachmentRow | null;
 };
 
@@ -28,6 +32,7 @@ export type ListIncomesParams = {
 
 export type CreateIncomeInput = {
   user_id: string;
+  source_id?: string | null;
   amount: number;
   currency: CurrencyCode;
   occurred_at: string;
@@ -71,7 +76,7 @@ const MIME_TO_EXT: Record<string, string> = {
 const KNOWN_EXTS = new Set(['jpg', 'jpeg', 'png', 'webp', 'heic', 'pdf']);
 
 const INCOME_WITH_RELATIONS_SELECT =
-  '*, attachment:income_attachments!incomes_attachment_id_fkey(*)';
+  '*, category:income_categories!incomes_source_id_fkey(*), attachment:income_attachments!incomes_attachment_id_fkey(*)';
 
 export async function listIncomes({
   from,
@@ -125,6 +130,64 @@ export async function updateIncome(
 
 export async function deleteIncome(id: string): Promise<Result<null>> {
   const { error } = await supabase.from('incomes').delete().eq('id', id);
+  return { data: null, error };
+}
+
+// --- income categories -----------------------------------------------------
+// Flat income taxonomy (no tier). Mirrors features/categories/api.ts.
+
+type IncomeCategoryFields = Pick<
+  Tables<'income_categories'>,
+  'name' | 'icon' | 'color'
+>;
+
+export type CreateIncomeCategoryInput = IncomeCategoryFields & {
+  user_id: string;
+  sort_order?: number;
+};
+export type UpdateIncomeCategoryPatch = Partial<IncomeCategoryFields>;
+
+export async function listIncomeCategories(): Promise<
+  Result<Tables<'income_categories'>[]>
+> {
+  const { data, error } = await supabase
+    .from('income_categories')
+    .select('*')
+    .eq('is_archived', false)
+    .order('sort_order', { ascending: true })
+    .order('name', { ascending: true });
+  return { data, error };
+}
+
+export async function createIncomeCategory(
+  input: CreateIncomeCategoryInput
+): Promise<Result<Tables<'income_categories'>>> {
+  const { data, error } = await supabase
+    .from('income_categories')
+    .insert(input)
+    .select('*')
+    .single();
+  return { data, error };
+}
+
+export async function updateIncomeCategory(
+  id: string,
+  patch: UpdateIncomeCategoryPatch
+): Promise<Result<Tables<'income_categories'>>> {
+  const { data, error } = await supabase
+    .from('income_categories')
+    .update(patch)
+    .eq('id', id)
+    .select('*')
+    .single();
+  return { data, error };
+}
+
+export async function deleteIncomeCategory(id: string): Promise<Result<null>> {
+  const { error } = await supabase
+    .from('income_categories')
+    .delete()
+    .eq('id', id);
   return { data: null, error };
 }
 
@@ -195,7 +258,9 @@ export async function getIncomeAttachmentSignedUrl(
   return { data: { signedUrl: data.signedUrl }, error: null };
 }
 
-export async function deleteIncomeAttachment(id: string): Promise<Result<null>> {
+export async function deleteIncomeAttachment(
+  id: string
+): Promise<Result<null>> {
   const { error } = await supabase
     .from('income_attachments')
     .delete()

@@ -29,6 +29,8 @@ export const CATEGORY_ICONS = [
   'Wallet',
   'Banknote',
   'PiggyBank',
+  'Briefcase',
+  'TrendingUp',
   'Shirt',
   'Phone',
 ] as const;

@@ -30,6 +30,13 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Spinner } from '@/components/ui/spinner';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
@@ -45,7 +52,12 @@ import {
   updateIncomeAttachment,
   uploadIncomeAttachment,
 } from '../api';
+import { useIncomeCategories } from '../hooks/use-income-categories';
 import { incomeSchema, type IncomeInput } from '../schemas';
+
+// Radix Select cannot hold an empty-string value, so "no source" is represented
+// by this sentinel in the Select and mapped back to '' / null around it.
+const NO_SOURCE = '__none__';
 
 const INCOME_ALLOWED_MIME = new Set([
   'image/jpeg',
@@ -74,6 +86,12 @@ export function IncomeForm({
   const baseCurrency = (profile?.base_currency ?? 'IDR') as CurrencyCode;
   const amountStep = ZERO_DECIMAL_CURRENCIES.has(baseCurrency) ? '1' : '0.01';
 
+  const {
+    data: incomeCategories,
+    isLoading: incomeCategoriesLoading,
+    error: incomeCategoriesError,
+  } = useIncomeCategories();
+
   const [datePickerOpen, setDatePickerOpen] = useState(false);
   const [attachment, setAttachment] = useState<File | null>(null);
 
@@ -86,6 +104,7 @@ export function IncomeForm({
     resolver: zodResolver(incomeSchema),
     defaultValues: {
       amount: defaultValues?.amount ?? (undefined as unknown as number),
+      source_id: defaultValues?.source_id ?? '',
       occurred_at: defaultValues?.occurred_at ?? new Date(),
       note: defaultValues?.note ?? '',
     },
@@ -106,6 +125,7 @@ export function IncomeForm({
         user_id: user.id,
         amount: values.amount,
         currency: baseCurrency,
+        source_id: values.source_id ? values.source_id : null,
         occurred_at: toIsoDate(values.occurred_at),
         note: trimmedNote ? trimmedNote : null,
         source: 'manual' as const,
@@ -239,6 +259,48 @@ export function IncomeForm({
                   />
                 </PopoverContent>
               </Popover>
+              <FieldError
+                errors={fieldState.error ? [fieldState.error] : undefined}
+              />
+            </Field>
+          )}
+        />
+
+        <Controller
+          control={control}
+          name='source_id'
+          render={({ field, fieldState }) => (
+            <Field data-invalid={fieldState.invalid || undefined}>
+              <FieldLabel htmlFor='income-source'>Source (optional)</FieldLabel>
+              <Select
+                value={field.value ? field.value : NO_SOURCE}
+                onValueChange={(v) => field.onChange(v === NO_SOURCE ? '' : v)}
+                disabled={incomeCategoriesLoading || !!incomeCategoriesError}
+              >
+                <SelectTrigger
+                  id='income-source'
+                  className='w-full'
+                  aria-invalid={fieldState.invalid || undefined}
+                >
+                  <SelectValue
+                    placeholder={
+                      incomeCategoriesLoading
+                        ? 'Loading sources…'
+                        : incomeCategoriesError
+                          ? 'Failed to load sources'
+                          : 'Pick a source'
+                    }
+                  />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={NO_SOURCE}>Uncategorized</SelectItem>
+                  {incomeCategories?.map((category) => (
+                    <SelectItem key={category.id} value={category.id}>
+                      {category.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
               <FieldError
                 errors={fieldState.error ? [fieldState.error] : undefined}
               />

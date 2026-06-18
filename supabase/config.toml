@@ -61,6 +61,7 @@ schema_paths = [
   "./schemas/10_profiles.sql",
   "./schemas/10_tiers.sql",
   "./schemas/11_categories.sql",
+  "./schemas/11_income_categories.sql",
   "./schemas/12_essentials.sql",
   "./schemas/13_expenses.sql",
   "./schemas/14_expense_attachments.sql",

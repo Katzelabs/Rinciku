@@ -1,12 +1,14 @@
 -- §8 incomes
 -- attachment_id FK references income_attachments — the second half of a
 -- circular FK pair. The matching FK lives in 19_income_attachments.sql.
--- Parallel structure to expenses (no category — v1 leaves incomes
--- uncategorized; multi-source templates are v2 per docs/schema.md §14).
+-- Parallel structure to expenses. source_id points at a flat income_categories
+-- row (11_income_categories); on delete set null so deleting a source leaves the
+-- income intact but uncategorized (mirrors expenses.category_id).
 
 create table public.incomes (
   id             uuid primary key default gen_random_uuid(),
   user_id        uuid          not null references auth.users(id) on delete cascade,
+  source_id      uuid          references public.income_categories(id) on delete set null,
   amount         numeric(15,2) not null check (amount > 0),
   currency       text          not null check (currency in (
     'IDR','USD','EUR','JPY','GBP','SGD','MYR','AUD',
@@ -24,6 +26,7 @@ create table public.incomes (
 create index incomes_user_id_idx          on public.incomes (user_id);
 create index incomes_user_occurred_at_idx on public.incomes (user_id, occurred_at desc);
 create index incomes_user_source_idx      on public.incomes (user_id, source);
+create index incomes_user_source_id_idx   on public.incomes (user_id, source_id);
 
 create trigger set_updated_at before update on public.incomes
   for each row execute function public.set_updated_at();

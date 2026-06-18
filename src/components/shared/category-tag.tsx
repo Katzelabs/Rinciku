@@ -6,13 +6,22 @@ type TierRow = Database['public']['Tables']['tiers']['Row'];
 
 export type CategoryWithTier = CategoryRow & { tier: TierRow | null };
 
+// Structural minimum the tag actually renders — accepts a spending
+// CategoryWithTier or a tier-less income category (tier simply omitted).
+type TaggableCategory = {
+  name: string;
+  color: string | null;
+  tier?: { name: string } | null;
+};
+
 type Props = {
-  category: CategoryWithTier | null;
+  category: TaggableCategory | null;
 };
 
 /**
- * Renders a category as a colored initial chip + name + tier badge, with an
- * "Uncategorized" fallback. Shared by the expenses and essentials tables.
+ * Renders a category as a colored initial chip + name + optional tier badge,
+ * with an "Uncategorized" fallback. Shared by the expenses, essentials, and
+ * incomes tables.
  */
 export function CategoryTag({ category }: Props) {
   if (!category) {

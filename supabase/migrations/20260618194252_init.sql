@@ -117,9 +117,26 @@ alter table "public"."expenses" enable row level security;
 alter table "public"."income_attachments" enable row level security;
 
 
+  create table "public"."income_categories" (
+    "id" uuid not null default gen_random_uuid(),
+    "user_id" uuid not null,
+    "name" text not null,
+    "icon" text,
+    "color" text,
+    "sort_order" integer not null default 0,
+    "is_archived" boolean not null default false,
+    "created_at" timestamp with time zone not null default now(),
+    "updated_at" timestamp with time zone not null default now()
+      );
+
+
+alter table "public"."income_categories" enable row level security;
+
+
   create table "public"."incomes" (
     "id" uuid not null default gen_random_uuid(),
     "user_id" uuid not null,
+    "source_id" uuid,
     "amount" numeric(15,2) not null,
     "currency" text not null,
     "occurred_at" timestamp with time zone not null default now(),
@@ -235,11 +252,21 @@ CREATE INDEX income_attachments_user_confirmed_idx ON public.income_attachments 
 
 CREATE INDEX income_attachments_user_id_idx ON public.income_attachments USING btree (user_id);
 
+CREATE UNIQUE INDEX income_categories_pkey ON public.income_categories USING btree (id);
+
+CREATE INDEX income_categories_user_id_idx ON public.income_categories USING btree (user_id);
+
+CREATE UNIQUE INDEX income_categories_user_id_name_key ON public.income_categories USING btree (user_id, name);
+
+CREATE INDEX income_categories_user_sort_idx ON public.income_categories USING btree (user_id, sort_order);
+
 CREATE UNIQUE INDEX incomes_pkey ON public.incomes USING btree (id);
 
 CREATE INDEX incomes_user_id_idx ON public.incomes USING btree (user_id);
 
 CREATE INDEX incomes_user_occurred_at_idx ON public.incomes USING btree (user_id, occurred_at DESC);
+
+CREATE INDEX incomes_user_source_id_idx ON public.incomes USING btree (user_id, source_id);
 
 CREATE INDEX incomes_user_source_idx ON public.incomes USING btree (user_id, source);
 
@@ -272,6 +299,8 @@ alter table "public"."expense_attachments" add constraint "expense_attachments_p
 alter table "public"."expenses" add constraint "expenses_pkey" PRIMARY KEY using index "expenses_pkey";
 
 alter table "public"."income_attachments" add constraint "income_attachments_pkey" PRIMARY KEY using index "income_attachments_pkey";
+
+alter table "public"."income_categories" add constraint "income_categories_pkey" PRIMARY KEY using index "income_categories_pkey";
 
 alter table "public"."incomes" add constraint "incomes_pkey" PRIMARY KEY using index "incomes_pkey";
 
@@ -397,6 +426,16 @@ alter table "public"."income_attachments" add constraint "income_attachments_use
 
 alter table "public"."income_attachments" validate constraint "income_attachments_user_id_fkey";
 
+alter table "public"."income_categories" add constraint "income_categories_color_check" CHECK ((color ~ '^#[0-9a-fA-F]{6}$'::text)) not valid;
+
+alter table "public"."income_categories" validate constraint "income_categories_color_check";
+
+alter table "public"."income_categories" add constraint "income_categories_user_id_fkey" FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE not valid;
+
+alter table "public"."income_categories" validate constraint "income_categories_user_id_fkey";
+
+alter table "public"."income_categories" add constraint "income_categories_user_id_name_key" UNIQUE using index "income_categories_user_id_name_key";
+
 alter table "public"."incomes" add constraint "incomes_amount_check" CHECK ((amount > (0)::numeric)) not valid;
 
 alter table "public"."incomes" validate constraint "incomes_amount_check";
@@ -412,6 +451,10 @@ alter table "public"."incomes" validate constraint "incomes_currency_check";
 alter table "public"."incomes" add constraint "incomes_source_check" CHECK ((source = ANY (ARRAY['manual'::text, 'chat'::text, 'image'::text]))) not valid;
 
 alter table "public"."incomes" validate constraint "incomes_source_check";
+
+alter table "public"."incomes" add constraint "incomes_source_id_fkey" FOREIGN KEY (source_id) REFERENCES public.income_categories(id) ON DELETE SET NULL not valid;
+
+alter table "public"."incomes" validate constraint "incomes_source_id_fkey";
 
 alter table "public"."incomes" add constraint "incomes_user_id_fkey" FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE not valid;
 
@@ -555,6 +598,14 @@ begin
     (new.id, 'dining out',    v_wants, 'utensils',      '#c4a86b', 0),
     (new.id, 'subscriptions', v_wants, 'credit-card',   '#c4a86b', 1),
     (new.id, 'entertainment', v_wants, 'gamepad-2',     '#c4a86b', 2);
+
+  -- Default income categories (flat — no tier). Users can rename/recolor/add/delete.
+  -- Icon names are PascalCase lucide keys (see src/features/categories/lib/icons.ts).
+  insert into public.income_categories (user_id, name, icon, color, sort_order) values
+    (new.id, 'Salary',     'Banknote',   '#7a8d6a', 0),
+    (new.id, 'Freelance',  'Briefcase',  '#a3a86b', 1),
+    (new.id, 'Investment', 'TrendingUp', '#6b8da3', 2),
+    (new.id, 'Other',      'Wallet',     '#8d8d8d', 3);
 
   return new;
 end;
@@ -865,6 +916,48 @@ grant trigger on table "public"."income_attachments" to "service_role";
 grant truncate on table "public"."income_attachments" to "service_role";
 
 grant update on table "public"."income_attachments" to "service_role";
+
+grant delete on table "public"."income_categories" to "anon";
+
+grant insert on table "public"."income_categories" to "anon";
+
+grant references on table "public"."income_categories" to "anon";
+
+grant select on table "public"."income_categories" to "anon";
+
+grant trigger on table "public"."income_categories" to "anon";
+
+grant truncate on table "public"."income_categories" to "anon";
+
+grant update on table "public"."income_categories" to "anon";
+
+grant delete on table "public"."income_categories" to "authenticated";
+
+grant insert on table "public"."income_categories" to "authenticated";
+
+grant references on table "public"."income_categories" to "authenticated";
+
+grant select on table "public"."income_categories" to "authenticated";
+
+grant trigger on table "public"."income_categories" to "authenticated";
+
+grant truncate on table "public"."income_categories" to "authenticated";
+
+grant update on table "public"."income_categories" to "authenticated";
+
+grant delete on table "public"."income_categories" to "service_role";
+
+grant insert on table "public"."income_categories" to "service_role";
+
+grant references on table "public"."income_categories" to "service_role";
+
+grant select on table "public"."income_categories" to "service_role";
+
+grant trigger on table "public"."income_categories" to "service_role";
+
+grant truncate on table "public"."income_categories" to "service_role";
+
+grant update on table "public"."income_categories" to "service_role";
 
 grant delete on table "public"."incomes" to "anon";
 
@@ -1294,6 +1387,43 @@ with check ((user_id = ( SELECT auth.uid() AS uid)));
 
 
 
+  create policy "income_categories: delete own"
+  on "public"."income_categories"
+  as permissive
+  for delete
+  to authenticated
+using ((user_id = ( SELECT auth.uid() AS uid)));
+
+
+
+  create policy "income_categories: insert own"
+  on "public"."income_categories"
+  as permissive
+  for insert
+  to authenticated
+with check ((user_id = ( SELECT auth.uid() AS uid)));
+
+
+
+  create policy "income_categories: select own"
+  on "public"."income_categories"
+  as permissive
+  for select
+  to authenticated
+using ((user_id = ( SELECT auth.uid() AS uid)));
+
+
+
+  create policy "income_categories: update own"
+  on "public"."income_categories"
+  as permissive
+  for update
+  to authenticated
+using ((user_id = ( SELECT auth.uid() AS uid)))
+with check ((user_id = ( SELECT auth.uid() AS uid)));
+
+
+
   create policy "incomes: delete own"
   on "public"."incomes"
   as permissive
@@ -1445,6 +1575,8 @@ CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.expense_attachments FOR EA
 CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.expenses FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
 
 CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.income_attachments FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
+
+CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.income_categories FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
 
 CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.incomes FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
 

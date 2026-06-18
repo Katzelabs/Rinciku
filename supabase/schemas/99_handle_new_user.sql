@@ -1,6 +1,7 @@
 -- §12 handle_new_user
--- Auto-creates the profile row, seeds 3 default tiers, and seeds 10 default
--- categories (pointed at those tiers) whenever a new auth.users row is inserted.
+-- Auto-creates the profile row, seeds 3 default tiers, seeds 10 default
+-- categories (pointed at those tiers), and seeds 4 default income categories
+-- whenever a new auth.users row is inserted.
 
 create or replace function public.handle_new_user()
 returns trigger
@@ -36,6 +37,14 @@ begin
     (new.id, 'dining out',    v_wants, 'utensils',      '#c4a86b', 0),
     (new.id, 'subscriptions', v_wants, 'credit-card',   '#c4a86b', 1),
     (new.id, 'entertainment', v_wants, 'gamepad-2',     '#c4a86b', 2);
+
+  -- Default income categories (flat — no tier). Users can rename/recolor/add/delete.
+  -- Icon names are PascalCase lucide keys (see src/features/categories/lib/icons.ts).
+  insert into public.income_categories (user_id, name, icon, color, sort_order) values
+    (new.id, 'Salary',     'Banknote',   '#7a8d6a', 0),
+    (new.id, 'Freelance',  'Briefcase',  '#a3a86b', 1),
+    (new.id, 'Investment', 'TrendingUp', '#6b8da3', 2),
+    (new.id, 'Other',      'Wallet',     '#8d8d8d', 3);
 
   return new;
 end;

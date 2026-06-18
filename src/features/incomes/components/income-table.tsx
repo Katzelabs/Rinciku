@@ -1,5 +1,6 @@
 import { format } from 'date-fns';
 import { toast } from 'sonner';
+import { CategoryTag } from '@/components/shared/category-tag';
 import { DataTable } from '@/components/shared/data-table';
 import { RowActions } from '@/components/shared/row-actions';
 import { Badge } from '@/components/ui/badge';
@@ -50,6 +51,7 @@ export function IncomeTable({
       <TableHeader>
         <TableRow>
           <TableHead className='w-[130px]'>Date</TableHead>
+          <TableHead>Category</TableHead>
           {showSource && <TableHead className='w-[100px]'>Source</TableHead>}
           <TableHead>Note</TableHead>
           <TableHead className='text-right'>Amount</TableHead>
@@ -65,6 +67,9 @@ export function IncomeTable({
             <TableRow key={row.id}>
               <TableCell className='whitespace-nowrap text-muted-foreground'>
                 {format(new Date(row.occurred_at), 'd MMM yyyy')}
+              </TableCell>
+              <TableCell>
+                <CategoryTag category={row.category} />
               </TableCell>
               {showSource && (
                 <TableCell>
@@ -104,7 +109,7 @@ export function IncomeTable({
         {rows.length === 0 && (
           <TableRow>
             <TableCell
-              colSpan={showSource ? 5 : 4}
+              colSpan={showSource ? 6 : 5}
               className='py-10 text-center text-sm text-muted-foreground'
             >
               No incomes for this cycle.
@@ -115,7 +120,7 @@ export function IncomeTable({
       {rows.length > 0 && (
         <TableFooter>
           <TableRow>
-            <TableCell colSpan={showSource ? 3 : 2} className='text-right'>
+            <TableCell colSpan={showSource ? 4 : 3} className='text-right'>
               Total ({baseCurrency})
             </TableCell>
             <TableCell className='text-right font-semibold whitespace-nowrap tabular-nums'>
