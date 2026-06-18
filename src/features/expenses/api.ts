@@ -13,12 +13,15 @@ import { supabase } from '@/lib/supabase';
 type ExpenseRow = Database['public']['Tables']['expenses']['Row'];
 type ExpenseUpdate = Database['public']['Tables']['expenses']['Update'];
 type CategoryRow = Database['public']['Tables']['categories']['Row'];
+type TierRow = Database['public']['Tables']['tiers']['Row'];
 type AttachmentRow = Database['public']['Tables']['expense_attachments']['Row'];
 type AttachmentUpdate =
   Database['public']['Tables']['expense_attachments']['Update'];
 
+export type CategoryWithTier = CategoryRow & { tier: TierRow | null };
+
 export type ExpenseWithRelations = ExpenseRow & {
-  category: CategoryRow | null;
+  category: CategoryWithTier | null;
   attachment: AttachmentRow | null;
 };
 
@@ -73,7 +76,7 @@ const MIME_TO_EXT: Record<string, string> = {
 const KNOWN_EXTS = new Set(['jpg', 'jpeg', 'png', 'webp', 'heic']);
 
 const EXPENSE_WITH_RELATIONS_SELECT =
-  '*, category:categories(*), attachment:expense_attachments!expenses_attachment_id_fkey(*)';
+  '*, category:categories(*, tier:tiers(*)), attachment:expense_attachments!expenses_attachment_id_fkey(*)';
 
 export async function listExpenses({
   from,

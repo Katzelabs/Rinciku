@@ -19,7 +19,7 @@ alter table "public"."budgets" enable row level security;
     "id" uuid not null default gen_random_uuid(),
     "user_id" uuid not null,
     "name" text not null,
-    "tier" text not null,
+    "tier_id" uuid,
     "icon" text,
     "color" text,
     "sort_order" integer not null default 0,
@@ -167,6 +167,22 @@ alter table "public"."messages" enable row level security;
 
 alter table "public"."profiles" enable row level security;
 
+
+  create table "public"."tiers" (
+    "id" uuid not null default gen_random_uuid(),
+    "user_id" uuid not null,
+    "name" text not null,
+    "color" text,
+    "is_essential" boolean not null default false,
+    "sort_order" integer not null default 0,
+    "is_archived" boolean not null default false,
+    "created_at" timestamp with time zone not null default now(),
+    "updated_at" timestamp with time zone not null default now()
+      );
+
+
+alter table "public"."tiers" enable row level security;
+
 CREATE UNIQUE INDEX budgets_pkey ON public.budgets USING btree (id);
 
 CREATE UNIQUE INDEX budgets_user_id_category_id_period_year_period_month_key ON public.budgets USING btree (user_id, category_id, period_year, period_month);
@@ -181,7 +197,7 @@ CREATE INDEX categories_user_id_idx ON public.categories USING btree (user_id);
 
 CREATE UNIQUE INDEX categories_user_id_name_key ON public.categories USING btree (user_id, name);
 
-CREATE INDEX categories_user_tier_sort_idx ON public.categories USING btree (user_id, tier, sort_order);
+CREATE INDEX categories_user_tier_sort_idx ON public.categories USING btree (user_id, tier_id, sort_order);
 
 CREATE UNIQUE INDEX conversations_pkey ON public.conversations USING btree (id);
 
@@ -235,6 +251,14 @@ CREATE INDEX messages_user_id_idx ON public.messages USING btree (user_id);
 
 CREATE UNIQUE INDEX profiles_pkey ON public.profiles USING btree (id);
 
+CREATE UNIQUE INDEX tiers_pkey ON public.tiers USING btree (id);
+
+CREATE INDEX tiers_user_id_idx ON public.tiers USING btree (user_id);
+
+CREATE UNIQUE INDEX tiers_user_id_name_key ON public.tiers USING btree (user_id, name);
+
+CREATE INDEX tiers_user_sort_idx ON public.tiers USING btree (user_id, sort_order);
+
 alter table "public"."budgets" add constraint "budgets_pkey" PRIMARY KEY using index "budgets_pkey";
 
 alter table "public"."categories" add constraint "categories_pkey" PRIMARY KEY using index "categories_pkey";
@@ -254,6 +278,8 @@ alter table "public"."incomes" add constraint "incomes_pkey" PRIMARY KEY using i
 alter table "public"."messages" add constraint "messages_pkey" PRIMARY KEY using index "messages_pkey";
 
 alter table "public"."profiles" add constraint "profiles_pkey" PRIMARY KEY using index "profiles_pkey";
+
+alter table "public"."tiers" add constraint "tiers_pkey" PRIMARY KEY using index "tiers_pkey";
 
 alter table "public"."budgets" add constraint "budgets_amount_check" CHECK ((amount >= (0)::numeric)) not valid;
 
@@ -285,9 +311,9 @@ alter table "public"."categories" add constraint "categories_color_check" CHECK 
 
 alter table "public"."categories" validate constraint "categories_color_check";
 
-alter table "public"."categories" add constraint "categories_tier_check" CHECK ((tier = ANY (ARRAY['fixed'::text, 'needs'::text, 'wants'::text]))) not valid;
+alter table "public"."categories" add constraint "categories_tier_id_fkey" FOREIGN KEY (tier_id) REFERENCES public.tiers(id) ON DELETE SET NULL not valid;
 
-alter table "public"."categories" validate constraint "categories_tier_check";
+alter table "public"."categories" validate constraint "categories_tier_id_fkey";
 
 alter table "public"."categories" add constraint "categories_user_id_fkey" FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE not valid;
 
@@ -427,10 +453,20 @@ alter table "public"."profiles" add constraint "profiles_month_start_day_check" 
 
 alter table "public"."profiles" validate constraint "profiles_month_start_day_check";
 
+alter table "public"."tiers" add constraint "tiers_color_check" CHECK ((color ~ '^#[0-9a-fA-F]{6}$'::text)) not valid;
+
+alter table "public"."tiers" validate constraint "tiers_color_check";
+
+alter table "public"."tiers" add constraint "tiers_user_id_fkey" FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE not valid;
+
+alter table "public"."tiers" validate constraint "tiers_user_id_fkey";
+
+alter table "public"."tiers" add constraint "tiers_user_id_name_key" UNIQUE using index "tiers_user_id_name_key";
+
 set check_function_bodies = off;
 
 CREATE OR REPLACE FUNCTION public.dashboard_monthly_summary(p_start_at timestamp with time zone, p_end_at timestamp with time zone, p_base text, p_rates jsonb)
- RETURNS TABLE(spent_total numeric, tier_fixed numeric, tier_needs numeric, tier_wants numeric, income_received_this_cycle numeric)
+ RETURNS TABLE(spent_total numeric, by_tier jsonb, essentials_spent numeric, uncategorized_spent numeric, income_received_this_cycle numeric)
  LANGUAGE sql
  STABLE
  SET search_path TO ''
@@ -440,10 +476,12 @@ AS $function$
   ),
   converted_expenses as (
     select
-      c.tier,
+      c.tier_id,
+      t.is_essential,
       e.amount * (p_rates ->> e.currency)::numeric / nullif((select r from base_rate), 0) as amount_base
     from public.expenses e
     left join public.categories c on c.id = e.category_id
+    left join public.tiers t      on t.id = c.tier_id
     where e.user_id = (select auth.uid())
       and e.occurred_at >= p_start_at
       and e.occurred_at <  p_end_at
@@ -456,13 +494,18 @@ AS $function$
       and i.occurred_at >= p_start_at
       and i.occurred_at <  p_end_at
   ),
+  per_tier as (
+    select tier_id, sum(amount_base) as amount_base
+    from converted_expenses
+    where tier_id is not null
+    group by tier_id
+  ),
   expense_aggs as (
     select
-      coalesce(sum(amount_base), 0)                              as spent_total,
-      coalesce(sum(amount_base) filter (where tier = 'fixed'), 0) as tier_fixed,
-      coalesce(sum(amount_base) filter (where tier = 'needs'), 0) as tier_needs,
-      coalesce(sum(amount_base) filter (where tier = 'wants'), 0) as tier_wants
-    from converted_expenses
+      coalesce((select sum(amount_base) from converted_expenses), 0)                                  as spent_total,
+      coalesce((select sum(amount_base) from converted_expenses where is_essential), 0)               as essentials_spent,
+      coalesce((select sum(amount_base) from converted_expenses where tier_id is null), 0)            as uncategorized_spent,
+      coalesce((select jsonb_object_agg(tier_id::text, amount_base) from per_tier), '{}'::jsonb)      as by_tier
   ),
   income_aggs as (
     select coalesce(sum(amount_base), 0) as income_received_this_cycle
@@ -470,9 +513,9 @@ AS $function$
   )
   select
     e.spent_total,
-    e.tier_fixed,
-    e.tier_needs,
-    e.tier_wants,
+    e.by_tier,
+    e.essentials_spent,
+    e.uncategorized_spent,
     i.income_received_this_cycle
   from expense_aggs e, income_aggs i;
 $function$
@@ -484,21 +527,34 @@ CREATE OR REPLACE FUNCTION public.handle_new_user()
  SECURITY DEFINER
  SET search_path TO ''
 AS $function$
+declare
+  v_fixed uuid;
+  v_needs uuid;
+  v_wants uuid;
 begin
   insert into public.profiles (id, email)
   values (new.id, new.email);
 
-  insert into public.categories (user_id, name, tier, icon, color, sort_order) values
-    (new.id, 'rent',          'fixed', 'home',          '#7a8d6a', 0),
-    (new.id, 'internet',      'fixed', 'wifi',          '#7a8d6a', 1),
-    (new.id, 'electricity',   'fixed', 'plug-zap',      '#7a8d6a', 2),
-    (new.id, 'water',         'fixed', 'droplets',      '#7a8d6a', 3),
-    (new.id, 'groceries',     'needs', 'shopping-cart', '#a3a86b', 0),
-    (new.id, 'transport',     'needs', 'bus',           '#a3a86b', 1),
-    (new.id, 'health',        'needs', 'heart-pulse',   '#a3a86b', 2),
-    (new.id, 'dining out',    'wants', 'utensils',      '#c4a86b', 0),
-    (new.id, 'subscriptions', 'wants', 'credit-card',   '#c4a86b', 1),
-    (new.id, 'entertainment', 'wants', 'gamepad-2',     '#c4a86b', 2);
+  -- Default tiers. Fixed + Needs count toward the essentials baseline math;
+  -- Wants does not. Users can rename/recolor/add/delete tiers afterwards.
+  insert into public.tiers (user_id, name, color, is_essential, sort_order)
+    values (new.id, 'Fixed', '#7a8d6a', true, 0) returning id into v_fixed;
+  insert into public.tiers (user_id, name, color, is_essential, sort_order)
+    values (new.id, 'Needs', '#a3a86b', true, 1) returning id into v_needs;
+  insert into public.tiers (user_id, name, color, is_essential, sort_order)
+    values (new.id, 'Wants', '#c4a86b', false, 2) returning id into v_wants;
+
+  insert into public.categories (user_id, name, tier_id, icon, color, sort_order) values
+    (new.id, 'rent',          v_fixed, 'home',          '#7a8d6a', 0),
+    (new.id, 'internet',      v_fixed, 'wifi',          '#7a8d6a', 1),
+    (new.id, 'electricity',   v_fixed, 'plug-zap',      '#7a8d6a', 2),
+    (new.id, 'water',         v_fixed, 'droplets',      '#7a8d6a', 3),
+    (new.id, 'groceries',     v_needs, 'shopping-cart', '#a3a86b', 0),
+    (new.id, 'transport',     v_needs, 'bus',           '#a3a86b', 1),
+    (new.id, 'health',        v_needs, 'heart-pulse',   '#a3a86b', 2),
+    (new.id, 'dining out',    v_wants, 'utensils',      '#c4a86b', 0),
+    (new.id, 'subscriptions', v_wants, 'credit-card',   '#c4a86b', 1),
+    (new.id, 'entertainment', v_wants, 'gamepad-2',     '#c4a86b', 2);
 
   return new;
 end;
@@ -936,6 +992,48 @@ grant truncate on table "public"."profiles" to "service_role";
 
 grant update on table "public"."profiles" to "service_role";
 
+grant delete on table "public"."tiers" to "anon";
+
+grant insert on table "public"."tiers" to "anon";
+
+grant references on table "public"."tiers" to "anon";
+
+grant select on table "public"."tiers" to "anon";
+
+grant trigger on table "public"."tiers" to "anon";
+
+grant truncate on table "public"."tiers" to "anon";
+
+grant update on table "public"."tiers" to "anon";
+
+grant delete on table "public"."tiers" to "authenticated";
+
+grant insert on table "public"."tiers" to "authenticated";
+
+grant references on table "public"."tiers" to "authenticated";
+
+grant select on table "public"."tiers" to "authenticated";
+
+grant trigger on table "public"."tiers" to "authenticated";
+
+grant truncate on table "public"."tiers" to "authenticated";
+
+grant update on table "public"."tiers" to "authenticated";
+
+grant delete on table "public"."tiers" to "service_role";
+
+grant insert on table "public"."tiers" to "service_role";
+
+grant references on table "public"."tiers" to "service_role";
+
+grant select on table "public"."tiers" to "service_role";
+
+grant trigger on table "public"."tiers" to "service_role";
+
+grant truncate on table "public"."tiers" to "service_role";
+
+grant update on table "public"."tiers" to "service_role";
+
 
   create policy "budgets: delete own"
   on "public"."budgets"
@@ -1297,6 +1395,43 @@ using ((id = ( SELECT auth.uid() AS uid)))
 with check ((id = ( SELECT auth.uid() AS uid)));
 
 
+
+  create policy "tiers: delete own"
+  on "public"."tiers"
+  as permissive
+  for delete
+  to authenticated
+using ((user_id = ( SELECT auth.uid() AS uid)));
+
+
+
+  create policy "tiers: insert own"
+  on "public"."tiers"
+  as permissive
+  for insert
+  to authenticated
+with check ((user_id = ( SELECT auth.uid() AS uid)));
+
+
+
+  create policy "tiers: select own"
+  on "public"."tiers"
+  as permissive
+  for select
+  to authenticated
+using ((user_id = ( SELECT auth.uid() AS uid)));
+
+
+
+  create policy "tiers: update own"
+  on "public"."tiers"
+  as permissive
+  for update
+  to authenticated
+using ((user_id = ( SELECT auth.uid() AS uid)))
+with check ((user_id = ( SELECT auth.uid() AS uid)));
+
+
 CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.budgets FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
 
 CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.categories FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
@@ -1314,6 +1449,8 @@ CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.income_attachments FOR EAC
 CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.incomes FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
 
 CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.profiles FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
+
+CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.tiers FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
 
 CREATE TRIGGER on_auth_user_created AFTER INSERT ON auth.users FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
 

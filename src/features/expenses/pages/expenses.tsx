@@ -14,7 +14,7 @@ import { Spinner } from '@/components/ui/spinner';
 import { supabase } from '@/lib/supabase';
 import { ensureRates, getCurrentRates, type CurrencyCode } from '@/lib/fx';
 import { useAuth } from '@/features/auth';
-import type { CategoryTier } from '@/features/categories/hooks/use-categories';
+import { useTiers } from '@/features/categories/hooks/use-categories';
 import {
   deleteExpense,
   listExpenses,
@@ -31,19 +31,15 @@ import {
 
 type MonthlyTotals = {
   spent_total: number;
-  tier_fixed: number;
-  tier_needs: number;
-  tier_wants: number;
+  by_tier: Record<string, number>;
+  uncategorized_spent: number;
 };
 
 const EMPTY_TOTALS: MonthlyTotals = {
   spent_total: 0,
-  tier_fixed: 0,
-  tier_needs: 0,
-  tier_wants: 0,
+  by_tier: {},
+  uncategorized_spent: 0,
 };
-
-const ALL_TIERS: CategoryTier[] = ['fixed', 'needs', 'wants'];
 
 type DialogState =
   | { kind: 'create' }
@@ -56,11 +52,13 @@ export function ExpensesPage() {
   const startDay = profile?.month_start_day ?? 1;
   const baseCurrency = (profile?.base_currency ?? 'IDR') as CurrencyCode;
 
+  const { data: availableTiers } = useTiers();
   const [cycle, setCycle] = useState<Cycle>(() =>
     getCurrentCycle(new Date(), startDay)
   );
-  const [tiers, setTiers] = useState<Set<CategoryTier>>(
-    () => new Set(ALL_TIERS)
+  // Empty set means "no filter" — show every tier.
+  const [selectedTierIds, setSelectedTierIds] = useState<Set<string>>(
+    () => new Set()
   );
   const [dialog, setDialog] = useState<DialogState>(null);
   const [deleting, setDeleting] = useState(false);
@@ -105,9 +103,10 @@ export function ExpensesPage() {
       const totals: MonthlyTotals = summaryRes.data
         ? {
             spent_total: Number(summaryRes.data.spent_total ?? 0),
-            tier_fixed: Number(summaryRes.data.tier_fixed ?? 0),
-            tier_needs: Number(summaryRes.data.tier_needs ?? 0),
-            tier_wants: Number(summaryRes.data.tier_wants ?? 0),
+            by_tier: parseTierTotals(summaryRes.data.by_tier),
+            uncategorized_spent: Number(
+              summaryRes.data.uncategorized_spent ?? 0
+            ),
           }
         : EMPTY_TOTALS;
       setResponse({
@@ -127,29 +126,26 @@ export function ExpensesPage() {
 
   const filteredRows = useMemo(() => {
     const rows = response?.rows ?? [];
-    if (tiers.size === 0) return rows;
+    if (selectedTierIds.size === 0) return rows;
     return rows.filter((row) => {
-      if (!row.category) return true;
-      return tiers.has(row.category.tier as CategoryTier);
+      const tierId = row.category?.tier_id ?? null;
+      // Rows with no tier (uncategorized or untiered) always show.
+      if (!tierId) return true;
+      return selectedTierIds.has(tierId);
     });
-  }, [response, tiers]);
+  }, [response, selectedTierIds]);
 
   const total = useMemo(() => {
     const totals = response?.totals ?? EMPTY_TOTALS;
-    if (tiers.size === 0) return round2(totals.spent_total);
-    // Uncategorized rows always appear in the filtered list (see filteredRows
-    // above), so they always contribute to the total. Mirror that here.
-    const uncategorized =
-      totals.spent_total -
-      totals.tier_fixed -
-      totals.tier_needs -
-      totals.tier_wants;
-    const tierSum =
-      (tiers.has('fixed') ? totals.tier_fixed : 0) +
-      (tiers.has('needs') ? totals.tier_needs : 0) +
-      (tiers.has('wants') ? totals.tier_wants : 0);
-    return round2(tierSum + uncategorized);
-  }, [response, tiers]);
+    if (selectedTierIds.size === 0) return round2(totals.spent_total);
+    // Untiered/uncategorized rows always appear in the filtered list (see
+    // filteredRows above), so they always contribute to the total.
+    let sum = totals.uncategorized_spent;
+    for (const tierId of selectedTierIds) {
+      sum += totals.by_tier[tierId] ?? 0;
+    }
+    return round2(sum);
+  }, [response, selectedTierIds]);
 
   function refetch() {
     setRefetchToken((n) => n + 1);
@@ -188,8 +184,9 @@ export function ExpensesPage() {
         cycle={cycle}
         onCycleChange={setCycle}
         startDay={startDay}
-        tiers={tiers}
-        onTiersChange={setTiers}
+        availableTiers={availableTiers ?? []}
+        selectedTierIds={selectedTierIds}
+        onTiersChange={setSelectedTierIds}
       />
 
       {loading ? (
@@ -293,6 +290,17 @@ export function ExpensesPage() {
       </Dialog>
     </div>
   );
+}
+
+// The SQL function returns by_tier as a jsonb map { tier_id: amount }.
+function parseTierTotals(raw: unknown): Record<string, number> {
+  const totals: Record<string, number> = {};
+  if (raw && typeof raw === 'object' && !Array.isArray(raw)) {
+    for (const [tierId, amount] of Object.entries(raw)) {
+      totals[tierId] = Number(amount ?? 0);
+    }
+  }
+  return totals;
 }
 
 function round2(n: number): number {

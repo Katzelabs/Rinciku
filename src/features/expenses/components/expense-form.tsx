@@ -41,6 +41,7 @@ import { useAuth } from '@/features/auth';
 import {
   groupByTier,
   useCategories,
+  useTiers,
 } from '@/features/categories/hooks/use-categories';
 
 import { AttachmentDropzone } from '@/components/shared/attachment-dropzone';
@@ -62,12 +63,6 @@ const EXPENSE_ALLOWED_MIME = new Set([
   'image/heic',
 ]);
 
-const TIER_LABELS: Record<'fixed' | 'needs' | 'wants', string> = {
-  fixed: 'Fixed',
-  needs: 'Needs',
-  wants: 'Wants',
-};
-
 type ExpenseFormProps = {
   mode: 'create' | 'edit';
   defaultValues?: Partial<ExpenseInput> & { id?: string };
@@ -85,12 +80,13 @@ export function ExpenseForm({
     isLoading: categoriesLoading,
     error: categoriesError,
   } = useCategories();
+  const { data: tiers } = useTiers();
   const [datePickerOpen, setDatePickerOpen] = useState(false);
   const [attachment, setAttachment] = useState<File | null>(null);
 
   const grouped = useMemo(
-    () => (categories ? groupByTier(categories) : null),
-    [categories]
+    () => (categories ? groupByTier(categories, tiers ?? []) : null),
+    [categories, tiers]
   );
 
   // On create, currency is locked to the user's current base. On edit, preserve
@@ -253,21 +249,22 @@ export function ExpenseForm({
                   />
                 </SelectTrigger>
                 <SelectContent>
-                  {grouped &&
-                    (['fixed', 'needs', 'wants'] as const).map((tier) => {
-                      const items = grouped[tier];
-                      if (items.length === 0) return null;
-                      return (
-                        <SelectGroup key={tier}>
-                          <SelectLabel>{TIER_LABELS[tier]}</SelectLabel>
-                          {items.map((category) => (
-                            <SelectItem key={category.id} value={category.id}>
-                              {category.name}
-                            </SelectItem>
-                          ))}
-                        </SelectGroup>
-                      );
-                    })}
+                  {grouped?.map((group) => {
+                    if (group.categories.length === 0) return null;
+                    const key = group.tier?.id ?? '__untiered__';
+                    return (
+                      <SelectGroup key={key}>
+                        <SelectLabel>
+                          {group.tier?.name ?? 'Untiered'}
+                        </SelectLabel>
+                        {group.categories.map((category) => (
+                          <SelectItem key={category.id} value={category.id}>
+                            {category.name}
+                          </SelectItem>
+                        ))}
+                      </SelectGroup>
+                    );
+                  })}
                 </SelectContent>
               </Select>
               <FieldError

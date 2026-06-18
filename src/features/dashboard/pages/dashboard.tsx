@@ -16,7 +16,7 @@ import { formatCurrency } from '@/lib/format';
 import { useAuth } from '@/features/auth';
 import { getMonthlySummary, type MonthlySummary } from '../api';
 import { BudgetHealthIndicator } from '../components/budget-health-indicator';
-import { NeedsVsWantsBreakdown } from '../components/needs-vs-wants-breakdown';
+import { TierBreakdown } from '../components/tier-breakdown';
 
 type Response = {
   key: string;
@@ -127,10 +127,15 @@ export function DashboardPage() {
             <div>
               <h2 className='text-base font-semibold'>Where it's going</h2>
               <p className='text-sm text-muted-foreground'>
-                Fixed vs Needs vs Wants this cycle.
+                Spending by tier this cycle.
               </p>
             </div>
-            <NeedsVsWantsBreakdown by_tier={summary.by_tier} base={base} />
+            <TierBreakdown
+              by_tier={summary.by_tier}
+              tiers={summary.tiers}
+              uncategorized={summary.uncategorized_spent}
+              base={base}
+            />
           </CardContent>
         </Card>
         <Card>

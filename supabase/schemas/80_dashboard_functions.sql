@@ -5,6 +5,9 @@
 --   amount_in_base = amount * (p_rates ->> currency) / (p_rates ->> p_base)
 -- Frozen / live rate source lives in src/lib/fx.ts.
 
+-- Returns spend aggregated per user-defined tier (by_tier: { tier_id::text :
+-- amount_base }), plus an essentials_spent roll-up (tiers flagged is_essential)
+-- and uncategorized_spent (expenses with no category / no tier).
 create or replace function public.dashboard_monthly_summary(
   p_start_at timestamptz,
   p_end_at   timestamptz,
@@ -12,9 +15,9 @@ create or replace function public.dashboard_monthly_summary(
   p_rates    jsonb
 ) returns table (
   spent_total                numeric,
-  tier_fixed                 numeric,
-  tier_needs                 numeric,
-  tier_wants                 numeric,
+  by_tier                    jsonb,
+  essentials_spent           numeric,
+  uncategorized_spent        numeric,
   income_received_this_cycle numeric
 )
 language sql
@@ -27,10 +30,12 @@ as $$
   ),
   converted_expenses as (
     select
-      c.tier,
+      c.tier_id,
+      t.is_essential,
       e.amount * (p_rates ->> e.currency)::numeric / nullif((select r from base_rate), 0) as amount_base
     from public.expenses e
     left join public.categories c on c.id = e.category_id
+    left join public.tiers t      on t.id = c.tier_id
     where e.user_id = (select auth.uid())
       and e.occurred_at >= p_start_at
       and e.occurred_at <  p_end_at
@@ -43,13 +48,18 @@ as $$
       and i.occurred_at >= p_start_at
       and i.occurred_at <  p_end_at
   ),
+  per_tier as (
+    select tier_id, sum(amount_base) as amount_base
+    from converted_expenses
+    where tier_id is not null
+    group by tier_id
+  ),
   expense_aggs as (
     select
-      coalesce(sum(amount_base), 0)                              as spent_total,
-      coalesce(sum(amount_base) filter (where tier = 'fixed'), 0) as tier_fixed,
-      coalesce(sum(amount_base) filter (where tier = 'needs'), 0) as tier_needs,
-      coalesce(sum(amount_base) filter (where tier = 'wants'), 0) as tier_wants
-    from converted_expenses
+      coalesce((select sum(amount_base) from converted_expenses), 0)                                  as spent_total,
+      coalesce((select sum(amount_base) from converted_expenses where is_essential), 0)               as essentials_spent,
+      coalesce((select sum(amount_base) from converted_expenses where tier_id is null), 0)            as uncategorized_spent,
+      coalesce((select jsonb_object_agg(tier_id::text, amount_base) from per_tier), '{}'::jsonb)      as by_tier
   ),
   income_aggs as (
     select coalesce(sum(amount_base), 0) as income_received_this_cycle
@@ -57,9 +67,9 @@ as $$
   )
   select
     e.spent_total,
-    e.tier_fixed,
-    e.tier_needs,
-    e.tier_wants,
+    e.by_tier,
+    e.essentials_spent,
+    e.uncategorized_spent,
     i.income_received_this_cycle
   from expense_aggs e, income_aggs i;
 $$;

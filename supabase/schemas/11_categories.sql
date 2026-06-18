@@ -4,7 +4,7 @@ create table public.categories (
   id          uuid primary key default gen_random_uuid(),
   user_id     uuid        not null references auth.users(id) on delete cascade,
   name        text        not null,
-  tier        text        not null check (tier in ('fixed','needs','wants')),
+  tier_id     uuid        references public.tiers(id) on delete set null,
   icon        text,
   color       text        check (color ~ '^#[0-9a-fA-F]{6}$'),
   sort_order  int         not null default 0,
@@ -15,7 +15,7 @@ create table public.categories (
 );
 
 create index categories_user_id_idx        on public.categories (user_id);
-create index categories_user_tier_sort_idx on public.categories (user_id, tier, sort_order);
+create index categories_user_tier_sort_idx on public.categories (user_id, tier_id, sort_order);
 
 create trigger set_updated_at before update on public.categories
   for each row execute function public.set_updated_at();

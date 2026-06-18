@@ -5,15 +5,9 @@ import { cn } from '@/lib/utils';
 import { formatCurrency } from '@/lib/format';
 import type { CurrencyCode } from '@/lib/fx';
 import { useAuth } from '@/features/auth';
-import type { CategoryTier } from '@/features/categories/hooks/use-categories';
+import { useTiers } from '@/features/categories/hooks/use-categories';
 import { listEssentials } from '../api';
 import { computeBaseline, type Baseline } from '../lib/baseline';
-
-const TIER_LABELS: Record<CategoryTier, string> = {
-  fixed: 'Fixed',
-  needs: 'Needs',
-  wants: 'Wants',
-};
 
 type Props = {
   variant: 'footer' | 'card';
@@ -33,6 +27,7 @@ export function MonthlyBaselineSummary({
   className,
 }: Props) {
   const { profile } = useAuth();
+  const { data: tiers } = useTiers();
   const base = (profile?.base_currency ?? 'IDR') as CurrencyCode;
   const fetchKey = `${refreshKey}-${base}`;
   const [response, setResponse] = useState<Response | null>(null);
@@ -125,17 +120,19 @@ export function MonthlyBaselineSummary({
           </p>
         </div>
         <ul className='space-y-1 text-sm'>
-          {(['fixed', 'needs', 'wants'] as const).map((tier) => (
-            <li
-              key={tier}
-              className='flex items-center justify-between text-muted-foreground'
-            >
-              <span>{TIER_LABELS[tier]}</span>
-              <span className='font-medium text-foreground'>
-                {formatCurrency(baseline.by_tier[tier], base)}
-              </span>
-            </li>
-          ))}
+          {(tiers ?? [])
+            .filter((tier) => (baseline.by_tier[tier.id] ?? 0) > 0)
+            .map((tier) => (
+              <li
+                key={tier.id}
+                className='flex items-center justify-between text-muted-foreground'
+              >
+                <span>{tier.name}</span>
+                <span className='font-medium text-foreground'>
+                  {formatCurrency(baseline.by_tier[tier.id] ?? 0, base)}
+                </span>
+              </li>
+            ))}
         </ul>
       </CardContent>
     </Card>

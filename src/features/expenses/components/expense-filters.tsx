@@ -8,7 +8,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
-import type { CategoryTier } from '@/features/categories/hooks/use-categories';
+import type { Tier } from '@/features/categories/hooks/use-categories';
 import { getCycleRange, type Cycle } from '../lib/cycle';
 
 const MONTHS = [
@@ -26,27 +26,21 @@ const MONTHS = [
   'December',
 ];
 
-const TIER_LABELS: Record<CategoryTier, string> = {
-  fixed: 'Fixed',
-  needs: 'Needs',
-  wants: 'Wants',
-};
-
-const TIER_ORDER: CategoryTier[] = ['fixed', 'needs', 'wants'];
-
 type Props = {
   cycle: Cycle;
   onCycleChange: (next: Cycle) => void;
   startDay: number;
-  tiers: Set<CategoryTier>;
-  onTiersChange: (next: Set<CategoryTier>) => void;
+  availableTiers: Tier[];
+  selectedTierIds: Set<string>;
+  onTiersChange: (next: Set<string>) => void;
 };
 
 export function ExpenseFilters({
   cycle,
   onCycleChange,
   startDay,
-  tiers,
+  availableTiers,
+  selectedTierIds,
   onTiersChange,
 }: Props) {
   const currentYear = new Date().getFullYear();
@@ -55,12 +49,12 @@ export function ExpenseFilters({
   const { from, to } = getCycleRange(cycle.year, cycle.month, startDay);
   const rangeLabel = `${format(from, 'd MMM yyyy')} – ${format(to, 'd MMM yyyy')}`;
 
-  function toggleTier(tier: CategoryTier) {
-    const next = new Set(tiers);
-    if (next.has(tier)) {
-      next.delete(tier);
+  function toggleTier(tierId: string) {
+    const next = new Set(selectedTierIds);
+    if (next.has(tierId)) {
+      next.delete(tierId);
     } else {
-      next.add(tier);
+      next.add(tierId);
     }
     onTiersChange(next);
   }
@@ -108,19 +102,19 @@ export function ExpenseFilters({
       </div>
 
       <div className='flex flex-wrap gap-2'>
-        {TIER_ORDER.map((tier) => {
-          const active = tiers.has(tier);
+        {availableTiers.map((tier) => {
+          const active = selectedTierIds.has(tier.id);
           return (
             <Button
-              key={tier}
+              key={tier.id}
               type='button'
               size='sm'
               variant={active ? 'default' : 'outline'}
-              onClick={() => toggleTier(tier)}
+              onClick={() => toggleTier(tier.id)}
               aria-pressed={active}
               className={cn('rounded-full')}
             >
-              {TIER_LABELS[tier]}
+              {tier.name}
             </Button>
           );
         })}

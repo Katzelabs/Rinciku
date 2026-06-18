@@ -21,25 +21,22 @@ import { Spinner } from '@/components/ui/spinner';
 import { useAuth } from '@/features/auth';
 
 import { createCategory, updateCategory } from '../api';
-import { categorySchema, TIERS, type CategoryInput } from '../schemas';
+import { categorySchema, type CategoryInput } from '../schemas';
+import type { Tier } from '../hooks/use-categories';
 import { PRESET_COLORS } from '../lib/colors';
 import { ColorPicker } from './color-picker';
 import { IconPicker } from './icon-picker';
 
-const TIER_LABELS: Record<(typeof TIERS)[number], string> = {
-  fixed: 'Fixed',
-  needs: 'Needs',
-  wants: 'Wants',
-};
-
 type CategoryFormProps = {
   mode: 'create' | 'edit';
+  tiers: Tier[];
   defaultValues?: Partial<CategoryInput> & { id?: string };
   onSuccess: () => void;
 };
 
 export function CategoryForm({
   mode,
+  tiers,
   defaultValues,
   onSuccess,
 }: CategoryFormProps) {
@@ -54,7 +51,7 @@ export function CategoryForm({
     resolver: zodResolver(categorySchema),
     defaultValues: {
       name: defaultValues?.name ?? '',
-      tier: defaultValues?.tier ?? 'needs',
+      tier_id: defaultValues?.tier_id ?? tiers[0]?.id ?? '',
       icon: defaultValues?.icon ?? '',
       color: defaultValues?.color ?? PRESET_COLORS[0],
     },
@@ -108,7 +105,7 @@ export function CategoryForm({
 
         <Controller
           control={control}
-          name='tier'
+          name='tier_id'
           render={({ field, fieldState }) => (
             <Field data-invalid={fieldState.invalid || undefined}>
               <FieldLabel htmlFor='category-tier'>Tier</FieldLabel>
@@ -121,9 +118,9 @@ export function CategoryForm({
                   <SelectValue placeholder='Pick a tier' />
                 </SelectTrigger>
                 <SelectContent>
-                  {TIERS.map((tier) => (
-                    <SelectItem key={tier} value={tier}>
-                      {TIER_LABELS[tier]}
+                  {tiers.map((tier) => (
+                    <SelectItem key={tier.id} value={tier.id}>
+                      {tier.name}
                     </SelectItem>
                   ))}
                 </SelectContent>

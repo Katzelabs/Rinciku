@@ -1,10 +1,11 @@
 import { convertToBase, type CurrencyCode } from '@/lib/fx';
-import type { CategoryTier } from '@/features/categories/hooks/use-categories';
 import type { EssentialWithCategory } from '../api';
 
 export type Baseline = {
   total_base: number;
-  by_tier: Record<CategoryTier, number>;
+  // Spend per tier, keyed by tier id. Essentials with no tier are not bucketed
+  // here but still count toward total_base.
+  by_tier: Record<string, number>;
 };
 
 export function computeBaseline(
@@ -13,7 +14,7 @@ export function computeBaseline(
 ): Baseline {
   const baseline: Baseline = {
     total_base: 0,
-    by_tier: { fixed: 0, needs: 0, wants: 0 },
+    by_tier: {},
   };
   for (const row of essentials) {
     if (!row.is_active) continue;
@@ -25,14 +26,14 @@ export function computeBaseline(
       base
     );
     baseline.total_base += amount_base;
-    const tier = row.category?.tier as CategoryTier | undefined;
-    if (tier && tier in baseline.by_tier) {
-      baseline.by_tier[tier] += amount_base;
+    const tierId = row.category?.tier_id;
+    if (tierId) {
+      baseline.by_tier[tierId] = (baseline.by_tier[tierId] ?? 0) + amount_base;
     }
   }
   baseline.total_base = Math.round(baseline.total_base * 100) / 100;
-  (Object.keys(baseline.by_tier) as CategoryTier[]).forEach((tier) => {
-    baseline.by_tier[tier] = Math.round(baseline.by_tier[tier] * 100) / 100;
-  });
+  for (const tierId of Object.keys(baseline.by_tier)) {
+    baseline.by_tier[tierId] = Math.round(baseline.by_tier[tierId] * 100) / 100;
+  }
   return baseline;
 }

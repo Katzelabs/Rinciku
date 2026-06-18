@@ -6,9 +6,12 @@ import { supabase } from '@/lib/supabase';
 type EssentialRow = Database['public']['Tables']['essentials']['Row'];
 type EssentialUpdate = Database['public']['Tables']['essentials']['Update'];
 type CategoryRow = Database['public']['Tables']['categories']['Row'];
+type TierRow = Database['public']['Tables']['tiers']['Row'];
+
+export type CategoryWithTier = CategoryRow & { tier: TierRow | null };
 
 export type EssentialWithCategory = EssentialRow & {
-  category: CategoryRow | null;
+  category: CategoryWithTier | null;
 };
 
 export type CreateEssentialInput = {
@@ -25,7 +28,8 @@ type Result<T> = {
   error: PostgrestError | null;
 };
 
-const ESSENTIAL_WITH_CATEGORY_SELECT = '*, category:categories(*)';
+const ESSENTIAL_WITH_CATEGORY_SELECT =
+  '*, category:categories(*, tier:tiers(*))';
 
 export async function listEssentials(): Promise<
   Result<EssentialWithCategory[]>

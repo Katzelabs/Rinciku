@@ -11,7 +11,8 @@
 1. [Overview & conventions](#1-overview--conventions)
 2. [Entity diagram](#2-entity-diagram)
 3. [`profiles`](#3-profiles) — per-user profile + monthly cycle config
-4. [`categories`](#4-categories) — three-tier spending categories (fixed / needs / wants)
+4. [`tiers`](#4-tiers) — user-defined spending tiers (`is_essential` flag)
+4a. [`categories`](#4a-categories) — spending categories, each pointing at a tier
 5. [`essentials`](#5-essentials) — monthly non-negotiable line items
 6. [`expenses`](#6-expenses) — core transaction table
 7. [`expense_attachments`](#7-expense_attachments) — AI-extracted document metadata
@@ -58,7 +59,6 @@ When working on a single table, use `Read(offset, limit)` to jump to its section
 
 ### Enums-as-text
 Same reasoning as currency. Applies to:
-- `categories.tier` — `'fixed' | 'needs' | 'wants'`
 - `expense_attachments.doc_type` — `'receipt' | 'transfer' | 'invoice' | 'ewallet' | 'unknown'`
 - `expenses.source` — `'manual' | 'chat' | 'image'`
 - `messages.role` — `'user' | 'assistant' | 'system' | 'tool'`
@@ -191,9 +191,47 @@ create policy "profiles: update own" on public.profiles for update to authentica
 
 ---
 
-## 4. `categories`
+## 4. `tiers`
 
-Per-user, three-tier spending categories. Seeded with defaults on signup so first-run UX has something to log against.
+Per-user, **free-form** spending tiers. Replaces the old hardcoded `fixed|needs|wants` enum on `categories`: users name, color, order, and delete their own tiers. The `is_essential` flag drives the dashboard baseline-covered math (see [`dashboard_monthly_summary`](#14-helper-functions--triggers) and `src/features/dashboard/api.ts`) — spending in essential tiers is what counts against the essentials baseline. Seeded with three defaults on signup.
+
+### Columns
+
+| column | type | notes |
+|---|---|---|
+| `id` | `uuid` pk | `default gen_random_uuid()` |
+| `user_id` | `uuid not null` | `references auth.users(id) on delete cascade` |
+| `name` | `text not null` | user label, e.g. `'Fixed'`, `'Fun money'` |
+| `color` | `text` | hex `#rrggbb`; `check (color ~ '^#[0-9a-fA-F]{6}$')` |
+| `is_essential` | `boolean not null default false` | counts toward the essentials baseline-covered math |
+| `sort_order` | `int not null default 0` | display order |
+| `is_archived` | `boolean not null default false` | hide without deleting |
+| `created_at`, `updated_at` | `timestamptz` | standard |
+
+### Constraints
+- `pk (id)`
+- `unique (user_id, name)` — one tier per name per user
+- `fk (user_id) -> auth.users(id) on delete cascade`
+
+### Indexes
+- `tiers (user_id)` — RLS
+- `tiers (user_id, sort_order)` — ordered picker / card list
+
+### RLS
+Standard pattern on `user_id`.
+
+### Default seed (created by `handle_new_user`)
+- **Fixed** (`is_essential = true`, sort 0)
+- **Needs** (`is_essential = true`, sort 1)
+- **Wants** (`is_essential = false`, sort 2)
+
+Flagging Fixed + Needs essential preserves the old "fixed + needs = essentials" behavior out of the box.
+
+---
+
+## 4a. `categories`
+
+Per-user spending categories, each pointing at a [tier](#4-tiers). Seeded with defaults on signup so first-run UX has something to log against.
 
 ### Columns
 
@@ -202,7 +240,7 @@ Per-user, three-tier spending categories. Seeded with defaults on signup so firs
 | `id` | `uuid` pk | `default gen_random_uuid()` |
 | `user_id` | `uuid not null` | `references auth.users(id) on delete cascade` |
 | `name` | `text not null` | e.g. `'rent'`, `'groceries'` |
-| `tier` | `text not null` | `check (tier in ('fixed','needs','wants'))` |
+| `tier_id` | `uuid` | `references tiers(id) on delete set null` — nullable; a category whose tier is deleted becomes "Untiered" rather than blocking the delete |
 | `icon` | `text` | lucide icon name, e.g. `'home'` |
 | `color` | `text` | hex `#rrggbb`; `check (color ~ '^#[0-9a-fA-F]{6}$')` |
 | `sort_order` | `int not null default 0` | display order within its tier |
@@ -213,18 +251,19 @@ Per-user, three-tier spending categories. Seeded with defaults on signup so firs
 - `pk (id)`
 - `unique (user_id, name)` — one category per name per user; archived rows still count
 - `fk (user_id) -> auth.users(id) on delete cascade`
+- `fk (tier_id) -> tiers(id) on delete set null`
 
 ### Indexes
 - `categories (user_id)` — RLS
-- `categories (user_id, tier, sort_order)` — sidebar / picker queries
+- `categories (user_id, tier_id, sort_order)` — sidebar / picker queries
 
 ### RLS
 Standard pattern on `user_id`.
 
 ### Default seed (created by `handle_new_user`)
-- **fixed:** rent, internet, electricity, water
-- **needs:** groceries, transport, health
-- **wants:** dining out, subscriptions, entertainment
+- **Fixed:** rent, internet, electricity, water
+- **Needs:** groceries, transport, health
+- **Wants:** dining out, subscriptions, entertainment
 
 Colors and icons are chosen by the seeder; not encoded here so they can evolve without a schema change.
 
@@ -596,10 +635,10 @@ create trigger set_updated_at before update on public.<t>
   for each row execute function public.set_updated_at();
 ```
 
-Attached to: `profiles`, `categories`, `essentials`, `expenses`, `expense_attachments`, `incomes`, `income_attachments`, `budgets`, `conversations`. (Not `messages` — immutable.)
+Attached to: `profiles`, `tiers`, `categories`, `essentials`, `expenses`, `expense_attachments`, `incomes`, `income_attachments`, `budgets`, `conversations`. (Not `messages` — immutable.)
 
 ### `public.handle_new_user()`
-`AFTER INSERT ON auth.users` trigger. Creates a profile row and seeds default categories.
+`AFTER INSERT ON auth.users` trigger. Creates a profile row, seeds 3 default tiers, and seeds default categories pointed at those tiers.
 
 ```sql
 create or replace function public.handle_new_user()
@@ -608,22 +647,33 @@ language plpgsql
 security definer
 set search_path = ''
 as $$
+declare
+  v_fixed uuid;
+  v_needs uuid;
+  v_wants uuid;
 begin
   insert into public.profiles (id, email)
   values (new.id, new.email);
 
-  -- seed default categories (fixed / needs / wants)
-  insert into public.categories (user_id, name, tier, icon, color, sort_order) values
-    (new.id, 'rent',          'fixed', 'home',          '#7a8d6a', 0),
-    (new.id, 'internet',      'fixed', 'wifi',          '#7a8d6a', 1),
-    (new.id, 'electricity',   'fixed', 'plug-zap',      '#7a8d6a', 2),
-    (new.id, 'water',         'fixed', 'droplets',      '#7a8d6a', 3),
-    (new.id, 'groceries',     'needs', 'shopping-cart', '#a3a86b', 0),
-    (new.id, 'transport',     'needs', 'bus',           '#a3a86b', 1),
-    (new.id, 'health',        'needs', 'heart-pulse',   '#a3a86b', 2),
-    (new.id, 'dining out',    'wants', 'utensils',      '#c4a86b', 0),
-    (new.id, 'subscriptions', 'wants', 'credit-card',   '#c4a86b', 1),
-    (new.id, 'entertainment', 'wants', 'gamepad-2',     '#c4a86b', 2);
+  -- seed default tiers (Fixed/Needs essential, Wants not)
+  insert into public.tiers (user_id, name, color, is_essential, sort_order)
+    values (new.id, 'Fixed', '#7a8d6a', true, 0) returning id into v_fixed;
+  insert into public.tiers (user_id, name, color, is_essential, sort_order)
+    values (new.id, 'Needs', '#a3a86b', true, 1) returning id into v_needs;
+  insert into public.tiers (user_id, name, color, is_essential, sort_order)
+    values (new.id, 'Wants', '#c4a86b', false, 2) returning id into v_wants;
+
+  insert into public.categories (user_id, name, tier_id, icon, color, sort_order) values
+    (new.id, 'rent',          v_fixed, 'home',          '#7a8d6a', 0),
+    (new.id, 'internet',      v_fixed, 'wifi',          '#7a8d6a', 1),
+    (new.id, 'electricity',   v_fixed, 'plug-zap',      '#7a8d6a', 2),
+    (new.id, 'water',         v_fixed, 'droplets',      '#7a8d6a', 3),
+    (new.id, 'groceries',     v_needs, 'shopping-cart', '#a3a86b', 0),
+    (new.id, 'transport',     v_needs, 'bus',           '#a3a86b', 1),
+    (new.id, 'health',        v_needs, 'heart-pulse',   '#a3a86b', 2),
+    (new.id, 'dining out',    v_wants, 'utensils',      '#c4a86b', 0),
+    (new.id, 'subscriptions', v_wants, 'credit-card',   '#c4a86b', 1),
+    (new.id, 'entertainment', v_wants, 'gamepad-2',     '#c4a86b', 2);
 
   return new;
 end;
@@ -644,8 +694,10 @@ Every PK is implicitly indexed. Non-PK indexes:
 
 | index | table | purpose |
 |---|---|---|
+| `(user_id)` | `tiers` | RLS |
+| `(user_id, sort_order)` | `tiers` | ordered picker / card list |
 | `(user_id)` | `categories` | RLS |
-| `(user_id, tier, sort_order)` | `categories` | picker / sidebar |
+| `(user_id, tier_id, sort_order)` | `categories` | picker / sidebar |
 | `(user_id)` | `essentials` | RLS |
 | `(user_id, is_active)` | `essentials` | baseline aggregation |
 | `(user_id)` | `expenses` | RLS |

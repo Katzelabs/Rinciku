@@ -87,7 +87,7 @@ export type Database = {
           is_archived: boolean
           name: string
           sort_order: number
-          tier: string
+          tier_id: string | null
           updated_at: string
           user_id: string
         }
@@ -99,7 +99,7 @@ export type Database = {
           is_archived?: boolean
           name: string
           sort_order?: number
-          tier: string
+          tier_id?: string | null
           updated_at?: string
           user_id: string
         }
@@ -111,11 +111,19 @@ export type Database = {
           is_archived?: boolean
           name?: string
           sort_order?: number
-          tier?: string
+          tier_id?: string | null
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "categories_tier_id_fkey"
+            columns: ["tier_id"]
+            isOneToOne: false
+            referencedRelation: "tiers"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       conversations: {
         Row: {
@@ -491,6 +499,42 @@ export type Database = {
         }
         Relationships: []
       }
+      tiers: {
+        Row: {
+          color: string | null
+          created_at: string
+          id: string
+          is_archived: boolean
+          is_essential: boolean
+          name: string
+          sort_order: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string
+          id?: string
+          is_archived?: boolean
+          is_essential?: boolean
+          name: string
+          sort_order?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          color?: string | null
+          created_at?: string
+          id?: string
+          is_archived?: boolean
+          is_essential?: boolean
+          name?: string
+          sort_order?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -504,11 +548,11 @@ export type Database = {
           p_start_at: string
         }
         Returns: {
+          by_tier: Json
+          essentials_spent: number
           income_received_this_cycle: number
           spent_total: number
-          tier_fixed: number
-          tier_needs: number
-          tier_wants: number
+          uncategorized_spent: number
         }[]
       }
     }

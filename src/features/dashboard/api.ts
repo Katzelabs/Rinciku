@@ -8,11 +8,13 @@ import {
 } from '@/lib/fx';
 import { getCurrentCycle, getDaysLeft, type Cycle } from '@/lib/cycle';
 import type { Profile } from '@/features/auth';
-import type { CategoryTier } from '@/features/categories/hooks/use-categories';
+import { listTiers } from '@/features/categories/api';
+import type { Tier } from '@/features/categories/hooks/use-categories';
 import { listEssentials } from '@/features/essentials/api';
 import { computeBaseline } from '@/features/essentials/lib/baseline';
 
-export type TierTotals = Record<CategoryTier, number>;
+// Spend per tier, keyed by tier id (matches the SQL `by_tier` jsonb map).
+export type TierTotals = Record<string, number>;
 
 export type MonthlySummary = {
   cycle: Cycle;
@@ -25,6 +27,8 @@ export type MonthlySummary = {
   baseline_total: number;
   baseline_uncovered: number;
   by_tier: TierTotals;
+  uncategorized_spent: number;
+  tiers: Tier[];
 };
 
 type Result<T> = {
@@ -44,7 +48,7 @@ export async function getMonthlySummary(
 
   await ensureRates();
 
-  const [summaryRes, essentialsRes] = await Promise.all([
+  const [summaryRes, essentialsRes, tiersRes] = await Promise.all([
     supabase
       .rpc('dashboard_monthly_summary', {
         p_start_at: cycle.start.toISOString(),
@@ -54,17 +58,21 @@ export async function getMonthlySummary(
       })
       .single(),
     listEssentials(),
+    listTiers(),
   ]);
 
   if (summaryRes.error) return { data: null, error: summaryRes.error };
   if (essentialsRes.error) return { data: null, error: essentialsRes.error };
+  if (tiersRes.error) return { data: null, error: tiersRes.error };
 
-  const by_tier: TierTotals = {
-    fixed: round2(Number(summaryRes.data.tier_fixed ?? 0)),
-    needs: round2(Number(summaryRes.data.tier_needs ?? 0)),
-    wants: round2(Number(summaryRes.data.tier_wants ?? 0)),
-  };
+  const by_tier = parseTierTotals(summaryRes.data.by_tier);
   const spent_total = round2(Number(summaryRes.data.spent_total ?? 0));
+  const essentials_spent = round2(
+    Number(summaryRes.data.essentials_spent ?? 0)
+  );
+  const uncategorized_spent = round2(
+    Number(summaryRes.data.uncategorized_spent ?? 0)
+  );
 
   const expected_monthly_income = round2(
     convertToBase(
@@ -80,9 +88,8 @@ export async function getMonthlySummary(
 
   const baseline = computeBaseline(essentialsRes.data ?? [], base);
   const baseline_total = baseline.total_base;
-  const essentialsSpent = by_tier.fixed + by_tier.needs;
   const baseline_uncovered = round2(
-    Math.max(0, baseline_total - essentialsSpent)
+    Math.max(0, baseline_total - essentials_spent)
   );
 
   const remaining = round2(expected_monthly_income - spent_total);
@@ -100,9 +107,22 @@ export async function getMonthlySummary(
       baseline_total,
       baseline_uncovered,
       by_tier,
+      uncategorized_spent,
+      tiers: tiersRes.data ?? [],
     },
     error: null,
   };
+}
+
+// The SQL function returns by_tier as a jsonb map { tier_id: amount }.
+function parseTierTotals(raw: unknown): TierTotals {
+  const totals: TierTotals = {};
+  if (raw && typeof raw === 'object' && !Array.isArray(raw)) {
+    for (const [tierId, amount] of Object.entries(raw)) {
+      totals[tierId] = round2(Number(amount ?? 0));
+    }
+  }
+  return totals;
 }
 
 function round2(n: number): number {
