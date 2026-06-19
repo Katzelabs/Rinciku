@@ -21,6 +21,7 @@ type Props = {
   rows: IncomeWithRelations[];
   total: number;
   baseCurrency: CurrencyCode;
+  onView: (row: IncomeWithRelations) => void;
   onEdit: (row: IncomeWithRelations) => void;
   onDelete: (row: IncomeWithRelations) => void;
 };
@@ -29,6 +30,7 @@ export function IncomeTable({
   rows,
   total,
   baseCurrency,
+  onView,
   onEdit,
   onDelete,
 }: Props) {
@@ -61,7 +63,11 @@ export function IncomeTable({
           const amount = Number(row.amount);
           const attachment = row.attachment;
           return (
-            <TableRow key={row.id}>
+            <TableRow
+              key={row.id}
+              onClick={() => onView(row)}
+              className='cursor-pointer'
+            >
               <TableCell className='whitespace-nowrap text-muted-foreground'>
                 {format(new Date(row.occurred_at), 'd MMM yyyy')}
               </TableCell>
@@ -87,7 +93,10 @@ export function IncomeTable({
               <TableCell className='text-right font-medium whitespace-nowrap tabular-nums'>
                 {formatCurrency(amount, currency)}
               </TableCell>
-              <TableCell className='text-right'>
+              <TableCell
+                className='text-right'
+                onClick={(e) => e.stopPropagation()}
+              >
                 <RowActions
                   editLabel='Edit income'
                   deleteLabel='Delete income'

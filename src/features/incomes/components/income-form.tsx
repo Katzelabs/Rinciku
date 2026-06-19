@@ -11,7 +11,7 @@ import { format } from 'date-fns';
 import { CalendarIcon } from 'lucide-react';
 import { toast } from 'sonner';
 
-import { AttachmentDropzone } from '@/components/shared/attachment-dropzone';
+import { AttachmentField } from '@/components/shared/attachment-field';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import {
@@ -20,11 +20,6 @@ import {
   FieldGroup,
   FieldLabel,
 } from '@/components/ui/field';
-import {
-  InputGroup,
-  InputGroupAddon,
-  InputGroupInput,
-} from '@/components/ui/input-group';
 import {
   Popover,
   PopoverContent,
@@ -40,7 +35,9 @@ import {
 import { Spinner } from '@/components/ui/spinner';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
+import { defineAttachmentConfig } from '@/lib/attachments';
 import type { CurrencyCode } from '@/lib/fx';
+import { CurrencyAmountInput } from '@/components/shared/currency-amount-input';
 import { useAuth } from '@/features/auth';
 
 import {
@@ -48,6 +45,7 @@ import {
   createIncomeAttachment,
   deleteIncomeAttachment,
   deleteIncomeAttachmentObject,
+  getIncomeAttachmentSignedUrl,
   updateIncome,
   updateIncomeAttachment,
   uploadIncomeAttachment,
@@ -59,7 +57,9 @@ import { incomeSchema, type IncomeInput } from '../schemas';
 // by this sentinel in the Select and mapped back to '' / null around it.
 const NO_SOURCE = '__none__';
 
-const INCOME_ALLOWED_MIME = new Set([
+// Single source of truth for accepted types + size limit (kept in sync with the
+// income-attachments bucket in supabase/seed.sql).
+const INCOME_ATTACHMENT = defineAttachmentConfig([
   'image/jpeg',
   'image/png',
   'image/webp',
@@ -67,24 +67,27 @@ const INCOME_ALLOWED_MIME = new Set([
   'application/pdf',
 ]);
 
-// Currencies that conventionally have no fractional unit. Drives the
-// `step` attribute on the amount input so the spinner advances by 1.
-const ZERO_DECIMAL_CURRENCIES = new Set<CurrencyCode>(['JPY', 'KRW', 'VND']);
+type ExistingAttachment = {
+  id: string;
+  storage_path: string;
+  mime_type: string | null;
+};
 
 type IncomeFormProps = {
   mode: 'create' | 'edit';
   defaultValues?: Partial<IncomeInput> & { id?: string };
+  existingAttachment?: ExistingAttachment | null;
   onSuccess: () => void;
 };
 
 export function IncomeForm({
   mode,
   defaultValues,
+  existingAttachment,
   onSuccess,
 }: IncomeFormProps) {
   const { user, profile } = useAuth();
   const baseCurrency = (profile?.base_currency ?? 'IDR') as CurrencyCode;
-  const amountStep = ZERO_DECIMAL_CURRENCIES.has(baseCurrency) ? '1' : '0.01';
 
   const {
     data: incomeCategories,
@@ -94,6 +97,7 @@ export function IncomeForm({
 
   const [datePickerOpen, setDatePickerOpen] = useState(false);
   const [attachment, setAttachment] = useState<File | null>(null);
+  const [removeExisting, setRemoveExisting] = useState(false);
 
   const {
     register,
@@ -132,9 +136,57 @@ export function IncomeForm({
       };
 
       if (mode === 'edit') {
-        // TODO: support replacing/removing attachments in edit mode.
-        const { error } = await updateIncome(defaultValues!.id!, basePayload);
+        const id = defaultValues!.id!;
+        const { error } = await updateIncome(id, basePayload);
         if (error) throw error;
+
+        // Attachment changes are independent of the metadata update above:
+        // a staged file replaces whatever was there; "remove" with no new file
+        // unlinks and deletes the existing one.
+        if (attachment) {
+          const upload = await uploadIncomeAttachment(attachment, {
+            userId: user.id,
+            occurredAt: values.occurred_at,
+          });
+          if (upload.error || !upload.data)
+            throw upload.error ?? new Error('Upload failed');
+          const storage_path = upload.data.storage_path;
+
+          const insert = await createIncomeAttachment({
+            user_id: user.id,
+            storage_path,
+            mime_type: attachment.type,
+            file_size_bytes: attachment.size,
+          });
+          if (insert.error || !insert.data) {
+            await deleteIncomeAttachmentObject(storage_path);
+            throw insert.error ?? new Error('Attachment insert failed');
+          }
+          const newId = insert.data.id;
+
+          const relink = await updateIncome(id, { attachment_id: newId });
+          if (relink.error) {
+            await deleteIncomeAttachment(newId);
+            await deleteIncomeAttachmentObject(storage_path);
+            throw relink.error;
+          }
+          await updateIncomeAttachment(newId, {
+            income_id: id,
+            confirmed: true,
+          });
+
+          // The previous attachment is now orphaned — drop row + object.
+          if (existingAttachment) {
+            await deleteIncomeAttachment(existingAttachment.id);
+            await deleteIncomeAttachmentObject(existingAttachment.storage_path);
+          }
+        } else if (removeExisting && existingAttachment) {
+          const relink = await updateIncome(id, { attachment_id: null });
+          if (relink.error) throw relink.error;
+          await deleteIncomeAttachment(existingAttachment.id);
+          await deleteIncomeAttachmentObject(existingAttachment.storage_path);
+        }
+
         toast.success('Income updated');
         onSuccess();
         return;
@@ -197,28 +249,29 @@ export function IncomeForm({
   return (
     <form onSubmit={submit} noValidate>
       <FieldGroup>
-        <Field data-invalid={errors.amount ? true : undefined}>
-          <FieldLabel htmlFor='income-amount'>Amount</FieldLabel>
-          <InputGroup>
-            <InputGroupAddon>
-              <span className='text-sm font-medium text-muted-foreground'>
-                {baseCurrency}
-              </span>
-            </InputGroupAddon>
-            <InputGroupInput
-              id='income-amount'
-              type='number'
-              inputMode='decimal'
-              step={amountStep}
-              min='0'
-              placeholder={amountStep === '1' ? '0' : '0.00'}
-              autoFocus
-              aria-invalid={errors.amount ? true : undefined}
-              {...register('amount', { valueAsNumber: true })}
-            />
-          </InputGroup>
-          <FieldError errors={errors.amount ? [errors.amount] : undefined} />
-        </Field>
+        <Controller
+          control={control}
+          name='amount'
+          render={({ field, fieldState }) => (
+            <Field data-invalid={fieldState.invalid || undefined}>
+              <FieldLabel htmlFor='income-amount'>Amount</FieldLabel>
+              <CurrencyAmountInput
+                id='income-amount'
+                currency={baseCurrency}
+                value={field.value}
+                onChange={field.onChange}
+                onBlur={field.onBlur}
+                inputRef={field.ref}
+                name={field.name}
+                autoFocus
+                invalid={fieldState.invalid}
+              />
+              <FieldError
+                errors={fieldState.error ? [fieldState.error] : undefined}
+              />
+            </Field>
+          )}
+        />
 
         <Controller
           control={control}
@@ -320,22 +373,25 @@ export function IncomeForm({
           <FieldError errors={errors.note ? [errors.note] : undefined} />
         </Field>
 
-        {mode === 'create' && (
-          <Field>
-            <FieldLabel>Proof of income (optional)</FieldLabel>
-            <AttachmentDropzone
-              value={attachment}
-              onChange={setAttachment}
-              disabled={isSubmitting}
-              accept='image/jpeg,image/png,image/webp,image/heic,application/pdf'
-              allowedMime={INCOME_ALLOWED_MIME}
-              hintLabel='Drop a transfer proof or click to browse'
-              hintFormats='JPG, PNG, WEBP, HEIC, or PDF · 10 MB max'
-              invalidTypeMessage='File must be an image (JPG, PNG, WEBP, HEIC) or PDF.'
-              oversizedMessage='File must be 10 MB or smaller.'
-            />
-          </Field>
-        )}
+        <Field>
+          <FieldLabel>Proof of income (optional)</FieldLabel>
+          <AttachmentField
+            file={attachment}
+            onFileChange={setAttachment}
+            existing={mode === 'edit' ? (existingAttachment ?? null) : null}
+            removed={removeExisting}
+            onRemovedChange={setRemoveExisting}
+            getSignedUrl={getIncomeAttachmentSignedUrl}
+            disabled={isSubmitting}
+            accept={INCOME_ATTACHMENT.accept}
+            allowedMime={INCOME_ATTACHMENT.allowedMime}
+            maxBytes={INCOME_ATTACHMENT.maxBytes}
+            hintLabel='Drop a transfer proof or click to browse'
+            hintFormats='JPG, PNG, WEBP, HEIC, or PDF · 10 MB max'
+            invalidTypeMessage='File must be an image (JPG, PNG, WEBP, HEIC) or PDF.'
+            oversizedMessage='File must be 10 MB or smaller.'
+          />
+        </Field>
 
         <Button type='submit' disabled={isSubmitting}>
           {isSubmitting && <Spinner data-icon='inline-start' />}

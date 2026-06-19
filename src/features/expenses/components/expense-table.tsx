@@ -20,6 +20,7 @@ type Props = {
   rows: ExpenseWithRelations[];
   total: number;
   baseCurrency: CurrencyCode;
+  onView: (row: ExpenseWithRelations) => void;
   onEdit: (row: ExpenseWithRelations) => void;
   onDelete: (row: ExpenseWithRelations) => void;
 };
@@ -28,6 +29,7 @@ export function ExpenseTable({
   rows,
   total,
   baseCurrency,
+  onView,
   onEdit,
   onDelete,
 }: Props) {
@@ -57,7 +59,11 @@ export function ExpenseTable({
           const amount = Number(row.amount);
           const attachment = row.attachment;
           return (
-            <TableRow key={row.id}>
+            <TableRow
+              key={row.id}
+              onClick={() => onView(row)}
+              className='cursor-pointer'
+            >
               <TableCell className='whitespace-nowrap text-muted-foreground'>
                 {format(new Date(row.occurred_at), 'd MMM yyyy')}
               </TableCell>
@@ -76,7 +82,10 @@ export function ExpenseTable({
               <TableCell className='text-right font-medium whitespace-nowrap tabular-nums'>
                 {formatCurrency(amount, currency)}
               </TableCell>
-              <TableCell className='text-right'>
+              <TableCell
+                className='text-right'
+                onClick={(e) => e.stopPropagation()}
+              >
                 <RowActions
                   editLabel='Edit expense'
                   deleteLabel='Delete expense'

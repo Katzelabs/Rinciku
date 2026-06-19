@@ -14,11 +14,6 @@ import {
   FieldLabel,
 } from '@/components/ui/field';
 import {
-  InputGroup,
-  InputGroupAddon,
-  InputGroupInput,
-} from '@/components/ui/input-group';
-import {
   Popover,
   PopoverContent,
   PopoverTrigger,
@@ -35,8 +30,9 @@ import {
 import { Spinner } from '@/components/ui/spinner';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
-import { stepForCurrency } from '@/lib/format';
+import { defineAttachmentConfig } from '@/lib/attachments';
 import type { CurrencyCode } from '@/lib/fx';
+import { CurrencyAmountInput } from '@/components/shared/currency-amount-input';
 import { useAuth } from '@/features/auth';
 import {
   groupByTier,
@@ -44,34 +40,46 @@ import {
   useTiers,
 } from '@/features/categories/hooks/use-categories';
 
-import { AttachmentDropzone } from '@/components/shared/attachment-dropzone';
+import { AttachmentField } from '@/components/shared/attachment-field';
 import {
   createAttachment,
   createExpense,
   deleteAttachment,
   deleteAttachmentObject,
+  getAttachmentSignedUrl,
   updateAttachment,
   updateExpense,
   uploadAttachment,
 } from '../api';
 import { expenseSchema, type ExpenseInput } from '../schemas';
 
-const EXPENSE_ALLOWED_MIME = new Set([
+// Single source of truth for accepted types + size limit (kept in sync with the
+// expense-attachments bucket in supabase/seed.sql).
+const EXPENSE_ATTACHMENT = defineAttachmentConfig([
   'image/jpeg',
   'image/png',
   'image/webp',
   'image/heic',
+  'application/pdf',
 ]);
+
+type ExistingAttachment = {
+  id: string;
+  storage_path: string;
+  mime_type: string | null;
+};
 
 type ExpenseFormProps = {
   mode: 'create' | 'edit';
   defaultValues?: Partial<ExpenseInput> & { id?: string };
+  existingAttachment?: ExistingAttachment | null;
   onSuccess: () => void;
 };
 
 export function ExpenseForm({
   mode,
   defaultValues,
+  existingAttachment,
   onSuccess,
 }: ExpenseFormProps) {
   const { user, profile } = useAuth();
@@ -83,6 +91,7 @@ export function ExpenseForm({
   const { data: tiers } = useTiers();
   const [datePickerOpen, setDatePickerOpen] = useState(false);
   const [attachment, setAttachment] = useState<File | null>(null);
+  const [removeExisting, setRemoveExisting] = useState(false);
 
   const grouped = useMemo(
     () => (categories ? groupByTier(categories, tiers ?? []) : null),
@@ -134,9 +143,54 @@ export function ExpenseForm({
       };
 
       if (mode === 'edit') {
-        // TODO: support replacing/removing attachments in edit mode.
-        const { error } = await updateExpense(defaultValues!.id!, basePayload);
+        const id = defaultValues!.id!;
+        const { error } = await updateExpense(id, basePayload);
         if (error) throw error;
+
+        // Attachment changes are independent of the metadata update above:
+        // a staged file replaces whatever was there; "remove" with no new file
+        // unlinks and deletes the existing one.
+        if (attachment) {
+          const upload = await uploadAttachment(attachment, {
+            userId: user.id,
+            occurredAt: values.occurred_at,
+          });
+          if (upload.error || !upload.data)
+            throw upload.error ?? new Error('Upload failed');
+          const storage_path = upload.data.storage_path;
+
+          const insert = await createAttachment({
+            user_id: user.id,
+            storage_path,
+            mime_type: attachment.type,
+            file_size_bytes: attachment.size,
+          });
+          if (insert.error || !insert.data) {
+            await deleteAttachmentObject(storage_path);
+            throw insert.error ?? new Error('Attachment insert failed');
+          }
+          const newId = insert.data.id;
+
+          const relink = await updateExpense(id, { attachment_id: newId });
+          if (relink.error) {
+            await deleteAttachment(newId);
+            await deleteAttachmentObject(storage_path);
+            throw relink.error;
+          }
+          await updateAttachment(newId, { expense_id: id, confirmed: true });
+
+          // The previous attachment is now orphaned — drop row + object.
+          if (existingAttachment) {
+            await deleteAttachment(existingAttachment.id);
+            await deleteAttachmentObject(existingAttachment.storage_path);
+          }
+        } else if (removeExisting && existingAttachment) {
+          const relink = await updateExpense(id, { attachment_id: null });
+          if (relink.error) throw relink.error;
+          await deleteAttachment(existingAttachment.id);
+          await deleteAttachmentObject(existingAttachment.storage_path);
+        }
+
         toast.success('Expense updated');
         onSuccess();
         return;
@@ -199,28 +253,29 @@ export function ExpenseForm({
   return (
     <form onSubmit={submit} noValidate>
       <FieldGroup>
-        <Field data-invalid={errors.amount ? true : undefined}>
-          <FieldLabel htmlFor='expense-amount'>Amount</FieldLabel>
-          <InputGroup>
-            <InputGroupAddon>
-              <span className='text-sm font-medium text-muted-foreground'>
-                {currency}
-              </span>
-            </InputGroupAddon>
-            <InputGroupInput
-              id='expense-amount'
-              type='number'
-              inputMode='decimal'
-              step={stepForCurrency(currency)}
-              min='0'
-              placeholder='0.00'
-              autoFocus
-              aria-invalid={errors.amount ? true : undefined}
-              {...register('amount', { valueAsNumber: true })}
-            />
-          </InputGroup>
-          <FieldError errors={errors.amount ? [errors.amount] : undefined} />
-        </Field>
+        <Controller
+          control={control}
+          name='amount'
+          render={({ field, fieldState }) => (
+            <Field data-invalid={fieldState.invalid || undefined}>
+              <FieldLabel htmlFor='expense-amount'>Amount</FieldLabel>
+              <CurrencyAmountInput
+                id='expense-amount'
+                currency={currency}
+                value={field.value}
+                onChange={field.onChange}
+                onBlur={field.onBlur}
+                inputRef={field.ref}
+                name={field.name}
+                autoFocus
+                invalid={fieldState.invalid}
+              />
+              <FieldError
+                errors={fieldState.error ? [fieldState.error] : undefined}
+              />
+            </Field>
+          )}
+        />
 
         <Controller
           control={control}
@@ -332,22 +387,25 @@ export function ExpenseForm({
           <FieldError errors={errors.note ? [errors.note] : undefined} />
         </Field>
 
-        {mode === 'create' && (
-          <Field>
-            <FieldLabel>Receipt (optional)</FieldLabel>
-            <AttachmentDropzone
-              value={attachment}
-              onChange={setAttachment}
-              disabled={isSubmitting}
-              accept='image/jpeg,image/png,image/webp,image/heic'
-              allowedMime={EXPENSE_ALLOWED_MIME}
-              hintLabel='Drop a receipt image or click to browse'
-              hintFormats='JPG, PNG, WEBP, or HEIC · 10 MB max'
-              invalidTypeMessage='Image must be JPG, PNG, WEBP, or HEIC.'
-              oversizedMessage='Image must be 10 MB or smaller.'
-            />
-          </Field>
-        )}
+        <Field>
+          <FieldLabel>Receipt (optional)</FieldLabel>
+          <AttachmentField
+            file={attachment}
+            onFileChange={setAttachment}
+            existing={mode === 'edit' ? (existingAttachment ?? null) : null}
+            removed={removeExisting}
+            onRemovedChange={setRemoveExisting}
+            getSignedUrl={getAttachmentSignedUrl}
+            disabled={isSubmitting}
+            accept={EXPENSE_ATTACHMENT.accept}
+            allowedMime={EXPENSE_ATTACHMENT.allowedMime}
+            maxBytes={EXPENSE_ATTACHMENT.maxBytes}
+            hintLabel='Drop a receipt or click to browse'
+            hintFormats='JPG, PNG, WEBP, HEIC, or PDF · 10 MB max'
+            invalidTypeMessage='File must be an image (JPG, PNG, WEBP, HEIC) or PDF.'
+            oversizedMessage='File must be 10 MB or smaller.'
+          />
+        </Field>
 
         <Button type='submit' disabled={isSubmitting}>
           {isSubmitting && <Spinner data-icon='inline-start' />}

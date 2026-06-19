@@ -9,12 +9,8 @@ import {
   FieldLabel,
 } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
-import {
-  InputGroup,
-  InputGroupAddon,
-  InputGroupInput,
-} from '@/components/ui/input-group';
 import { CurrencySelect } from '@/components/shared/currency-select';
+import { CurrencyAmountInput } from '@/components/shared/currency-amount-input';
 import { CURRENCY_CODES, type CurrencyCode } from '@/lib/fx';
 import { onboardingSchema, type OnboardingInput } from '../schemas';
 import type { Profile } from '../types';
@@ -111,29 +107,16 @@ export function ProfileForm({
                 Your typical monthly income. If you have multiple streams, enter
                 your main one — log others on the Incomes page.
               </FieldDescription>
-              <InputGroup>
-                <InputGroupAddon>
-                  <span className='text-sm font-medium text-muted-foreground'>
-                    {baseCurrency}
-                  </span>
-                </InputGroupAddon>
-                <InputGroupInput
-                  ref={field.ref}
-                  name={field.name}
-                  onBlur={field.onBlur}
-                  value={field.value ?? ''}
-                  onChange={(event) => {
-                    const next = event.target.value;
-                    field.onChange(next === '' ? undefined : Number(next));
-                  }}
-                  id='profile-expected-income'
-                  type='number'
-                  inputMode='decimal'
-                  step='0.01'
-                  min='0'
-                  aria-invalid={fieldState.invalid || undefined}
-                />
-              </InputGroup>
+              <CurrencyAmountInput
+                id='profile-expected-income'
+                currency={baseCurrency}
+                value={field.value}
+                onChange={field.onChange}
+                onBlur={field.onBlur}
+                inputRef={field.ref}
+                name={field.name}
+                invalid={fieldState.invalid}
+              />
               <FieldError
                 errors={fieldState.error ? [fieldState.error] : undefined}
               />

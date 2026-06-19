@@ -71,9 +71,10 @@ const MIME_TO_EXT: Record<string, string> = {
   'image/png': 'png',
   'image/webp': 'webp',
   'image/heic': 'heic',
+  'application/pdf': 'pdf',
 };
 
-const KNOWN_EXTS = new Set(['jpg', 'jpeg', 'png', 'webp', 'heic']);
+const KNOWN_EXTS = new Set(['jpg', 'jpeg', 'png', 'webp', 'heic', 'pdf']);
 
 const EXPENSE_WITH_RELATIONS_SELECT =
   '*, category:categories(*, tier:tiers(*)), attachment:expense_attachments!expenses_attachment_id_fkey(*)';

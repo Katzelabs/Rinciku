@@ -18,13 +18,20 @@ import {
   getCycleRange,
   type Cycle,
 } from '@/features/expenses/lib/cycle';
-import { deleteIncome, listIncomes, type IncomeWithRelations } from '../api';
+import {
+  deleteIncome,
+  deleteIncomeAttachmentObject,
+  listIncomes,
+  type IncomeWithRelations,
+} from '../api';
+import { IncomeDetailDialog } from '../components/income-detail-dialog';
 import { IncomeFilters } from '../components/income-filters';
 import { IncomeForm } from '../components/income-form';
 import { IncomeTable } from '../components/income-table';
 
 type DialogState =
   | { kind: 'create' }
+  | { kind: 'view'; row: IncomeWithRelations }
   | { kind: 'edit'; row: IncomeWithRelations }
   | { kind: 'delete'; row: IncomeWithRelations }
   | null;
@@ -91,8 +98,14 @@ export function IncomesPage() {
 
   async function handleConfirmDelete() {
     if (dialog?.kind !== 'delete') return;
+    const { row } = dialog;
     setDeleting(true);
-    const { error } = await deleteIncome(dialog.row.id);
+    const { error } = await deleteIncome(row.id);
+    // Deleting the income cascade-deletes the attachment row; the storage
+    // object is not cascaded, so remove it here to avoid orphaned files.
+    if (!error && row.attachment) {
+      await deleteIncomeAttachmentObject(row.attachment.storage_path);
+    }
     setDeleting(false);
     if (error) {
       toast.error('Could not delete income.');
@@ -137,10 +150,25 @@ export function IncomesPage() {
           rows={rows}
           total={total}
           baseCurrency={baseCurrency}
+          onView={(row) => setDialog({ kind: 'view', row })}
           onEdit={(row) => setDialog({ kind: 'edit', row })}
           onDelete={(row) => setDialog({ kind: 'delete', row })}
         />
       )}
+
+      <IncomeDetailDialog
+        row={dialog?.kind === 'view' ? dialog.row : null}
+        open={dialog?.kind === 'view'}
+        onOpenChange={(open) => !open && setDialog(null)}
+        onEdit={() =>
+          dialog?.kind === 'view' &&
+          setDialog({ kind: 'edit', row: dialog.row })
+        }
+        onDelete={() =>
+          dialog?.kind === 'view' &&
+          setDialog({ kind: 'delete', row: dialog.row })
+        }
+      />
 
       <Dialog
         open={dialog?.kind === 'create'}
@@ -182,6 +210,15 @@ export function IncomesPage() {
                 occurred_at: new Date(dialog.row.occurred_at),
                 note: dialog.row.note ?? '',
               }}
+              existingAttachment={
+                dialog.row.attachment
+                  ? {
+                      id: dialog.row.attachment.id,
+                      storage_path: dialog.row.attachment.storage_path,
+                      mime_type: dialog.row.attachment.mime_type,
+                    }
+                  : null
+              }
               onSuccess={() => {
                 setDialog(null);
                 refetch();
@@ -199,8 +236,7 @@ export function IncomesPage() {
           <DialogHeader>
             <DialogTitle>Delete income?</DialogTitle>
             <DialogDescription>
-              This permanently removes the income. Any linked attachment file
-              stays in storage.
+              This permanently removes the income and any attached proof.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>

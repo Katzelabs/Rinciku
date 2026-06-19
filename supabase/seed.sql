@@ -24,7 +24,7 @@ values (
   'expense-attachments',
   false,
   10485760,
-  array['image/jpeg','image/png','image/webp','image/heic']
+  array['image/jpeg','image/png','image/webp','image/heic','application/pdf']
 )
 on conflict (id) do nothing;
 

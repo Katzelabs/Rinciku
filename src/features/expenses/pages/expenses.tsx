@@ -15,7 +15,13 @@ import { supabase } from '@/lib/supabase';
 import { ensureRates, getCurrentRates, type CurrencyCode } from '@/lib/fx';
 import { useAuth } from '@/features/auth';
 import { useTiers } from '@/features/categories/hooks/use-categories';
-import { deleteExpense, listExpenses, type ExpenseWithRelations } from '../api';
+import {
+  deleteAttachmentObject,
+  deleteExpense,
+  listExpenses,
+  type ExpenseWithRelations,
+} from '../api';
+import { ExpenseDetailDialog } from '../components/expense-detail-dialog';
 import { ExpenseFilters } from '../components/expense-filters';
 import { ExpenseForm } from '../components/expense-form';
 import { ExpenseTable } from '../components/expense-table';
@@ -35,6 +41,7 @@ const EMPTY_TOTALS: MonthlyTotals = {
 
 type DialogState =
   | { kind: 'create' }
+  | { kind: 'view'; row: ExpenseWithRelations }
   | { kind: 'edit'; row: ExpenseWithRelations }
   | { kind: 'delete'; row: ExpenseWithRelations }
   | null;
@@ -145,8 +152,14 @@ export function ExpensesPage() {
 
   async function handleConfirmDelete() {
     if (dialog?.kind !== 'delete') return;
+    const { row } = dialog;
     setDeleting(true);
-    const { error } = await deleteExpense(dialog.row.id);
+    const { error } = await deleteExpense(row.id);
+    // Deleting the expense cascade-deletes the attachment row; the storage
+    // object is not cascaded, so remove it here to avoid orphaned files.
+    if (!error && row.attachment) {
+      await deleteAttachmentObject(row.attachment.storage_path);
+    }
     setDeleting(false);
     if (error) {
       toast.error('Could not delete expense.');
@@ -194,10 +207,25 @@ export function ExpensesPage() {
           rows={filteredRows}
           total={total}
           baseCurrency={baseCurrency}
+          onView={(row) => setDialog({ kind: 'view', row })}
           onEdit={(row) => setDialog({ kind: 'edit', row })}
           onDelete={(row) => setDialog({ kind: 'delete', row })}
         />
       )}
+
+      <ExpenseDetailDialog
+        row={dialog?.kind === 'view' ? dialog.row : null}
+        open={dialog?.kind === 'view'}
+        onOpenChange={(open) => !open && setDialog(null)}
+        onEdit={() =>
+          dialog?.kind === 'view' &&
+          setDialog({ kind: 'edit', row: dialog.row })
+        }
+        onDelete={() =>
+          dialog?.kind === 'view' &&
+          setDialog({ kind: 'delete', row: dialog.row })
+        }
+      />
 
       <Dialog
         open={dialog?.kind === 'create'}
@@ -240,6 +268,15 @@ export function ExpensesPage() {
                 occurred_at: new Date(dialog.row.occurred_at),
                 note: dialog.row.note ?? '',
               }}
+              existingAttachment={
+                dialog.row.attachment
+                  ? {
+                      id: dialog.row.attachment.id,
+                      storage_path: dialog.row.attachment.storage_path,
+                      mime_type: dialog.row.attachment.mime_type,
+                    }
+                  : null
+              }
               onSuccess={() => {
                 setDialog(null);
                 refetch();
@@ -257,8 +294,7 @@ export function ExpensesPage() {
           <DialogHeader>
             <DialogTitle>Delete expense?</DialogTitle>
             <DialogDescription>
-              This permanently removes the expense. Any linked attachment file
-              stays in storage.
+              This permanently removes the expense and any attached receipt.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>

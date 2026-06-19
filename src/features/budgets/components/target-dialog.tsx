@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 
 import { Button } from '@/components/ui/button';
@@ -17,14 +17,9 @@ import {
   FieldGroup,
   FieldLabel,
 } from '@/components/ui/field';
-import {
-  InputGroup,
-  InputGroupAddon,
-  InputGroupInput,
-} from '@/components/ui/input-group';
 import { Spinner } from '@/components/ui/spinner';
-import { stepForCurrency } from '@/lib/format';
 import type { CurrencyCode } from '@/lib/fx';
+import { CurrencyAmountInput } from '@/components/shared/currency-amount-input';
 
 import { budgetTargetSchema, type BudgetTargetInput } from '../schemas';
 
@@ -53,10 +48,10 @@ export function TargetDialog({
 }: TargetDialogProps) {
   const [removing, setRemoving] = useState(false);
   const {
-    register,
+    control,
     handleSubmit,
     reset,
-    formState: { errors, isSubmitting },
+    formState: { isSubmitting },
   } = useForm<BudgetTargetInput>({
     resolver: zodResolver(budgetTargetSchema),
     defaultValues: {
@@ -100,30 +95,31 @@ export function TargetDialog({
         </DialogHeader>
         <form onSubmit={submit} noValidate>
           <FieldGroup>
-            <Field data-invalid={errors.amount ? true : undefined}>
-              <FieldLabel htmlFor='target-amount'>Monthly target</FieldLabel>
-              <InputGroup>
-                <InputGroupAddon>
-                  <span className='text-sm font-medium text-muted-foreground'>
-                    {currency}
-                  </span>
-                </InputGroupAddon>
-                <InputGroupInput
-                  id='target-amount'
-                  type='number'
-                  inputMode='decimal'
-                  step={stepForCurrency(currency)}
-                  min='0'
-                  placeholder='0.00'
-                  autoFocus
-                  aria-invalid={errors.amount ? true : undefined}
-                  {...register('amount', { valueAsNumber: true })}
-                />
-              </InputGroup>
-              <FieldError
-                errors={errors.amount ? [errors.amount] : undefined}
-              />
-            </Field>
+            <Controller
+              control={control}
+              name='amount'
+              render={({ field, fieldState }) => (
+                <Field data-invalid={fieldState.invalid || undefined}>
+                  <FieldLabel htmlFor='target-amount'>
+                    Monthly target
+                  </FieldLabel>
+                  <CurrencyAmountInput
+                    id='target-amount'
+                    currency={currency}
+                    value={field.value}
+                    onChange={field.onChange}
+                    onBlur={field.onBlur}
+                    inputRef={field.ref}
+                    name={field.name}
+                    autoFocus
+                    invalid={fieldState.invalid}
+                  />
+                  <FieldError
+                    errors={fieldState.error ? [fieldState.error] : undefined}
+                  />
+                </Field>
+              )}
+            />
             <DialogFooter className='sm:justify-between'>
               {onRemove ? (
                 <Button

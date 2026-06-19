@@ -12,11 +12,6 @@ import {
 } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import {
-  InputGroup,
-  InputGroupAddon,
-  InputGroupInput,
-} from '@/components/ui/input-group';
-import {
   Select,
   SelectContent,
   SelectGroup,
@@ -27,8 +22,8 @@ import {
 } from '@/components/ui/select';
 import { Spinner } from '@/components/ui/spinner';
 import { Textarea } from '@/components/ui/textarea';
-import { stepForCurrency } from '@/lib/format';
 import type { CurrencyCode } from '@/lib/fx';
+import { CurrencyAmountInput } from '@/components/shared/currency-amount-input';
 import { useAuth } from '@/features/auth';
 import {
   groupByTier,
@@ -153,31 +148,30 @@ export function EssentialForm({
           <FieldError errors={errors.name ? [errors.name] : undefined} />
         </Field>
 
-        <Field data-invalid={errors.estimated_amount ? true : undefined}>
-          <FieldLabel htmlFor='essential-amount'>Estimated amount</FieldLabel>
-          <InputGroup>
-            <InputGroupAddon>
-              <span className='text-sm font-medium text-muted-foreground'>
-                {currency}
-              </span>
-            </InputGroupAddon>
-            <InputGroupInput
-              id='essential-amount'
-              type='number'
-              inputMode='decimal'
-              step={stepForCurrency(currency)}
-              min='0'
-              placeholder='0.00'
-              aria-invalid={errors.estimated_amount ? true : undefined}
-              {...register('estimated_amount', { valueAsNumber: true })}
-            />
-          </InputGroup>
-          <FieldError
-            errors={
-              errors.estimated_amount ? [errors.estimated_amount] : undefined
-            }
-          />
-        </Field>
+        <Controller
+          control={control}
+          name='estimated_amount'
+          render={({ field, fieldState }) => (
+            <Field data-invalid={fieldState.invalid || undefined}>
+              <FieldLabel htmlFor='essential-amount'>
+                Estimated amount
+              </FieldLabel>
+              <CurrencyAmountInput
+                id='essential-amount'
+                currency={currency}
+                value={field.value}
+                onChange={field.onChange}
+                onBlur={field.onBlur}
+                inputRef={field.ref}
+                name={field.name}
+                invalid={fieldState.invalid}
+              />
+              <FieldError
+                errors={fieldState.error ? [fieldState.error] : undefined}
+              />
+            </Field>
+          )}
+        />
 
         <Controller
           control={control}
