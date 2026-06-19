@@ -9,7 +9,12 @@ type ColorPickerProps = {
   id?: string;
 };
 
-export function ColorPicker({ value, onChange, invalid, id }: ColorPickerProps) {
+export function ColorPicker({
+  value,
+  onChange,
+  invalid,
+  id,
+}: ColorPickerProps) {
   return (
     <div className='space-y-2'>
       <div className='flex flex-wrap gap-2'>

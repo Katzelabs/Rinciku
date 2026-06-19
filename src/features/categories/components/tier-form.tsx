@@ -127,7 +127,8 @@ export function TierForm({
               <div className='flex flex-1 flex-col'>
                 <FieldLabel htmlFor='tier-essential'>Essential</FieldLabel>
                 <FieldDescription>
-                  Spending in essential tiers counts toward your monthly baseline.
+                  Spending in essential tiers counts toward your monthly
+                  baseline.
                 </FieldDescription>
               </div>
               <Switch

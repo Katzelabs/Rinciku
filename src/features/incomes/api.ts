@@ -13,7 +13,8 @@ import { supabase } from '@/lib/supabase';
 
 type IncomeRow = Database['public']['Tables']['incomes']['Row'];
 type IncomeUpdate = Database['public']['Tables']['incomes']['Update'];
-type IncomeCategoryRow = Database['public']['Tables']['income_categories']['Row'];
+type IncomeCategoryRow =
+  Database['public']['Tables']['income_categories']['Row'];
 type AttachmentRow = Database['public']['Tables']['income_attachments']['Row'];
 type AttachmentUpdate =
   Database['public']['Tables']['income_attachments']['Update'];

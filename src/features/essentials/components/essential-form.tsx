@@ -66,8 +66,7 @@ export function EssentialForm({
   // On create, currency is locked to the user's current base. On edit, preserve
   // the row's stored currency so existing rows are not silently rewritten.
   const baseCurrency = (profile?.base_currency ?? 'IDR') as CurrencyCode;
-  const lockedCurrency: CurrencyCode =
-    defaultValues?.currency ?? baseCurrency;
+  const lockedCurrency: CurrencyCode = defaultValues?.currency ?? baseCurrency;
 
   const {
     register,
@@ -116,7 +115,10 @@ export function EssentialForm({
       };
 
       if (mode === 'edit') {
-        const { error } = await updateEssential(defaultValues!.id!, basePayload);
+        const { error } = await updateEssential(
+          defaultValues!.id!,
+          basePayload
+        );
         if (error) throw error;
         toast.success('Essential updated');
         onSuccess();

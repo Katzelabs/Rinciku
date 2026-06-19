@@ -15,19 +15,11 @@ import { supabase } from '@/lib/supabase';
 import { ensureRates, getCurrentRates, type CurrencyCode } from '@/lib/fx';
 import { useAuth } from '@/features/auth';
 import { useTiers } from '@/features/categories/hooks/use-categories';
-import {
-  deleteExpense,
-  listExpenses,
-  type ExpenseWithRelations,
-} from '../api';
+import { deleteExpense, listExpenses, type ExpenseWithRelations } from '../api';
 import { ExpenseFilters } from '../components/expense-filters';
 import { ExpenseForm } from '../components/expense-form';
 import { ExpenseTable } from '../components/expense-table';
-import {
-  getCurrentCycle,
-  getCycleRange,
-  type Cycle,
-} from '../lib/cycle';
+import { getCurrentCycle, getCycleRange, type Cycle } from '../lib/cycle';
 
 type MonthlyTotals = {
   spent_total: number;
@@ -97,25 +89,25 @@ export function ExpensesPage() {
         ])
       )
       .then(([listRes, summaryRes]) => {
-      if (cancelled) return;
-      const errorMessage =
-        listRes.error?.message ?? summaryRes.error?.message ?? null;
-      const totals: MonthlyTotals = summaryRes.data
-        ? {
-            spent_total: Number(summaryRes.data.spent_total ?? 0),
-            by_tier: parseTierTotals(summaryRes.data.by_tier),
-            uncategorized_spent: Number(
-              summaryRes.data.uncategorized_spent ?? 0
-            ),
-          }
-        : EMPTY_TOTALS;
-      setResponse({
-        key: fetchKey,
-        rows: listRes.data ?? [],
-        totals,
-        error: errorMessage,
+        if (cancelled) return;
+        const errorMessage =
+          listRes.error?.message ?? summaryRes.error?.message ?? null;
+        const totals: MonthlyTotals = summaryRes.data
+          ? {
+              spent_total: Number(summaryRes.data.spent_total ?? 0),
+              by_tier: parseTierTotals(summaryRes.data.by_tier),
+              uncategorized_spent: Number(
+                summaryRes.data.uncategorized_spent ?? 0
+              ),
+            }
+          : EMPTY_TOTALS;
+        setResponse({
+          key: fetchKey,
+          rows: listRes.data ?? [],
+          totals,
+          error: errorMessage,
+        });
       });
-    });
     return () => {
       cancelled = true;
     };

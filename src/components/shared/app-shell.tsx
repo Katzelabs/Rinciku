@@ -40,10 +40,10 @@ const navItems: NavItem[] = [
   { title: 'Incomes', to: '/incomes', icon: TrendingUp },
   { title: 'Essentials', to: '/essentials', icon: Wallet },
   { title: 'Categories', to: '/categories', icon: Tag },
+  { title: 'Budgets', to: '/budgets', icon: PiggyBank },
 ];
 
 const comingSoonItems: Pick<NavItem, 'title' | 'icon'>[] = [
-  { title: 'Budgets', icon: PiggyBank },
   { title: 'AI Chat', icon: Sparkles },
 ];
 

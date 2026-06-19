@@ -44,7 +44,12 @@ export function ExpenseFilters({
   onTiersChange,
 }: Props) {
   const currentYear = new Date().getFullYear();
-  const years = [currentYear - 2, currentYear - 1, currentYear, currentYear + 1];
+  const years = [
+    currentYear - 2,
+    currentYear - 1,
+    currentYear,
+    currentYear + 1,
+  ];
 
   const { from, to } = getCycleRange(cycle.year, cycle.month, startDay);
   const rangeLabel = `${format(from, 'd MMM yyyy')} – ${format(to, 'd MMM yyyy')}`;

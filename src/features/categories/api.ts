@@ -15,7 +15,9 @@ type CategoryFields = Pick<
 export type CreateCategoryInput = CategoryFields & { user_id: string };
 export type UpdateCategoryPatch = Partial<CategoryFields>;
 
-export async function listCategories(): Promise<Result<Tables<'categories'>[]>> {
+export async function listCategories(): Promise<
+  Result<Tables<'categories'>[]>
+> {
   const { data, error } = await supabase
     .from('categories')
     .select('*')

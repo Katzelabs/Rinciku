@@ -185,6 +185,22 @@ alter table "public"."messages" enable row level security;
 alter table "public"."profiles" enable row level security;
 
 
+  create table "public"."tier_budgets" (
+    "id" uuid not null default gen_random_uuid(),
+    "user_id" uuid not null,
+    "tier_id" uuid not null,
+    "period_year" smallint not null,
+    "period_month" smallint not null,
+    "amount" numeric(15,2) not null,
+    "currency" text not null,
+    "created_at" timestamp with time zone not null default now(),
+    "updated_at" timestamp with time zone not null default now()
+      );
+
+
+alter table "public"."tier_budgets" enable row level security;
+
+
   create table "public"."tiers" (
     "id" uuid not null default gen_random_uuid(),
     "user_id" uuid not null,
@@ -278,6 +294,14 @@ CREATE INDEX messages_user_id_idx ON public.messages USING btree (user_id);
 
 CREATE UNIQUE INDEX profiles_pkey ON public.profiles USING btree (id);
 
+CREATE UNIQUE INDEX tier_budgets_pkey ON public.tier_budgets USING btree (id);
+
+CREATE INDEX tier_budgets_user_id_idx ON public.tier_budgets USING btree (user_id);
+
+CREATE UNIQUE INDEX tier_budgets_user_id_tier_id_period_year_period_month_key ON public.tier_budgets USING btree (user_id, tier_id, period_year, period_month);
+
+CREATE INDEX tier_budgets_user_period_idx ON public.tier_budgets USING btree (user_id, period_year, period_month);
+
 CREATE UNIQUE INDEX tiers_pkey ON public.tiers USING btree (id);
 
 CREATE INDEX tiers_user_id_idx ON public.tiers USING btree (user_id);
@@ -307,6 +331,8 @@ alter table "public"."incomes" add constraint "incomes_pkey" PRIMARY KEY using i
 alter table "public"."messages" add constraint "messages_pkey" PRIMARY KEY using index "messages_pkey";
 
 alter table "public"."profiles" add constraint "profiles_pkey" PRIMARY KEY using index "profiles_pkey";
+
+alter table "public"."tier_budgets" add constraint "tier_budgets_pkey" PRIMARY KEY using index "tier_budgets_pkey";
 
 alter table "public"."tiers" add constraint "tiers_pkey" PRIMARY KEY using index "tiers_pkey";
 
@@ -496,6 +522,32 @@ alter table "public"."profiles" add constraint "profiles_month_start_day_check" 
 
 alter table "public"."profiles" validate constraint "profiles_month_start_day_check";
 
+alter table "public"."tier_budgets" add constraint "tier_budgets_amount_check" CHECK ((amount >= (0)::numeric)) not valid;
+
+alter table "public"."tier_budgets" validate constraint "tier_budgets_amount_check";
+
+alter table "public"."tier_budgets" add constraint "tier_budgets_currency_check" CHECK ((currency = ANY (ARRAY['IDR'::text, 'USD'::text, 'EUR'::text, 'JPY'::text, 'GBP'::text, 'SGD'::text, 'MYR'::text, 'AUD'::text, 'CAD'::text, 'CNY'::text, 'KRW'::text, 'HKD'::text, 'THB'::text, 'PHP'::text, 'INR'::text, 'VND'::text]))) not valid;
+
+alter table "public"."tier_budgets" validate constraint "tier_budgets_currency_check";
+
+alter table "public"."tier_budgets" add constraint "tier_budgets_period_month_check" CHECK (((period_month >= 1) AND (period_month <= 12))) not valid;
+
+alter table "public"."tier_budgets" validate constraint "tier_budgets_period_month_check";
+
+alter table "public"."tier_budgets" add constraint "tier_budgets_period_year_check" CHECK (((period_year >= 2020) AND (period_year <= 2100))) not valid;
+
+alter table "public"."tier_budgets" validate constraint "tier_budgets_period_year_check";
+
+alter table "public"."tier_budgets" add constraint "tier_budgets_tier_id_fkey" FOREIGN KEY (tier_id) REFERENCES public.tiers(id) ON DELETE CASCADE not valid;
+
+alter table "public"."tier_budgets" validate constraint "tier_budgets_tier_id_fkey";
+
+alter table "public"."tier_budgets" add constraint "tier_budgets_user_id_fkey" FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE not valid;
+
+alter table "public"."tier_budgets" validate constraint "tier_budgets_user_id_fkey";
+
+alter table "public"."tier_budgets" add constraint "tier_budgets_user_id_tier_id_period_year_period_month_key" UNIQUE using index "tier_budgets_user_id_tier_id_period_year_period_month_key";
+
 alter table "public"."tiers" add constraint "tiers_color_check" CHECK ((color ~ '^#[0-9a-fA-F]{6}$'::text)) not valid;
 
 alter table "public"."tiers" validate constraint "tiers_color_check";
@@ -507,6 +559,44 @@ alter table "public"."tiers" validate constraint "tiers_user_id_fkey";
 alter table "public"."tiers" add constraint "tiers_user_id_name_key" UNIQUE using index "tiers_user_id_name_key";
 
 set check_function_bodies = off;
+
+CREATE OR REPLACE FUNCTION public.budget_actuals(p_start_at timestamp with time zone, p_end_at timestamp with time zone, p_base text, p_rates jsonb)
+ RETURNS TABLE(by_category jsonb, by_tier jsonb)
+ LANGUAGE sql
+ STABLE
+ SET search_path TO ''
+AS $function$
+  with base_rate as (
+    select (p_rates ->> p_base)::numeric as r
+  ),
+  converted_expenses as (
+    select
+      e.category_id,
+      c.tier_id,
+      e.amount * (p_rates ->> e.currency)::numeric / nullif((select r from base_rate), 0) as amount_base
+    from public.expenses e
+    left join public.categories c on c.id = e.category_id
+    where e.user_id = (select auth.uid())
+      and e.occurred_at >= p_start_at
+      and e.occurred_at <  p_end_at
+  ),
+  per_category as (
+    select category_id, sum(amount_base) as amount_base
+    from converted_expenses
+    where category_id is not null
+    group by category_id
+  ),
+  per_tier as (
+    select tier_id, sum(amount_base) as amount_base
+    from converted_expenses
+    where tier_id is not null
+    group by tier_id
+  )
+  select
+    coalesce((select jsonb_object_agg(category_id::text, amount_base) from per_category), '{}'::jsonb) as by_category,
+    coalesce((select jsonb_object_agg(tier_id::text, amount_base) from per_tier), '{}'::jsonb)         as by_tier;
+$function$
+;
 
 CREATE OR REPLACE FUNCTION public.dashboard_monthly_summary(p_start_at timestamp with time zone, p_end_at timestamp with time zone, p_base text, p_rates jsonb)
  RETURNS TABLE(spent_total numeric, by_tier jsonb, essentials_spent numeric, uncategorized_spent numeric, income_received_this_cycle numeric)
@@ -1085,6 +1175,48 @@ grant truncate on table "public"."profiles" to "service_role";
 
 grant update on table "public"."profiles" to "service_role";
 
+grant delete on table "public"."tier_budgets" to "anon";
+
+grant insert on table "public"."tier_budgets" to "anon";
+
+grant references on table "public"."tier_budgets" to "anon";
+
+grant select on table "public"."tier_budgets" to "anon";
+
+grant trigger on table "public"."tier_budgets" to "anon";
+
+grant truncate on table "public"."tier_budgets" to "anon";
+
+grant update on table "public"."tier_budgets" to "anon";
+
+grant delete on table "public"."tier_budgets" to "authenticated";
+
+grant insert on table "public"."tier_budgets" to "authenticated";
+
+grant references on table "public"."tier_budgets" to "authenticated";
+
+grant select on table "public"."tier_budgets" to "authenticated";
+
+grant trigger on table "public"."tier_budgets" to "authenticated";
+
+grant truncate on table "public"."tier_budgets" to "authenticated";
+
+grant update on table "public"."tier_budgets" to "authenticated";
+
+grant delete on table "public"."tier_budgets" to "service_role";
+
+grant insert on table "public"."tier_budgets" to "service_role";
+
+grant references on table "public"."tier_budgets" to "service_role";
+
+grant select on table "public"."tier_budgets" to "service_role";
+
+grant trigger on table "public"."tier_budgets" to "service_role";
+
+grant truncate on table "public"."tier_budgets" to "service_role";
+
+grant update on table "public"."tier_budgets" to "service_role";
+
 grant delete on table "public"."tiers" to "anon";
 
 grant insert on table "public"."tiers" to "anon";
@@ -1526,6 +1658,43 @@ with check ((id = ( SELECT auth.uid() AS uid)));
 
 
 
+  create policy "tier_budgets: delete own"
+  on "public"."tier_budgets"
+  as permissive
+  for delete
+  to authenticated
+using ((user_id = ( SELECT auth.uid() AS uid)));
+
+
+
+  create policy "tier_budgets: insert own"
+  on "public"."tier_budgets"
+  as permissive
+  for insert
+  to authenticated
+with check ((user_id = ( SELECT auth.uid() AS uid)));
+
+
+
+  create policy "tier_budgets: select own"
+  on "public"."tier_budgets"
+  as permissive
+  for select
+  to authenticated
+using ((user_id = ( SELECT auth.uid() AS uid)));
+
+
+
+  create policy "tier_budgets: update own"
+  on "public"."tier_budgets"
+  as permissive
+  for update
+  to authenticated
+using ((user_id = ( SELECT auth.uid() AS uid)))
+with check ((user_id = ( SELECT auth.uid() AS uid)));
+
+
+
   create policy "tiers: delete own"
   on "public"."tiers"
   as permissive
@@ -1581,6 +1750,8 @@ CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.income_categories FOR EACH
 CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.incomes FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
 
 CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.profiles FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
+
+CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.tier_budgets FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
 
 CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.tiers FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
 

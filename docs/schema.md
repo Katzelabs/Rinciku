@@ -20,6 +20,7 @@
 8. [`incomes`](#8-incomes) — manual income log (parallel to expenses)
 9. [`income_attachments`](#9-income_attachments) — AI-extracted income document metadata
 10. [`budgets`](#10-budgets) — monthly snapshot per category per month
+10a. [`tier_budgets`](#10a-tier_budgets) — monthly cap per tier per month
 11. [`conversations`](#11-conversations) — AI chat threads
 12. [`messages`](#12-messages) — chat messages with token accounting
 13. [Storage — attachment buckets](#13-storage--attachment-buckets)
@@ -542,6 +543,42 @@ Standard pattern on `user_id`.
 
 ---
 
+## 10a. `tier_budgets`
+
+Per-tier monthly cap, parallel to `budgets` but keyed on `tier_id`. One row per `(user_id, tier_id, period_year, period_month)`. A tier cap is **independent** — not a rollup of its categories' budgets — so a user can cap a whole tier (e.g. "Wants ≤ Rp 3M") without itemizing every category.
+
+### Columns
+
+| column | type | notes |
+|---|---|---|
+| `id` | `uuid` pk | |
+| `user_id` | `uuid not null` | `references auth.users(id) on delete cascade` |
+| `tier_id` | `uuid not null` | `references tiers(id) on delete cascade` — a cap without its tier is meaningless |
+| `period_year` | `smallint not null` | `check (between 2020 and 2100)` |
+| `period_month` | `smallint not null` | `check (between 1 and 12)` |
+| `amount` | `numeric(15,2) not null` | `check (amount >= 0)` — the cap in `currency` |
+| `currency` | `text not null` | `check (currency in (<16 codes>))` — the base in effect when this cap was set |
+| `created_at`, `updated_at` | `timestamptz` | standard |
+
+### Constraints
+- `pk (id)`
+- `unique (user_id, tier_id, period_year, period_month)` — one cap per tier per month
+- `fk (user_id) -> auth.users(id) on delete cascade`
+- `fk (tier_id) -> tiers(id) on delete cascade`
+
+### Indexes
+- `tier_budgets (user_id)` — RLS
+- `tier_budgets (user_id, period_year, period_month)` — this-month's caps query
+
+### RLS
+Standard pattern on `user_id`.
+
+### Notes
+- Same base-at-write-time / convert-at-read-time model as `budgets`.
+- Spend for the cap comes from [`budget_actuals`](#14-helper-functions--triggers) `by_tier`.
+
+---
+
 ## 11. `conversations`
 
 One row per AI chat thread. Each thread is a sequence of [`messages`](#12-messages).
@@ -675,7 +712,10 @@ create trigger set_updated_at before update on public.<t>
   for each row execute function public.set_updated_at();
 ```
 
-Attached to: `profiles`, `tiers`, `categories`, `essentials`, `expenses`, `expense_attachments`, `incomes`, `income_attachments`, `budgets`, `conversations`. (Not `messages` — immutable.)
+Attached to: `profiles`, `tiers`, `categories`, `essentials`, `expenses`, `expense_attachments`, `incomes`, `income_attachments`, `budgets`, `tier_budgets`, `conversations`. (Not `messages` — immutable.)
+
+### `public.budget_actuals(p_start_at, p_end_at, p_base, p_rates)`
+Read-side aggregation for the budgets feature. Sums expenses in the half-open window `[p_start_at, p_end_at)`, FX-converted to `p_base` via the same pivot-through-IDR math as `dashboard_monthly_summary`, and returns two jsonb maps: `by_category` (keyed `category_id::text`) and `by_tier` (keyed `tier_id::text`). The dashboard summary only exposes `by_tier`; budgets also needs `by_category` to compare against per-category targets. `security invoker` + RLS-scoped via `auth.uid()`.
 
 ### `public.handle_new_user()`
 `AFTER INSERT ON auth.users` trigger. Creates a profile row, seeds 3 default tiers, seeds default categories pointed at those tiers, and seeds 4 default income categories.

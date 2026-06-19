@@ -16,6 +16,7 @@ import { formatCurrency } from '@/lib/format';
 import { useAuth } from '@/features/auth';
 import { getMonthlySummary, type MonthlySummary } from '../api';
 import { BudgetHealthIndicator } from '../components/budget-health-indicator';
+import { BudgetTargetsCard } from '../components/budget-targets-card';
 import { TierBreakdown } from '../components/tier-breakdown';
 
 type Response = {
@@ -69,7 +70,9 @@ export function DashboardPage() {
       <Alert variant='destructive'>
         <AlertCircle />
         <AlertTitle>Couldn't load this cycle</AlertTitle>
-        <AlertDescription>{error ?? 'Failed to load dashboard.'}</AlertDescription>
+        <AlertDescription>
+          {error ?? 'Failed to load dashboard.'}
+        </AlertDescription>
         <AlertAction>
           <Button
             size='sm'
@@ -150,6 +153,8 @@ export function DashboardPage() {
           </CardContent>
         </Card>
       </div>
+
+      <BudgetTargetsCard />
     </div>
   );
 }
@@ -184,9 +189,7 @@ function SummaryCard({
             {secondary}
           </p>
         ) : null}
-        {hint ? (
-          <p className='text-xs text-muted-foreground'>{hint}</p>
-        ) : null}
+        {hint ? <p className='text-xs text-muted-foreground'>{hint}</p> : null}
       </CardContent>
     </Card>
   );

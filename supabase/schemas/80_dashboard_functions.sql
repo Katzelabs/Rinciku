@@ -76,3 +76,55 @@ $$;
 
 grant execute on function public.dashboard_monthly_summary(timestamptz, timestamptz, text, jsonb)
   to authenticated;
+
+-- Per-category and per-tier spend for the window, FX-converted to p_base using
+-- the same pivot-through-IDR math as dashboard_monthly_summary. The dashboard
+-- summary only exposes by_tier; the budgets feature also needs by_category to
+-- compare against per-category targets. Both maps key amounts by id::text.
+create or replace function public.budget_actuals(
+  p_start_at timestamptz,
+  p_end_at   timestamptz,
+  p_base     text,
+  p_rates    jsonb
+) returns table (
+  by_category jsonb,
+  by_tier     jsonb
+)
+language sql
+stable
+security invoker
+set search_path = ''
+as $$
+  with base_rate as (
+    select (p_rates ->> p_base)::numeric as r
+  ),
+  converted_expenses as (
+    select
+      e.category_id,
+      c.tier_id,
+      e.amount * (p_rates ->> e.currency)::numeric / nullif((select r from base_rate), 0) as amount_base
+    from public.expenses e
+    left join public.categories c on c.id = e.category_id
+    where e.user_id = (select auth.uid())
+      and e.occurred_at >= p_start_at
+      and e.occurred_at <  p_end_at
+  ),
+  per_category as (
+    select category_id, sum(amount_base) as amount_base
+    from converted_expenses
+    where category_id is not null
+    group by category_id
+  ),
+  per_tier as (
+    select tier_id, sum(amount_base) as amount_base
+    from converted_expenses
+    where tier_id is not null
+    group by tier_id
+  )
+  select
+    coalesce((select jsonb_object_agg(category_id::text, amount_base) from per_category), '{}'::jsonb) as by_category,
+    coalesce((select jsonb_object_agg(tier_id::text, amount_base) from per_tier), '{}'::jsonb)         as by_tier;
+$$;
+
+grant execute on function public.budget_actuals(timestamptz, timestamptz, text, jsonb)
+  to authenticated;

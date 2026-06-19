@@ -15,10 +15,7 @@ import {
 import { cn } from '@/lib/utils';
 import { formatCurrency } from '@/lib/format';
 import type { CurrencyCode } from '@/lib/fx';
-import {
-  getIncomeAttachmentSignedUrl,
-  type IncomeWithRelations,
-} from '../api';
+import { getIncomeAttachmentSignedUrl, type IncomeWithRelations } from '../api';
 
 type Props = {
   rows: IncomeWithRelations[];

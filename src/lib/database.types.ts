@@ -545,6 +545,50 @@ export type Database = {
         };
         Relationships: [];
       };
+      tier_budgets: {
+        Row: {
+          amount: number;
+          created_at: string;
+          currency: string;
+          id: string;
+          period_month: number;
+          period_year: number;
+          tier_id: string;
+          updated_at: string;
+          user_id: string;
+        };
+        Insert: {
+          amount: number;
+          created_at?: string;
+          currency: string;
+          id?: string;
+          period_month: number;
+          period_year: number;
+          tier_id: string;
+          updated_at?: string;
+          user_id: string;
+        };
+        Update: {
+          amount?: number;
+          created_at?: string;
+          currency?: string;
+          id?: string;
+          period_month?: number;
+          period_year?: number;
+          tier_id?: string;
+          updated_at?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'tier_budgets_tier_id_fkey';
+            columns: ['tier_id'];
+            isOneToOne: false;
+            referencedRelation: 'tiers';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       tiers: {
         Row: {
           color: string | null;
@@ -586,6 +630,18 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
+      budget_actuals: {
+        Args: {
+          p_base: string;
+          p_end_at: string;
+          p_rates: Json;
+          p_start_at: string;
+        };
+        Returns: {
+          by_category: Json;
+          by_tier: Json;
+        }[];
+      };
       dashboard_monthly_summary: {
         Args: {
           p_base: string;

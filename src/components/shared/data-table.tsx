@@ -7,7 +7,10 @@ import { cn } from '@/lib/utils';
  * row-spacing styling so the expenses, incomes, and essentials tables stay
  * visually consistent. Compose the usual `Table*` primitives as children.
  */
-export function DataTable({ className, ...props }: React.ComponentProps<'table'>) {
+export function DataTable({
+  className,
+  ...props
+}: React.ComponentProps<'table'>) {
   return (
     <div className='rounded-md border'>
       <Table

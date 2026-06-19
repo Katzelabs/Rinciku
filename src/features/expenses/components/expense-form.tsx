@@ -92,8 +92,7 @@ export function ExpenseForm({
   // On create, currency is locked to the user's current base. On edit, preserve
   // the row's stored currency so historical rows are not silently rewritten.
   const baseCurrency = (profile?.base_currency ?? 'IDR') as CurrencyCode;
-  const lockedCurrency: CurrencyCode =
-    defaultValues?.currency ?? baseCurrency;
+  const lockedCurrency: CurrencyCode = defaultValues?.currency ?? baseCurrency;
 
   const {
     register,
@@ -155,7 +154,8 @@ export function ExpenseForm({
         userId: user.id,
         occurredAt: values.occurred_at,
       });
-      if (upload.error || !upload.data) throw upload.error ?? new Error('Upload failed');
+      if (upload.error || !upload.data)
+        throw upload.error ?? new Error('Upload failed');
       const storage_path = upload.data.storage_path;
 
       const attachmentInsert = await createAttachment({
