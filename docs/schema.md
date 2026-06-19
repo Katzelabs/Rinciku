@@ -217,6 +217,9 @@ Per-user, **free-form** spending tiers. Replaces the old hardcoded `fixed|needs|
 - `unique (user_id, name)` — one tier per name per user
 - `fk (user_id) -> auth.users(id) on delete cascade`
 
+### Limits
+- Max **6** active (non-archived) tiers per user, enforced by the `enforce_tier_limit` `before insert` trigger (raises `check_violation`). Mirrored client-side as `MAX_TIERS` in `src/features/categories/lib/limits.ts`.
+
 ### Indexes
 - `tiers (user_id)` — RLS
 - `tiers (user_id, sort_order)` — ordered picker / card list
@@ -257,6 +260,9 @@ Per-user spending categories, each pointing at a [tier](#4-tiers). Seeded with d
 - `fk (user_id) -> auth.users(id) on delete cascade`
 - `fk (tier_id) -> tiers(id) on delete set null`
 
+### Limits
+- Max **15** active (non-archived) categories **per tier**, enforced by the `enforce_category_limit` trigger on `before insert` and on `before update of tier_id` (so a category can't be moved into a full tier). Only enforced when `tier_id is not null` — the "Untiered" bucket is uncapped. Mirrored client-side as `MAX_CATEGORIES_PER_TIER` in `src/features/categories/lib/limits.ts`.
+
 ### Indexes
 - `categories (user_id)` — RLS
 - `categories (user_id, tier_id, sort_order)` — sidebar / picker queries
@@ -294,6 +300,9 @@ Per-user **income source taxonomy** (e.g. Salary, Freelance, Investment). Flat �
 - `pk (id)`
 - `unique (user_id, name)` — one income category per name per user; archived rows still count
 - `fk (user_id) -> auth.users(id) on delete cascade`
+
+### Limits
+- Max **20** active (non-archived) income categories per user, enforced by the `enforce_income_category_limit` `before insert` trigger (raises `check_violation`). Mirrored client-side as `MAX_INCOME_CATEGORIES` in `src/features/incomes/lib/limits.ts`.
 
 ### Indexes
 - `income_categories (user_id)` — RLS

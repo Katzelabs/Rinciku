@@ -21,6 +21,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import type { CurrencyCode } from '@/lib/fx';
+import { useAuth } from '@/features/auth';
 import {
   deleteEssential,
   listEssentials,
@@ -37,6 +38,8 @@ type DialogState =
   | null;
 
 export function EssentialsPage() {
+  const { profile } = useAuth();
+  const baseCurrency = (profile?.base_currency ?? 'IDR') as CurrencyCode;
   const [dialog, setDialog] = useState<DialogState>(null);
   const [deleting, setDeleting] = useState(false);
   const [refetchToken, setRefetchToken] = useState(0);
@@ -110,6 +113,7 @@ export function EssentialsPage() {
       ) : (
         <EssentialTable
           rows={rows}
+          baseCurrency={baseCurrency}
           onAdd={() => setDialog({ kind: 'create' })}
           onEdit={(row) => setDialog({ kind: 'edit', row })}
           onDelete={(row) => setDialog({ kind: 'delete', row })}

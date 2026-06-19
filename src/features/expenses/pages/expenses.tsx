@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Plus } from 'lucide-react';
 import { toast } from 'sonner';
+import type { PaginationState } from '@tanstack/react-table';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -11,33 +12,24 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Spinner } from '@/components/ui/spinner';
-import { supabase } from '@/lib/supabase';
-import { ensureRates, getCurrentRates, type CurrencyCode } from '@/lib/fx';
+import type { DateRangeValue } from '@/components/shared/date-range-picker';
+import { useDebouncedValue } from '@/hooks/use-debounced-value';
+import { convertToBase, ensureRates, type CurrencyCode } from '@/lib/fx';
 import { useAuth } from '@/features/auth';
-import { useTiers } from '@/features/categories/hooks/use-categories';
 import {
   deleteAttachmentObject,
   deleteExpense,
   listExpenses,
+  sumExpenses,
   type ExpenseWithRelations,
 } from '../api';
 import { ExpenseDetailDialog } from '../components/expense-detail-dialog';
 import { ExpenseFilters } from '../components/expense-filters';
 import { ExpenseForm } from '../components/expense-form';
 import { ExpenseTable } from '../components/expense-table';
-import { getCurrentCycle, getCycleRange, type Cycle } from '../lib/cycle';
+import { getCurrentCycle, getCycleRange } from '../lib/cycle';
 
-type MonthlyTotals = {
-  spent_total: number;
-  by_tier: Record<string, number>;
-  uncategorized_spent: number;
-};
-
-const EMPTY_TOTALS: MonthlyTotals = {
-  spent_total: 0,
-  by_tier: {},
-  uncategorized_spent: 0,
-};
+const DEFAULT_PAGE_SIZE = 10;
 
 type DialogState =
   | { kind: 'create' }
@@ -51,100 +43,104 @@ export function ExpensesPage() {
   const startDay = profile?.month_start_day ?? 1;
   const baseCurrency = (profile?.base_currency ?? 'IDR') as CurrencyCode;
 
-  const { data: availableTiers } = useTiers();
-  const [cycle, setCycle] = useState<Cycle>(() =>
-    getCurrentCycle(new Date(), startDay)
-  );
-  // Empty set means "no filter" — show every tier.
-  const [selectedTierIds, setSelectedTierIds] = useState<Set<string>>(
-    () => new Set()
-  );
+  const [customRange, setCustomRange] = useState<DateRangeValue | null>(null);
+  const [search, setSearch] = useState('');
+  const [categoryIds, setCategoryIds] = useState<string[]>([]);
+  const [pagination, setPagination] = useState<PaginationState>({
+    pageIndex: 0,
+    pageSize: DEFAULT_PAGE_SIZE,
+  });
   const [dialog, setDialog] = useState<DialogState>(null);
   const [deleting, setDeleting] = useState(false);
   const [refetchToken, setRefetchToken] = useState(0);
 
-  const fetchKey = `${cycle.year}-${cycle.month}-${startDay}-${baseCurrency}-${refetchToken}`;
+  const debouncedSearch = useDebouncedValue(search, 300);
+  const { pageIndex, pageSize } = pagination;
+  // Default to the current billing cycle until the user picks a custom range.
+  const cycle = getCurrentCycle(new Date(), startDay);
+  const dateRange =
+    customRange ?? getCycleRange(cycle.year, cycle.month, startDay);
+  const fromIso = dateRange.from.toISOString();
+  const toIso = dateRange.to.toISOString();
+
+  const fetchKey = `${fromIso}|${toIso}|${categoryIds.join(',')}|${debouncedSearch}|${pageIndex}|${pageSize}|${baseCurrency}|${refetchToken}`;
   const [response, setResponse] = useState<{
     key: string;
     rows: ExpenseWithRelations[];
-    totals: MonthlyTotals;
+    count: number;
+    total: number;
     error: string | null;
   } | null>(null);
 
   useEffect(() => {
     let cancelled = false;
-    const { from, to } = getCycleRange(cycle.year, cycle.month, startDay);
-    // listExpenses uses .lte(occurred_at, to) so `to` is the inclusive last
-    // instant. The RPC window is half-open [start, end), so pass `to + 1ms`
-    // as p_end_at to keep both queries over the same set of rows.
-    const fromIso = from.toISOString();
-    const toIso = to.toISOString();
-    const endExclusiveIso = new Date(to.getTime() + 1).toISOString();
-
     ensureRates()
       .then(() =>
         Promise.all([
-          listExpenses({ from: fromIso, to: toIso }),
-          supabase
-            .rpc('dashboard_monthly_summary', {
-              p_start_at: fromIso,
-              p_end_at: endExclusiveIso,
-              p_base: baseCurrency,
-              p_rates: getCurrentRates(),
-            })
-            .single(),
+          listExpenses({
+            from: fromIso,
+            to: toIso,
+            categoryIds,
+            search: debouncedSearch,
+            limit: pageSize,
+            offset: pageIndex * pageSize,
+          }),
+          sumExpenses({
+            from: fromIso,
+            to: toIso,
+            categoryIds,
+            search: debouncedSearch,
+          }),
         ])
       )
-      .then(([listRes, summaryRes]) => {
+      .then(([listRes, sumRes]) => {
         if (cancelled) return;
-        const errorMessage =
-          listRes.error?.message ?? summaryRes.error?.message ?? null;
-        const totals: MonthlyTotals = summaryRes.data
-          ? {
-              spent_total: Number(summaryRes.data.spent_total ?? 0),
-              by_tier: parseTierTotals(summaryRes.data.by_tier),
-              uncategorized_spent: Number(
-                summaryRes.data.uncategorized_spent ?? 0
-              ),
-            }
-          : EMPTY_TOTALS;
+        const amounts = sumRes.data ?? [];
+        const total = amounts.reduce(
+          (sum, row) =>
+            sum +
+            convertToBase(
+              Number(row.amount),
+              row.currency as CurrencyCode,
+              baseCurrency
+            ).amount_base,
+          0
+        );
         setResponse({
           key: fetchKey,
           rows: listRes.data ?? [],
-          totals,
-          error: errorMessage,
+          // The sum query returns every matching row, so its length is the
+          // exact filtered total — PostgREST's `count` is null for selects
+          // with embedded relations, so we can't rely on listRes.count.
+          count: sumRes.data ? amounts.length : (listRes.count ?? 0),
+          total: Math.round(total * 100) / 100,
+          error: listRes.error?.message ?? sumRes.error?.message ?? null,
         });
       });
     return () => {
       cancelled = true;
     };
-  }, [fetchKey, cycle.year, cycle.month, startDay, baseCurrency]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    fromIso,
+    toIso,
+    categoryIds,
+    debouncedSearch,
+    pageIndex,
+    pageSize,
+    baseCurrency,
+    refetchToken,
+  ]);
 
   const loading = response?.key !== fetchKey;
   const error = response?.error ?? null;
+  const rows = response?.rows ?? [];
+  const total = response?.total ?? 0;
+  const pageCount = Math.ceil((response?.count ?? 0) / pageSize);
 
-  const filteredRows = useMemo(() => {
-    const rows = response?.rows ?? [];
-    if (selectedTierIds.size === 0) return rows;
-    return rows.filter((row) => {
-      const tierId = row.category?.tier_id ?? null;
-      // Rows with no tier (uncategorized or untiered) always show.
-      if (!tierId) return true;
-      return selectedTierIds.has(tierId);
-    });
-  }, [response, selectedTierIds]);
-
-  const total = useMemo(() => {
-    const totals = response?.totals ?? EMPTY_TOTALS;
-    if (selectedTierIds.size === 0) return round2(totals.spent_total);
-    // Untiered/uncategorized rows always appear in the filtered list (see
-    // filteredRows above), so they always contribute to the total.
-    let sum = totals.uncategorized_spent;
-    for (const tierId of selectedTierIds) {
-      sum += totals.by_tier[tierId] ?? 0;
-    }
-    return round2(sum);
-  }, [response, selectedTierIds]);
+  function resetToFirstPage() {
+    setPagination((prev) => ({ ...prev, pageIndex: 0 }));
+  }
 
   function refetch() {
     setRefetchToken((n) => n + 1);
@@ -176,7 +172,7 @@ export function ExpensesPage() {
         <div>
           <h1 className='text-2xl font-semibold'>Expenses</h1>
           <p className='text-sm text-muted-foreground'>
-            Log and review your spending for this cycle.
+            Log and review your spending for the selected range.
           </p>
         </div>
         <Button onClick={() => setDialog({ kind: 'create' })}>
@@ -186,27 +182,36 @@ export function ExpensesPage() {
       </div>
 
       <ExpenseFilters
-        cycle={cycle}
-        onCycleChange={setCycle}
-        startDay={startDay}
-        availableTiers={availableTiers ?? []}
-        selectedTierIds={selectedTierIds}
-        onTiersChange={setSelectedTierIds}
+        search={search}
+        onSearchChange={(value) => {
+          setSearch(value);
+          resetToFirstPage();
+        }}
+        categoryIds={categoryIds}
+        onCategoryIdsChange={(value) => {
+          setCategoryIds(value);
+          resetToFirstPage();
+        }}
+        dateRange={dateRange}
+        onDateRangeChange={(value) => {
+          setCustomRange(value);
+          resetToFirstPage();
+        }}
       />
 
-      {loading ? (
-        <div className='flex items-center justify-center py-12'>
-          <Spinner />
-        </div>
-      ) : error ? (
+      {error ? (
         <div className='rounded-md border border-destructive/50 bg-destructive/5 p-4 text-sm text-destructive'>
           Failed to load expenses: {error}
         </div>
       ) : (
         <ExpenseTable
-          rows={filteredRows}
+          rows={rows}
           total={total}
           baseCurrency={baseCurrency}
+          isLoading={loading}
+          pagination={pagination}
+          pageCount={pageCount}
+          onPaginationChange={setPagination}
           onView={(row) => setDialog({ kind: 'view', row })}
           onEdit={(row) => setDialog({ kind: 'edit', row })}
           onDelete={(row) => setDialog({ kind: 'delete', row })}
@@ -318,19 +323,4 @@ export function ExpensesPage() {
       </Dialog>
     </div>
   );
-}
-
-// The SQL function returns by_tier as a jsonb map { tier_id: amount }.
-function parseTierTotals(raw: unknown): Record<string, number> {
-  const totals: Record<string, number> = {};
-  if (raw && typeof raw === 'object' && !Array.isArray(raw)) {
-    for (const [tierId, amount] of Object.entries(raw)) {
-      totals[tierId] = Number(amount ?? 0);
-    }
-  }
-  return totals;
-}
-
-function round2(n: number): number {
-  return Math.round(n * 100) / 100;
 }

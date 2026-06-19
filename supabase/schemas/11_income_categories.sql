@@ -22,6 +22,23 @@ create index income_categories_user_sort_idx  on public.income_categories (user_
 create trigger set_updated_at before update on public.income_categories
   for each row execute function public.set_updated_at();
 
+-- Cap active (non-archived) income categories at 20 per user. security definer
+-- + empty search_path so the count isn't re-filtered by the caller's RLS.
+create or replace function public.enforce_income_category_limit()
+returns trigger language plpgsql security definer set search_path = '' as $$
+begin
+  if (select count(*) from public.income_categories
+      where user_id = new.user_id and is_archived = false) >= 20 then
+    raise exception 'Income category limit reached. You can have at most 20 income categories.'
+      using errcode = 'check_violation';
+  end if;
+  return new;
+end;
+$$;
+
+create trigger enforce_income_category_limit before insert on public.income_categories
+  for each row execute function public.enforce_income_category_limit();
+
 alter table public.income_categories enable row level security;
 
 create policy "income_categories: select own" on public.income_categories for select to authenticated

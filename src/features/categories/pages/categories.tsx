@@ -35,6 +35,7 @@ import { deleteCategory, deleteTier, listCategories, listTiers } from '../api';
 import { CategoryForm } from '../components/category-form';
 import { CategoryIcon } from '../components/category-icon';
 import { TierForm } from '../components/tier-form';
+import { MAX_CATEGORIES_PER_TIER, MAX_TIERS } from '../lib/limits';
 import {
   groupByTier,
   type Tier,
@@ -147,11 +148,22 @@ export function CategoriesPage() {
               <h2 className='text-lg font-semibold'>Spending tiers</h2>
               <p className='text-sm text-muted-foreground'>
                 Organize your spending into tiers you control.
+                {!loading && (
+                  <>
+                    {' '}
+                    <span className='font-medium'>
+                      {tiers.length} / {MAX_TIERS}
+                    </span>
+                    {tiers.length >= MAX_TIERS &&
+                      ` — you've reached the ${MAX_TIERS}-tier limit.`}
+                  </>
+                )}
               </p>
             </div>
             <Button
               size='sm'
               onClick={() => setDialog({ kind: 'create-tier' })}
+              disabled={loading || tiers.length >= MAX_TIERS}
             >
               <Plus className='size-4' />
               Add tier
@@ -377,6 +389,7 @@ function TierCard({
 }: TierCardProps) {
   const { tier, categories } = group;
   const color = tier?.color ?? '#94a3b8';
+  const atCategoryLimit = categories.length >= MAX_CATEGORIES_PER_TIER;
 
   return (
     <Card>
@@ -393,6 +406,11 @@ function TierCard({
               Essential
             </Badge>
           )}
+          {tier && (
+            <span className='ml-auto text-sm font-normal text-muted-foreground'>
+              {categories.length} / {MAX_CATEGORIES_PER_TIER}
+            </span>
+          )}
         </CardTitle>
         <p className='text-sm text-muted-foreground'>
           {tier
@@ -407,6 +425,12 @@ function TierCard({
               size='sm'
               variant='outline'
               onClick={() => onAddCategory(tier.id)}
+              disabled={atCategoryLimit}
+              title={
+                atCategoryLimit
+                  ? `Each tier can have at most ${MAX_CATEGORIES_PER_TIER} categories.`
+                  : undefined
+              }
             >
               <Plus className='size-4' />
               Add category

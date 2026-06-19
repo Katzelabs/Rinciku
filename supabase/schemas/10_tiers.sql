@@ -23,6 +23,23 @@ create index tiers_user_sort_idx      on public.tiers (user_id, sort_order);
 create trigger set_updated_at before update on public.tiers
   for each row execute function public.set_updated_at();
 
+-- Cap active (non-archived) tiers at 6 per user. security definer + empty
+-- search_path so the count isn't re-filtered by the caller's RLS.
+create or replace function public.enforce_tier_limit()
+returns trigger language plpgsql security definer set search_path = '' as $$
+begin
+  if (select count(*) from public.tiers
+      where user_id = new.user_id and is_archived = false) >= 6 then
+    raise exception 'Tier limit reached. You can have at most 6 tiers.'
+      using errcode = 'check_violation';
+  end if;
+  return new;
+end;
+$$;
+
+create trigger enforce_tier_limit before insert on public.tiers
+  for each row execute function public.enforce_tier_limit();
+
 alter table public.tiers enable row level security;
 
 create policy "tiers: select own" on public.tiers for select to authenticated

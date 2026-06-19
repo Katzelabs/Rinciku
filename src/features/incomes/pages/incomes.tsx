@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Plus } from 'lucide-react';
 import { toast } from 'sonner';
+import type { PaginationState } from '@tanstack/react-table';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -11,23 +12,27 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Spinner } from '@/components/ui/spinner';
-import { convertToBase, type CurrencyCode } from '@/lib/fx';
+import type { DateRangeValue } from '@/components/shared/date-range-picker';
+import { useDebouncedValue } from '@/hooks/use-debounced-value';
+import { convertToBase, ensureRates, type CurrencyCode } from '@/lib/fx';
 import { useAuth } from '@/features/auth';
 import {
   getCurrentCycle,
   getCycleRange,
-  type Cycle,
 } from '@/features/expenses/lib/cycle';
 import {
   deleteIncome,
   deleteIncomeAttachmentObject,
   listIncomes,
+  sumIncomes,
   type IncomeWithRelations,
 } from '../api';
 import { IncomeDetailDialog } from '../components/income-detail-dialog';
 import { IncomeFilters } from '../components/income-filters';
 import { IncomeForm } from '../components/income-form';
 import { IncomeTable } from '../components/income-table';
+
+const DEFAULT_PAGE_SIZE = 10;
 
 type DialogState =
   | { kind: 'create' }
@@ -41,56 +46,104 @@ export function IncomesPage() {
   const startDay = profile?.month_start_day ?? 1;
   const baseCurrency = (profile?.base_currency ?? 'IDR') as CurrencyCode;
 
-  const [cycle, setCycle] = useState<Cycle>(() =>
-    getCurrentCycle(new Date(), startDay)
-  );
+  const [customRange, setCustomRange] = useState<DateRangeValue | null>(null);
+  const [search, setSearch] = useState('');
+  const [categoryIds, setCategoryIds] = useState<string[]>([]);
+  const [pagination, setPagination] = useState<PaginationState>({
+    pageIndex: 0,
+    pageSize: DEFAULT_PAGE_SIZE,
+  });
   const [dialog, setDialog] = useState<DialogState>(null);
   const [deleting, setDeleting] = useState(false);
   const [refetchToken, setRefetchToken] = useState(0);
 
-  const fetchKey = `${cycle.year}-${cycle.month}-${startDay}-${refetchToken}`;
+  const debouncedSearch = useDebouncedValue(search, 300);
+  const { pageIndex, pageSize } = pagination;
+  // Default to the current billing cycle until the user picks a custom range.
+  const cycle = getCurrentCycle(new Date(), startDay);
+  const dateRange =
+    customRange ?? getCycleRange(cycle.year, cycle.month, startDay);
+  const fromIso = dateRange.from.toISOString();
+  const toIso = dateRange.to.toISOString();
+
+  const fetchKey = `${fromIso}|${toIso}|${categoryIds.join(',')}|${debouncedSearch}|${pageIndex}|${pageSize}|${baseCurrency}|${refetchToken}`;
   const [response, setResponse] = useState<{
     key: string;
     rows: IncomeWithRelations[];
+    count: number;
+    total: number;
     error: string | null;
   } | null>(null);
 
   useEffect(() => {
     let cancelled = false;
-    const { from, to } = getCycleRange(cycle.year, cycle.month, startDay);
-    listIncomes({ from: from.toISOString(), to: to.toISOString() }).then(
-      ({ data, error }) => {
+    ensureRates()
+      .then(() =>
+        Promise.all([
+          listIncomes({
+            from: fromIso,
+            to: toIso,
+            categoryIds,
+            search: debouncedSearch,
+            limit: pageSize,
+            offset: pageIndex * pageSize,
+          }),
+          sumIncomes({
+            from: fromIso,
+            to: toIso,
+            categoryIds,
+            search: debouncedSearch,
+          }),
+        ])
+      )
+      .then(([listRes, sumRes]) => {
         if (cancelled) return;
+        const amounts = sumRes.data ?? [];
+        const total = amounts.reduce(
+          (sum, row) =>
+            sum +
+            convertToBase(
+              Number(row.amount),
+              row.currency as CurrencyCode,
+              baseCurrency
+            ).amount_base,
+          0
+        );
         setResponse({
           key: fetchKey,
-          rows: data ?? [],
-          error: error?.message ?? null,
+          rows: listRes.data ?? [],
+          // The sum query returns every matching row, so its length is the
+          // exact filtered total — PostgREST's `count` is null for selects
+          // with embedded relations, so we can't rely on listRes.count.
+          count: sumRes.data ? amounts.length : (listRes.count ?? 0),
+          total: Math.round(total * 100) / 100,
+          error: listRes.error?.message ?? sumRes.error?.message ?? null,
         });
-      }
-    );
+      });
     return () => {
       cancelled = true;
     };
-  }, [fetchKey, cycle.year, cycle.month, startDay]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    fromIso,
+    toIso,
+    categoryIds,
+    debouncedSearch,
+    pageIndex,
+    pageSize,
+    baseCurrency,
+    refetchToken,
+  ]);
 
   const loading = response?.key !== fetchKey;
   const error = response?.error ?? null;
-  const rows = useMemo(() => response?.rows ?? [], [response]);
+  const rows = response?.rows ?? [];
+  const total = response?.total ?? 0;
+  const pageCount = Math.ceil((response?.count ?? 0) / pageSize);
 
-  const total = useMemo(
-    () =>
-      rows.reduce(
-        (sum, row) =>
-          sum +
-          convertToBase(
-            Number(row.amount),
-            row.currency as CurrencyCode,
-            baseCurrency
-          ).amount_base,
-        0
-      ),
-    [rows, baseCurrency]
-  );
+  function resetToFirstPage() {
+    setPagination((prev) => ({ ...prev, pageIndex: 0 }));
+  }
 
   function refetch() {
     setRefetchToken((n) => n + 1);
@@ -132,16 +185,24 @@ export function IncomesPage() {
       </div>
 
       <IncomeFilters
-        cycle={cycle}
-        onCycleChange={setCycle}
-        startDay={startDay}
+        search={search}
+        onSearchChange={(value) => {
+          setSearch(value);
+          resetToFirstPage();
+        }}
+        categoryIds={categoryIds}
+        onCategoryIdsChange={(value) => {
+          setCategoryIds(value);
+          resetToFirstPage();
+        }}
+        dateRange={dateRange}
+        onDateRangeChange={(value) => {
+          setCustomRange(value);
+          resetToFirstPage();
+        }}
       />
 
-      {loading ? (
-        <div className='flex items-center justify-center py-12'>
-          <Spinner />
-        </div>
-      ) : error ? (
+      {error ? (
         <div className='rounded-md border border-destructive/50 bg-destructive/5 p-4 text-sm text-destructive'>
           Failed to load incomes: {error}
         </div>
@@ -150,6 +211,10 @@ export function IncomesPage() {
           rows={rows}
           total={total}
           baseCurrency={baseCurrency}
+          isLoading={loading}
+          pagination={pagination}
+          pageCount={pageCount}
+          onPaginationChange={setPagination}
           onView={(row) => setDialog({ kind: 'view', row })}
           onEdit={(row) => setDialog({ kind: 'edit', row })}
           onDelete={(row) => setDialog({ kind: 'delete', row })}

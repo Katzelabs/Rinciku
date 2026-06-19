@@ -20,6 +20,32 @@ create index categories_user_tier_sort_idx on public.categories (user_id, tier_i
 create trigger set_updated_at before update on public.categories
   for each row execute function public.set_updated_at();
 
+-- Cap active (non-archived) categories at 15 per tier. Only enforced when a
+-- category is tiered; the "Untiered" bucket (tier deleted) is left uncapped.
+-- Fires on insert and on a tier change, so a category can't be moved into a
+-- full tier. `id <> new.id` keeps the move-trigger from counting itself.
+create or replace function public.enforce_category_limit()
+returns trigger language plpgsql security definer set search_path = '' as $$
+begin
+  if new.tier_id is not null
+     and (select count(*) from public.categories
+          where user_id = new.user_id
+            and tier_id = new.tier_id
+            and is_archived = false
+            and id <> new.id) >= 15 then
+    raise exception 'Category limit reached. Each tier can have at most 15 categories.'
+      using errcode = 'check_violation';
+  end if;
+  return new;
+end;
+$$;
+
+create trigger enforce_category_limit before insert on public.categories
+  for each row execute function public.enforce_category_limit();
+create trigger enforce_category_limit_on_move before update of tier_id on public.categories
+  for each row when (new.tier_id is distinct from old.tier_id)
+  execute function public.enforce_category_limit();
+
 alter table public.categories enable row level security;
 
 create policy "categories: select own" on public.categories for select to authenticated

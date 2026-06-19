@@ -30,6 +30,7 @@ import { CategoryIcon } from '@/features/categories/components/category-icon';
 import type { Tables } from '@/lib/database.types';
 
 import { deleteIncomeCategory, listIncomeCategories } from '../api';
+import { MAX_INCOME_CATEGORIES } from '../lib/limits';
 import { IncomeCategoryForm } from './income-category-form';
 
 type IncomeCategory = Tables<'income_categories'>;
@@ -104,9 +105,23 @@ export function IncomeCategoriesPanel() {
           <CardTitle>Income categories</CardTitle>
           <p className='text-sm text-muted-foreground'>
             Label where your money comes from — salary, freelance, investments.
+            {!loading && (
+              <>
+                {' '}
+                <span className='font-medium'>
+                  {categories.length} / {MAX_INCOME_CATEGORIES}
+                </span>
+                {categories.length >= MAX_INCOME_CATEGORIES &&
+                  ` — you've reached the ${MAX_INCOME_CATEGORIES}-category limit.`}
+              </>
+            )}
           </p>
           <CardAction>
-            <Button size='sm' onClick={() => setDialog({ kind: 'create' })}>
+            <Button
+              size='sm'
+              onClick={() => setDialog({ kind: 'create' })}
+              disabled={loading || categories.length >= MAX_INCOME_CATEGORIES}
+            >
               <Plus className='size-4' />
               Add category
             </Button>

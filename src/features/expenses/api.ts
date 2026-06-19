@@ -28,8 +28,20 @@ export type ExpenseWithRelations = ExpenseRow & {
 export type ListExpensesParams = {
   from: string;
   to: string;
-  categoryId?: string;
+  categoryIds?: string[];
+  search?: string;
+  limit: number;
+  offset: number;
 };
+
+export type SumExpensesParams = {
+  from: string;
+  to: string;
+  categoryIds?: string[];
+  search?: string;
+};
+
+export type ExpenseAmountRow = Pick<ExpenseRow, 'amount' | 'currency'>;
 
 export type CreateExpenseInput = {
   user_id: string;
@@ -59,6 +71,12 @@ type Result<T> = {
   error: PostgrestError | null;
 };
 
+type PaginatedResult<T> = {
+  data: T[] | null;
+  count: number | null;
+  error: PostgrestError | null;
+};
+
 type StorageResult<T> = {
   data: T | null;
   error: Error | null;
@@ -82,20 +100,54 @@ const EXPENSE_WITH_RELATIONS_SELECT =
 export async function listExpenses({
   from,
   to,
-  categoryId,
-}: ListExpensesParams): Promise<Result<ExpenseWithRelations[]>> {
+  categoryIds,
+  search,
+  limit,
+  offset,
+}: ListExpensesParams): Promise<PaginatedResult<ExpenseWithRelations>> {
   let query = supabase
     .from('expenses')
-    .select(EXPENSE_WITH_RELATIONS_SELECT)
+    .select(EXPENSE_WITH_RELATIONS_SELECT, { count: 'exact' })
     .gte('occurred_at', from)
     .lte('occurred_at', to)
     .order('occurred_at', { ascending: false });
 
-  if (categoryId) {
-    query = query.eq('category_id', categoryId);
+  if (categoryIds && categoryIds.length > 0) {
+    query = query.in('category_id', categoryIds);
+  }
+  if (search && search.trim()) {
+    query = query.ilike('note', `%${search.trim()}%`);
   }
 
-  const { data, error } = await query.returns<ExpenseWithRelations[]>();
+  const { data, error, count } = await query
+    .range(offset, offset + limit - 1)
+    .returns<ExpenseWithRelations[]>();
+  return { data, count, error };
+}
+
+// Lightweight aggregate for the footer total: same filters as listExpenses but
+// every matching row (no paging) and only the columns needed to convert + sum
+// client-side. Keeps the total accurate across all pages of the filtered set.
+export async function sumExpenses({
+  from,
+  to,
+  categoryIds,
+  search,
+}: SumExpensesParams): Promise<Result<ExpenseAmountRow[]>> {
+  let query = supabase
+    .from('expenses')
+    .select('amount, currency')
+    .gte('occurred_at', from)
+    .lte('occurred_at', to);
+
+  if (categoryIds && categoryIds.length > 0) {
+    query = query.in('category_id', categoryIds);
+  }
+  if (search && search.trim()) {
+    query = query.ilike('note', `%${search.trim()}%`);
+  }
+
+  const { data, error } = await query.returns<ExpenseAmountRow[]>();
   return { data, error };
 }
 

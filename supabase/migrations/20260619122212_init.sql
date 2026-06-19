@@ -654,6 +654,61 @@ AS $function$
 $function$
 ;
 
+CREATE OR REPLACE FUNCTION public.enforce_category_limit()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+begin
+  if new.tier_id is not null
+     and (select count(*) from public.categories
+          where user_id = new.user_id
+            and tier_id = new.tier_id
+            and is_archived = false
+            and id <> new.id) >= 15 then
+    raise exception 'Category limit reached. Each tier can have at most 15 categories.'
+      using errcode = 'check_violation';
+  end if;
+  return new;
+end;
+$function$
+;
+
+CREATE OR REPLACE FUNCTION public.enforce_income_category_limit()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+begin
+  if (select count(*) from public.income_categories
+      where user_id = new.user_id and is_archived = false) >= 20 then
+    raise exception 'Income category limit reached. You can have at most 20 income categories.'
+      using errcode = 'check_violation';
+  end if;
+  return new;
+end;
+$function$
+;
+
+CREATE OR REPLACE FUNCTION public.enforce_tier_limit()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+begin
+  if (select count(*) from public.tiers
+      where user_id = new.user_id and is_archived = false) >= 6 then
+    raise exception 'Tier limit reached. You can have at most 6 tiers.'
+      using errcode = 'check_violation';
+  end if;
+  return new;
+end;
+$function$
+;
+
 CREATE OR REPLACE FUNCTION public.handle_new_user()
  RETURNS trigger
  LANGUAGE plpgsql
@@ -1733,6 +1788,10 @@ with check ((user_id = ( SELECT auth.uid() AS uid)));
 
 CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.budgets FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
 
+CREATE TRIGGER enforce_category_limit BEFORE INSERT ON public.categories FOR EACH ROW EXECUTE FUNCTION public.enforce_category_limit();
+
+CREATE TRIGGER enforce_category_limit_on_move BEFORE UPDATE OF tier_id ON public.categories FOR EACH ROW WHEN ((new.tier_id IS DISTINCT FROM old.tier_id)) EXECUTE FUNCTION public.enforce_category_limit();
+
 CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.categories FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
 
 CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.conversations FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
@@ -1745,6 +1804,8 @@ CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.expenses FOR EACH ROW EXEC
 
 CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.income_attachments FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
 
+CREATE TRIGGER enforce_income_category_limit BEFORE INSERT ON public.income_categories FOR EACH ROW EXECUTE FUNCTION public.enforce_income_category_limit();
+
 CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.income_categories FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
 
 CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.incomes FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
@@ -1752,6 +1813,8 @@ CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.incomes FOR EACH ROW EXECU
 CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.profiles FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
 
 CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.tier_budgets FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
+
+CREATE TRIGGER enforce_tier_limit BEFORE INSERT ON public.tiers FOR EACH ROW EXECUTE FUNCTION public.enforce_tier_limit();
 
 CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.tiers FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
 

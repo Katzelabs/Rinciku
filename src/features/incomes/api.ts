@@ -29,7 +29,20 @@ export type IncomeWithRelations = IncomeRow & {
 export type ListIncomesParams = {
   from: string;
   to: string;
+  categoryIds?: string[];
+  search?: string;
+  limit: number;
+  offset: number;
 };
+
+export type SumIncomesParams = {
+  from: string;
+  to: string;
+  categoryIds?: string[];
+  search?: string;
+};
+
+export type IncomeAmountRow = Pick<IncomeRow, 'amount' | 'currency'>;
 
 export type CreateIncomeInput = {
   user_id: string;
@@ -59,6 +72,12 @@ type Result<T> = {
   error: PostgrestError | null;
 };
 
+type PaginatedResult<T> = {
+  data: T[] | null;
+  count: number | null;
+  error: PostgrestError | null;
+};
+
 type StorageResult<T> = {
   data: T | null;
   error: Error | null;
@@ -82,14 +101,54 @@ const INCOME_WITH_RELATIONS_SELECT =
 export async function listIncomes({
   from,
   to,
-}: ListIncomesParams): Promise<Result<IncomeWithRelations[]>> {
-  const { data, error } = await supabase
+  categoryIds,
+  search,
+  limit,
+  offset,
+}: ListIncomesParams): Promise<PaginatedResult<IncomeWithRelations>> {
+  let query = supabase
     .from('incomes')
-    .select(INCOME_WITH_RELATIONS_SELECT)
+    .select(INCOME_WITH_RELATIONS_SELECT, { count: 'exact' })
     .gte('occurred_at', from)
     .lte('occurred_at', to)
-    .order('occurred_at', { ascending: false })
+    .order('occurred_at', { ascending: false });
+
+  if (categoryIds && categoryIds.length > 0) {
+    query = query.in('source_id', categoryIds);
+  }
+  if (search && search.trim()) {
+    query = query.ilike('note', `%${search.trim()}%`);
+  }
+
+  const { data, error, count } = await query
+    .range(offset, offset + limit - 1)
     .returns<IncomeWithRelations[]>();
+  return { data, count, error };
+}
+
+// Lightweight aggregate for the footer total: same filters as listIncomes but
+// every matching row (no paging), summed + converted client-side so the total
+// stays accurate across all pages of the filtered set.
+export async function sumIncomes({
+  from,
+  to,
+  categoryIds,
+  search,
+}: SumIncomesParams): Promise<Result<IncomeAmountRow[]>> {
+  let query = supabase
+    .from('incomes')
+    .select('amount, currency')
+    .gte('occurred_at', from)
+    .lte('occurred_at', to);
+
+  if (categoryIds && categoryIds.length > 0) {
+    query = query.in('source_id', categoryIds);
+  }
+  if (search && search.trim()) {
+    query = query.ilike('note', `%${search.trim()}%`);
+  }
+
+  const { data, error } = await query.returns<IncomeAmountRow[]>();
   return { data, error };
 }
 

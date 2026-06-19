@@ -1,25 +1,30 @@
 import { format } from 'date-fns';
 import { toast } from 'sonner';
+import type {
+  ColumnDef,
+  OnChangeFn,
+  PaginationState,
+} from '@tanstack/react-table';
 import { CategoryTag } from '@/components/shared/category-tag';
-import { DataTable } from '@/components/shared/data-table';
-import { RowActions } from '@/components/shared/row-actions';
 import {
-  TableBody,
-  TableCell,
-  TableFooter,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
+  DataTable,
+  DataTableColumnHeader,
+} from '@/components/shared/data-table';
+import { RowActions } from '@/components/shared/row-actions';
+import { TableCell, TableRow } from '@/components/ui/table';
 import { cn } from '@/lib/utils';
 import { formatCurrency } from '@/lib/format';
-import type { CurrencyCode } from '@/lib/fx';
+import { convertToBase, type CurrencyCode } from '@/lib/fx';
 import { getAttachmentSignedUrl, type ExpenseWithRelations } from '../api';
 
 type Props = {
   rows: ExpenseWithRelations[];
   total: number;
   baseCurrency: CurrencyCode;
+  isLoading?: boolean;
+  pagination: PaginationState;
+  pageCount: number;
+  onPaginationChange: OnChangeFn<PaginationState>;
   onView: (row: ExpenseWithRelations) => void;
   onEdit: (row: ExpenseWithRelations) => void;
   onDelete: (row: ExpenseWithRelations) => void;
@@ -29,6 +34,10 @@ export function ExpenseTable({
   rows,
   total,
   baseCurrency,
+  isLoading,
+  pagination,
+  pageCount,
+  onPaginationChange,
   onView,
   onEdit,
   onDelete,
@@ -42,89 +51,116 @@ export function ExpenseTable({
     window.open(data.signedUrl, '_blank', 'noopener,noreferrer');
   }
 
+  const columns: ColumnDef<ExpenseWithRelations>[] = [
+    {
+      accessorKey: 'occurred_at',
+      header: ({ column }) => (
+        <DataTableColumnHeader column={column} title='Date' />
+      ),
+      cell: ({ row }) => (
+        <span className='whitespace-nowrap text-muted-foreground'>
+          {format(new Date(row.original.occurred_at), 'd MMM yyyy')}
+        </span>
+      ),
+      meta: { headerClassName: 'w-[130px]' },
+    },
+    {
+      id: 'category',
+      accessorFn: (row) => row.category?.name ?? '',
+      header: ({ column }) => (
+        <DataTableColumnHeader column={column} title='Category' />
+      ),
+      cell: ({ row }) => <CategoryTag category={row.original.category} />,
+      sortingFn: 'text',
+    },
+    {
+      id: 'note',
+      enableSorting: false,
+      header: 'Note',
+      cell: ({ row }) => (
+        <span
+          className={cn(
+            'block max-w-[280px] truncate',
+            !row.original.note && 'text-muted-foreground italic'
+          )}
+          title={row.original.note ?? undefined}
+        >
+          {row.original.note || '—'}
+        </span>
+      ),
+    },
+    {
+      id: 'amount',
+      accessorFn: (row) =>
+        convertToBase(
+          Number(row.amount),
+          row.currency as CurrencyCode,
+          baseCurrency
+        ).amount_base,
+      header: ({ column }) => (
+        <DataTableColumnHeader
+          column={column}
+          title='Amount'
+          className='w-full justify-end'
+        />
+      ),
+      cell: ({ row }) => (
+        <span className='font-medium whitespace-nowrap tabular-nums'>
+          {formatCurrency(
+            Number(row.original.amount),
+            row.original.currency as CurrencyCode
+          )}
+        </span>
+      ),
+      sortingFn: 'basic',
+      meta: { headerClassName: 'text-right', cellClassName: 'text-right' },
+    },
+    {
+      id: 'actions',
+      enableSorting: false,
+      header: 'Actions',
+      cell: ({ row }) => (
+        <div onClick={(event) => event.stopPropagation()}>
+          <RowActions
+            editLabel='Edit expense'
+            deleteLabel='Delete expense'
+            onEdit={() => onEdit(row.original)}
+            onDelete={() => onDelete(row.original)}
+            onOpenAttachment={
+              row.original.attachment
+                ? () => openAttachment(row.original.attachment!.storage_path)
+                : undefined
+            }
+          />
+        </div>
+      ),
+      meta: { headerClassName: 'w-[120px] text-right', cellClassName: 'text-right' },
+    },
+  ];
+
+  const footer = (
+    <TableRow>
+      <TableCell colSpan={3} className='text-right'>
+        Total ({baseCurrency})
+      </TableCell>
+      <TableCell className='text-right font-semibold whitespace-nowrap tabular-nums'>
+        {formatCurrency(total, baseCurrency)}
+      </TableCell>
+      <TableCell />
+    </TableRow>
+  );
+
   return (
-    <DataTable>
-      <TableHeader>
-        <TableRow>
-          <TableHead className='w-[130px]'>Date</TableHead>
-          <TableHead>Category</TableHead>
-          <TableHead>Note</TableHead>
-          <TableHead className='text-right'>Amount</TableHead>
-          <TableHead className='w-[120px] text-right'>Actions</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {rows.map((row) => {
-          const currency = row.currency as CurrencyCode;
-          const amount = Number(row.amount);
-          const attachment = row.attachment;
-          return (
-            <TableRow
-              key={row.id}
-              onClick={() => onView(row)}
-              className='cursor-pointer'
-            >
-              <TableCell className='whitespace-nowrap text-muted-foreground'>
-                {format(new Date(row.occurred_at), 'd MMM yyyy')}
-              </TableCell>
-              <TableCell>
-                <CategoryTag category={row.category} />
-              </TableCell>
-              <TableCell
-                className={cn(
-                  'max-w-[280px] truncate',
-                  !row.note && 'text-muted-foreground italic'
-                )}
-                title={row.note ?? undefined}
-              >
-                {row.note || '—'}
-              </TableCell>
-              <TableCell className='text-right font-medium whitespace-nowrap tabular-nums'>
-                {formatCurrency(amount, currency)}
-              </TableCell>
-              <TableCell
-                className='text-right'
-                onClick={(e) => e.stopPropagation()}
-              >
-                <RowActions
-                  editLabel='Edit expense'
-                  deleteLabel='Delete expense'
-                  onEdit={() => onEdit(row)}
-                  onDelete={() => onDelete(row)}
-                  onOpenAttachment={
-                    attachment
-                      ? () => openAttachment(attachment.storage_path)
-                      : undefined
-                  }
-                />
-              </TableCell>
-            </TableRow>
-          );
-        })}
-        {rows.length === 0 && (
-          <TableRow>
-            <TableCell
-              colSpan={5}
-              className='py-10 text-center text-sm text-muted-foreground'
-            >
-              No expenses for this cycle.
-            </TableCell>
-          </TableRow>
-        )}
-      </TableBody>
-      {rows.length > 0 && (
-        <TableFooter>
-          <TableRow>
-            <TableCell colSpan={3} className='text-right'>
-              Total ({baseCurrency})
-            </TableCell>
-            <TableCell className='text-right font-semibold whitespace-nowrap tabular-nums'>
-              {formatCurrency(total, baseCurrency)}
-            </TableCell>
-            <TableCell />
-          </TableRow>
-        </TableFooter>
-      )}
-    </DataTable>
+    <DataTable
+      columns={columns}
+      data={rows}
+      isLoading={isLoading}
+      onRowClick={onView}
+      emptyMessage='No expenses for this range.'
+      footer={footer}
+      pagination={pagination}
+      pageCount={pageCount}
+      onPaginationChange={onPaginationChange}
+    />
   );
 }

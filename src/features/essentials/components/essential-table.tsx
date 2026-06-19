@@ -1,79 +1,104 @@
+import type { ColumnDef } from '@tanstack/react-table';
 import { CategoryTag } from '@/components/shared/category-tag';
-import { DataTable } from '@/components/shared/data-table';
+import {
+  DataTable,
+  DataTableColumnHeader,
+} from '@/components/shared/data-table';
 import { RowActions } from '@/components/shared/row-actions';
 import { Button } from '@/components/ui/button';
-import {
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
 import { formatCurrency } from '@/lib/format';
-import type { CurrencyCode } from '@/lib/fx';
+import { convertToBase, type CurrencyCode } from '@/lib/fx';
 import { type EssentialWithCategory } from '../api';
 
 type Props = {
   rows: EssentialWithCategory[];
+  baseCurrency: CurrencyCode;
   onAdd: () => void;
   onEdit: (row: EssentialWithCategory) => void;
   onDelete: (row: EssentialWithCategory) => void;
 };
 
-export function EssentialTable({ rows, onAdd, onEdit, onDelete }: Props) {
+export function EssentialTable({
+  rows,
+  baseCurrency,
+  onAdd,
+  onEdit,
+  onDelete,
+}: Props) {
+  const columns: ColumnDef<EssentialWithCategory>[] = [
+    {
+      accessorKey: 'name',
+      header: ({ column }) => (
+        <DataTableColumnHeader column={column} title='Name' />
+      ),
+      cell: ({ row }) => (
+        <span className='font-medium'>{row.original.name}</span>
+      ),
+    },
+    {
+      id: 'category',
+      accessorFn: (row) => row.category?.name ?? '',
+      header: ({ column }) => (
+        <DataTableColumnHeader column={column} title='Category' />
+      ),
+      cell: ({ row }) => <CategoryTag category={row.original.category} />,
+      sortingFn: 'text',
+    },
+    {
+      id: 'amount',
+      accessorFn: (row) =>
+        convertToBase(
+          Number(row.estimated_amount),
+          row.currency as CurrencyCode,
+          baseCurrency
+        ).amount_base,
+      header: ({ column }) => (
+        <DataTableColumnHeader
+          column={column}
+          title='Amount'
+          className='w-full justify-end'
+        />
+      ),
+      cell: ({ row }) => (
+        <span className='font-medium whitespace-nowrap tabular-nums'>
+          {formatCurrency(
+            Number(row.original.estimated_amount),
+            row.original.currency as CurrencyCode
+          )}
+        </span>
+      ),
+      sortingFn: 'basic',
+      meta: { headerClassName: 'text-right', cellClassName: 'text-right' },
+    },
+    {
+      id: 'actions',
+      enableSorting: false,
+      header: 'Actions',
+      cell: ({ row }) => (
+        <RowActions
+          editLabel='Edit essential'
+          deleteLabel='Delete essential'
+          onEdit={() => onEdit(row.original)}
+          onDelete={() => onDelete(row.original)}
+        />
+      ),
+      meta: {
+        headerClassName: 'w-[120px] text-right',
+        cellClassName: 'text-right',
+      },
+    },
+  ];
+
+  const emptyMessage = (
+    <div className='space-y-1'>
+      <p>No essentials yet.</p>
+      <Button type='button' variant='link' className='mt-1' onClick={onAdd}>
+        Add your first essential
+      </Button>
+    </div>
+  );
+
   return (
-    <DataTable>
-      <TableHeader>
-        <TableRow>
-          <TableHead>Name</TableHead>
-          <TableHead>Category</TableHead>
-          <TableHead className='text-right'>Amount</TableHead>
-          <TableHead className='w-[120px] text-right'>Actions</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {rows.map((row) => {
-          const currency = row.currency as CurrencyCode;
-          const amount = Number(row.estimated_amount);
-          return (
-            <TableRow key={row.id}>
-              <TableCell className='font-medium'>{row.name}</TableCell>
-              <TableCell>
-                <CategoryTag category={row.category} />
-              </TableCell>
-              <TableCell className='text-right font-medium whitespace-nowrap tabular-nums'>
-                {formatCurrency(amount, currency)}
-              </TableCell>
-              <TableCell className='text-right'>
-                <RowActions
-                  editLabel='Edit essential'
-                  deleteLabel='Delete essential'
-                  onEdit={() => onEdit(row)}
-                  onDelete={() => onDelete(row)}
-                />
-              </TableCell>
-            </TableRow>
-          );
-        })}
-        {rows.length === 0 && (
-          <TableRow>
-            <TableCell
-              colSpan={4}
-              className='py-10 text-center text-sm text-muted-foreground'
-            >
-              <p>No essentials yet.</p>
-              <Button
-                type='button'
-                variant='link'
-                className='mt-1'
-                onClick={onAdd}
-              >
-                Add your first essential
-              </Button>
-            </TableCell>
-          </TableRow>
-        )}
-      </TableBody>
-    </DataTable>
+    <DataTable columns={columns} data={rows} emptyMessage={emptyMessage} />
   );
 }

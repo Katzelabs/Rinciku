@@ -1,87 +1,59 @@
-import { format } from 'date-fns';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { getCycleRange, type Cycle } from '@/features/expenses/lib/cycle';
-
-const MONTHS = [
-  'January',
-  'February',
-  'March',
-  'April',
-  'May',
-  'June',
-  'July',
-  'August',
-  'September',
-  'October',
-  'November',
-  'December',
-];
+  DateRangePicker,
+  type DateRangeValue,
+} from '@/components/shared/date-range-picker';
+import {
+  MultiSelect,
+  type MultiSelectOption,
+} from '@/components/shared/multi-select';
+import { Input } from '@/components/ui/input';
+import { useIncomeCategories } from '../hooks/use-income-categories';
 
 type Props = {
-  cycle: Cycle;
-  onCycleChange: (next: Cycle) => void;
-  startDay: number;
+  search: string;
+  onSearchChange: (value: string) => void;
+  categoryIds: string[];
+  onCategoryIdsChange: (value: string[]) => void;
+  dateRange: DateRangeValue;
+  onDateRangeChange: (value: DateRangeValue) => void;
 };
 
-export function IncomeFilters({ cycle, onCycleChange, startDay }: Props) {
-  const currentYear = new Date().getFullYear();
-  const years = [
-    currentYear - 2,
-    currentYear - 1,
-    currentYear,
-    currentYear + 1,
-  ];
-
-  const { from, to } = getCycleRange(cycle.year, cycle.month, startDay);
-  const rangeLabel = `${format(from, 'd MMM yyyy')} – ${format(to, 'd MMM yyyy')}`;
+export function IncomeFilters({
+  search,
+  onSearchChange,
+  categoryIds,
+  onCategoryIdsChange,
+  dateRange,
+  onDateRangeChange,
+}: Props) {
+  const { data: categories } = useIncomeCategories();
+  const options: MultiSelectOption[] = (categories ?? []).map((category) => ({
+    label: category.name,
+    value: category.id,
+    color: category.color,
+  }));
 
   return (
-    <div className='flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between'>
-      <div className='space-y-1'>
-        <div className='flex gap-2'>
-          <Select
-            value={String(cycle.year)}
-            onValueChange={(value) =>
-              onCycleChange({ ...cycle, year: Number(value) })
-            }
-          >
-            <SelectTrigger className='w-[110px]'>
-              <SelectValue placeholder='Year' />
-            </SelectTrigger>
-            <SelectContent>
-              {years.map((y) => (
-                <SelectItem key={y} value={String(y)}>
-                  {y}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Select
-            value={String(cycle.month)}
-            onValueChange={(value) =>
-              onCycleChange({ ...cycle, month: Number(value) })
-            }
-          >
-            <SelectTrigger className='w-[150px]'>
-              <SelectValue placeholder='Month' />
-            </SelectTrigger>
-            <SelectContent>
-              {MONTHS.map((name, idx) => (
-                <SelectItem key={name} value={String(idx + 1)}>
-                  {name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        <p className='text-xs text-muted-foreground'>Cycle: {rangeLabel}</p>
-      </div>
+    <div className='flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center'>
+      <Input
+        placeholder='Search notes…'
+        value={search}
+        onChange={(event) => onSearchChange(event.target.value)}
+        className='sm:max-w-[240px]'
+      />
+      <MultiSelect
+        options={options}
+        value={categoryIds}
+        onChange={onCategoryIdsChange}
+        placeholder='All sources'
+        searchPlaceholder='Search sources…'
+        emptyText='No income sources.'
+      />
+      <DateRangePicker
+        value={dateRange}
+        onChange={onDateRangeChange}
+        className='sm:ml-auto'
+      />
     </div>
   );
 }
