@@ -17,26 +17,11 @@
 -- ---------------------------------------------------------------------------
 -- 1. Storage buckets
 -- ---------------------------------------------------------------------------
-
-insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
-values (
-  'expense-attachments',
-  'expense-attachments',
-  false,
-  10485760,
-  array['image/jpeg','image/png','image/webp','image/heic','application/pdf']
-)
-on conflict (id) do nothing;
-
-insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
-values (
-  'income-attachments',
-  'income-attachments',
-  false,
-  10485760,
-  array['image/jpeg','image/png','image/webp','image/heic','application/pdf']
-)
-on conflict (id) do nothing;
+-- Buckets are declared in config.toml under [storage.buckets.*]. The CLI applies
+-- that config on every `supabase start`/`db reset`, and it takes precedence over
+-- SQL inserts here — so defining buckets in this seed only causes drift (a bucket
+-- present in both places silently reverts to the config.toml values on reset).
+-- Keep bucket size/MIME config in config.toml; this section is intentionally empty.
 
 -- ---------------------------------------------------------------------------
 -- 2. Demo account + sample data

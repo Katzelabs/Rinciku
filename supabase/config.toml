@@ -140,7 +140,12 @@ file_size_limit = "50MiB"
 [storage.buckets.expense-attachments]
 public = false
 file_size_limit = "10MiB"
-allowed_mime_types = ["image/jpeg", "image/png", "image/webp", "image/heic"]
+allowed_mime_types = ["image/jpeg", "image/png", "image/webp", "image/heic", "application/pdf"]
+
+[storage.buckets.income-attachments]
+public = false
+file_size_limit = "10MiB"
+allowed_mime_types = ["image/jpeg", "image/png", "image/webp", "image/heic", "application/pdf"]
 
 # Allow connections via S3 compatible clients
 [storage.s3_protocol]
