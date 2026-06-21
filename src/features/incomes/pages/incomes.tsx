@@ -3,6 +3,7 @@ import { Plus } from 'lucide-react';
 import { toast } from 'sonner';
 import type { PaginationState } from '@tanstack/react-table';
 import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
 import {
   Dialog,
   DialogContent,
@@ -184,42 +185,48 @@ export function IncomesPage() {
         </Button>
       </div>
 
-      <IncomeFilters
-        search={search}
-        onSearchChange={(value) => {
-          setSearch(value);
-          resetToFirstPage();
-        }}
-        categoryIds={categoryIds}
-        onCategoryIdsChange={(value) => {
-          setCategoryIds(value);
-          resetToFirstPage();
-        }}
-        dateRange={dateRange}
-        onDateRangeChange={(value) => {
-          setCustomRange(value);
-          resetToFirstPage();
-        }}
-      />
-
-      {error ? (
-        <div className='rounded-md border border-destructive/50 bg-destructive/5 p-4 text-sm text-destructive'>
-          Failed to load incomes: {error}
+      <Card className='gap-0 py-0'>
+        <div className='border-b p-4 sm:p-5'>
+          <IncomeFilters
+            search={search}
+            onSearchChange={(value) => {
+              setSearch(value);
+              resetToFirstPage();
+            }}
+            categoryIds={categoryIds}
+            onCategoryIdsChange={(value) => {
+              setCategoryIds(value);
+              resetToFirstPage();
+            }}
+            dateRange={dateRange}
+            onDateRangeChange={(value) => {
+              setCustomRange(value);
+              resetToFirstPage();
+            }}
+          />
         </div>
-      ) : (
-        <IncomeTable
-          rows={rows}
-          total={total}
-          baseCurrency={baseCurrency}
-          isLoading={loading}
-          pagination={pagination}
-          pageCount={pageCount}
-          onPaginationChange={setPagination}
-          onView={(row) => setDialog({ kind: 'view', row })}
-          onEdit={(row) => setDialog({ kind: 'edit', row })}
-          onDelete={(row) => setDialog({ kind: 'delete', row })}
-        />
-      )}
+        <div className='p-4 sm:p-5'>
+          {error ? (
+            <div className='rounded-md border border-destructive/50 bg-destructive/5 p-4 text-sm text-destructive'>
+              Failed to load incomes: {error}
+            </div>
+          ) : (
+            <IncomeTable
+              rows={rows}
+              total={total}
+              baseCurrency={baseCurrency}
+              isLoading={loading}
+              pagination={pagination}
+              pageCount={pageCount}
+              onPaginationChange={setPagination}
+              onView={(row) => setDialog({ kind: 'view', row })}
+              onEdit={(row) => setDialog({ kind: 'edit', row })}
+              onDelete={(row) => setDialog({ kind: 'delete', row })}
+              bordered={false}
+            />
+          )}
+        </div>
+      </Card>
 
       <IncomeDetailDialog
         row={dialog?.kind === 'view' ? dialog.row : null}

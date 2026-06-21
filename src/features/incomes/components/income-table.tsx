@@ -29,6 +29,7 @@ type Props = {
   onView: (row: IncomeWithRelations) => void;
   onEdit: (row: IncomeWithRelations) => void;
   onDelete: (row: IncomeWithRelations) => void;
+  bordered?: boolean;
 };
 
 export function IncomeTable({
@@ -42,6 +43,7 @@ export function IncomeTable({
   onView,
   onEdit,
   onDelete,
+  bordered,
 }: Props) {
   const showSource = rows.some((row) => row.source !== 'manual');
 
@@ -180,6 +182,7 @@ export function IncomeTable({
       pagination={pagination}
       pageCount={pageCount}
       onPaginationChange={onPaginationChange}
+      bordered={bordered}
     />
   );
 }

@@ -16,6 +16,7 @@ type Props = {
   onAdd: () => void;
   onEdit: (row: EssentialWithCategory) => void;
   onDelete: (row: EssentialWithCategory) => void;
+  bordered?: boolean;
 };
 
 export function EssentialTable({
@@ -24,6 +25,7 @@ export function EssentialTable({
   onAdd,
   onEdit,
   onDelete,
+  bordered,
 }: Props) {
   const columns: ColumnDef<EssentialWithCategory>[] = [
     {
@@ -99,6 +101,11 @@ export function EssentialTable({
   );
 
   return (
-    <DataTable columns={columns} data={rows} emptyMessage={emptyMessage} />
+    <DataTable
+      columns={columns}
+      data={rows}
+      emptyMessage={emptyMessage}
+      bordered={bordered}
+    />
   );
 }

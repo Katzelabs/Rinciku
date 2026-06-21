@@ -50,6 +50,11 @@ type DataTableProps<TData, TValue> = {
   pagination?: PaginationState;
   pageCount?: number;
   onPaginationChange?: OnChangeFn<PaginationState>;
+  /**
+   * Draw the table's own border + rounding. Set to `false` when the table is
+   * already framed by a parent (e.g. a `Card`) to avoid a doubled border.
+   */
+  bordered?: boolean;
 };
 
 const DEFAULT_PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
@@ -65,6 +70,7 @@ export function DataTable<TData, TValue>({
   pagination,
   pageCount,
   onPaginationChange,
+  bordered = true,
 }: DataTableProps<TData, TValue>) {
   // TanStack Table stores state inside a stable `table` object; the React
   // Compiler can't see those mutations and would serve stale renders.
@@ -100,7 +106,7 @@ export function DataTable<TData, TValue>({
 
   return (
     <div className='space-y-3'>
-      <div className='rounded-md border'>
+      <div className={cn(bordered && 'rounded-md border')}>
         <Table className='[&_th]:text-xs [&_th]:tracking-wide [&_th]:text-muted-foreground [&_th]:uppercase [&_td]:py-3'>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (

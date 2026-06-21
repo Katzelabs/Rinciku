@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Plus } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
 import {
   Dialog,
   DialogContent,
@@ -104,23 +105,29 @@ export function EssentialsPage() {
         </Button>
       </div>
 
-      {loading ? (
-        <EssentialTableSkeleton />
-      ) : error ? (
-        <div className='rounded-md border border-destructive/50 bg-destructive/5 p-4 text-sm text-destructive'>
-          Failed to load essentials: {error}
+      <Card className='gap-0 py-0'>
+        <div className='p-4 sm:p-5'>
+          {loading ? (
+            <EssentialTableSkeleton />
+          ) : error ? (
+            <div className='rounded-md border border-destructive/50 bg-destructive/5 p-4 text-sm text-destructive'>
+              Failed to load essentials: {error}
+            </div>
+          ) : (
+            <EssentialTable
+              rows={rows}
+              baseCurrency={baseCurrency}
+              onAdd={() => setDialog({ kind: 'create' })}
+              onEdit={(row) => setDialog({ kind: 'edit', row })}
+              onDelete={(row) => setDialog({ kind: 'delete', row })}
+              bordered={false}
+            />
+          )}
         </div>
-      ) : (
-        <EssentialTable
-          rows={rows}
-          baseCurrency={baseCurrency}
-          onAdd={() => setDialog({ kind: 'create' })}
-          onEdit={(row) => setDialog({ kind: 'edit', row })}
-          onDelete={(row) => setDialog({ kind: 'delete', row })}
-        />
-      )}
-
-      <MonthlyBaselineSummary variant='footer' refreshKey={refetchToken} />
+        <div className='border-t p-4 sm:p-5'>
+          <MonthlyBaselineSummary variant='footer' refreshKey={refetchToken} />
+        </div>
+      </Card>
 
       <Dialog
         open={dialog?.kind === 'create'}
@@ -208,7 +215,7 @@ export function EssentialsPage() {
 
 function EssentialTableSkeleton() {
   return (
-    <div className='rounded-md border'>
+    <div>
       <Table>
         <TableHeader>
           <TableRow>

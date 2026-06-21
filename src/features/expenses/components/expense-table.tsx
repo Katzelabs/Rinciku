@@ -28,6 +28,7 @@ type Props = {
   onView: (row: ExpenseWithRelations) => void;
   onEdit: (row: ExpenseWithRelations) => void;
   onDelete: (row: ExpenseWithRelations) => void;
+  bordered?: boolean;
 };
 
 export function ExpenseTable({
@@ -41,6 +42,7 @@ export function ExpenseTable({
   onView,
   onEdit,
   onDelete,
+  bordered,
 }: Props) {
   async function openAttachment(path: string) {
     const { data, error } = await getAttachmentSignedUrl(path);
@@ -161,6 +163,7 @@ export function ExpenseTable({
       pagination={pagination}
       pageCount={pageCount}
       onPaginationChange={onPaginationChange}
+      bordered={bordered}
     />
   );
 }
