@@ -37,7 +37,15 @@ export function DateRangePicker({ value, onChange, className }: Props) {
     setOpen(next);
   }
 
-  function handleSelect(range: DateRange | undefined) {
+  function handleSelect(range: DateRange | undefined, selectedDay: Date) {
+    // When a complete range is already drafted, react-day-picker extends the
+    // existing `to` instead of letting you pick a new start — so a click inside
+    // or after the range can never set `from`. Treat that click as the start of
+    // a fresh range instead, restoring the intuitive start-then-end flow.
+    if (draft?.from && draft?.to) {
+      setDraft({ from: selectedDay, to: undefined });
+      return;
+    }
     setDraft(range);
     if (range?.from && range?.to) {
       const from = new Date(range.from);
