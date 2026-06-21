@@ -1,5 +1,8 @@
 import { z } from 'zod';
 
+import { type CurrencyCode } from '@/lib/fx';
+import { isCurrencyCode, parseCsvDate } from '@/lib/csv';
+
 function endOfToday() {
   const d = new Date();
   d.setHours(23, 59, 59, 999);
@@ -26,6 +29,30 @@ export const incomeSchema = z.object({
 });
 
 export type IncomeInput = z.infer<typeof incomeSchema>;
+
+// Validates one raw CSV row (every cell is a string post-parse). Identical in
+// shape to expenseCsvRowSchema; the `category` name resolves to a source_id
+// downstream in the import dialog, not here.
+export const incomeCsvRowSchema = z.object({
+  date: z
+    .string()
+    .refine((v) => parseCsvDate(v) !== null, { message: 'Unparseable date' }),
+  amount: z
+    .string()
+    .transform((v) => Number(v.replace(/,/g, '').trim()))
+    .refine((n) => Number.isFinite(n) && n > 0, {
+      message: 'Amount must be a number greater than 0',
+    }),
+  currency: z
+    .string()
+    .trim()
+    .refine(isCurrencyCode, { message: 'Unsupported currency' })
+    .transform((v) => v.toUpperCase() as CurrencyCode),
+  category: z.string().trim().optional().default(''),
+  note: z.string().trim().max(280, 'Note too long').optional().default(''),
+});
+
+export type IncomeCsvRow = z.infer<typeof incomeCsvRowSchema>;
 
 // Flat income taxonomy form (no tier). Mirrors categorySchema minus tier_id.
 export const incomeCategorySchema = z.object({

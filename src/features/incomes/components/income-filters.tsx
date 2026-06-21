@@ -48,6 +48,7 @@ export function IncomeFilters({
         placeholder='All sources'
         searchPlaceholder='Search sources…'
         emptyText='No income sources.'
+        className='w-full sm:w-[220px]'
       />
       <DateRangePicker
         value={dateRange}

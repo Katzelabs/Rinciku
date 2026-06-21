@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Plus } from 'lucide-react';
+import { Download, Plus, Upload } from 'lucide-react';
 import { toast } from 'sonner';
 import type { PaginationState } from '@tanstack/react-table';
 import { Button } from '@/components/ui/button';
@@ -17,10 +17,7 @@ import type { DateRangeValue } from '@/components/shared/date-range-picker';
 import { useDebouncedValue } from '@/hooks/use-debounced-value';
 import { convertToBase, ensureRates, type CurrencyCode } from '@/lib/fx';
 import { useAuth } from '@/features/auth';
-import {
-  getCurrentCycle,
-  getCycleRange,
-} from '@/features/expenses/lib/cycle';
+import { getCurrentCycle, getCycleRange } from '@/features/expenses/lib/cycle';
 import {
   deleteIncome,
   deleteIncomeAttachmentObject,
@@ -29,14 +26,18 @@ import {
   type IncomeWithRelations,
 } from '../api';
 import { IncomeDetailDialog } from '../components/income-detail-dialog';
+import { IncomeExportDialog } from '../components/income-export-dialog';
 import { IncomeFilters } from '../components/income-filters';
 import { IncomeForm } from '../components/income-form';
+import { IncomeImportDialog } from '../components/income-import-dialog';
 import { IncomeTable } from '../components/income-table';
 
 const DEFAULT_PAGE_SIZE = 10;
 
 type DialogState =
   | { kind: 'create' }
+  | { kind: 'export' }
+  | { kind: 'import' }
   | { kind: 'view'; row: IncomeWithRelations }
   | { kind: 'edit'; row: IncomeWithRelations }
   | { kind: 'delete'; row: IncomeWithRelations }
@@ -172,17 +173,42 @@ export function IncomesPage() {
 
   return (
     <div className='space-y-6'>
-      <div className='flex items-center justify-between gap-4'>
+      <div className='flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between'>
         <div>
           <h1 className='text-2xl font-semibold'>Incomes</h1>
           <p className='text-sm text-muted-foreground'>
             Log received income and keep transfer proofs in one place.
           </p>
         </div>
-        <Button onClick={() => setDialog({ kind: 'create' })}>
-          <Plus className='size-4' />
-          Add income
-        </Button>
+        <div className='flex items-center gap-2'>
+          <Button
+            variant='outline'
+            onClick={() => setDialog({ kind: 'export' })}
+            aria-label='Export CSV'
+            title='Export CSV'
+            className='w-9 px-0 sm:w-auto sm:px-4'
+          >
+            <Download className='size-4' />
+            <span className='hidden sm:inline'>Export</span>
+          </Button>
+          <Button
+            variant='outline'
+            onClick={() => setDialog({ kind: 'import' })}
+            aria-label='Import CSV'
+            title='Import CSV'
+            className='w-9 px-0 sm:w-auto sm:px-4'
+          >
+            <Upload className='size-4' />
+            <span className='hidden sm:inline'>Import</span>
+          </Button>
+          <Button
+            className='flex-1 sm:flex-none'
+            onClick={() => setDialog({ kind: 'create' })}
+          >
+            <Plus className='size-4' />
+            Add income
+          </Button>
+        </div>
       </div>
 
       <Card className='gap-0 py-0'>
@@ -240,6 +266,20 @@ export function IncomesPage() {
           dialog?.kind === 'view' &&
           setDialog({ kind: 'delete', row: dialog.row })
         }
+      />
+
+      <IncomeExportDialog
+        open={dialog?.kind === 'export'}
+        onOpenChange={(open) => !open && setDialog(null)}
+      />
+
+      <IncomeImportDialog
+        open={dialog?.kind === 'import'}
+        onOpenChange={(open) => !open && setDialog(null)}
+        onImported={() => {
+          setDialog(null);
+          refetch();
+        }}
       />
 
       <Dialog

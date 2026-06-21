@@ -48,6 +48,7 @@ export function ExpenseFilters({
         placeholder='All categories'
         searchPlaceholder='Search categories…'
         emptyText='No categories.'
+        className='w-full sm:w-[220px]'
       />
       <DateRangePicker
         value={dateRange}

@@ -174,6 +174,20 @@ export async function createExpense(
   return { data, error };
 }
 
+// Bulk insert for CSV import: one request inserts the whole batch in a single
+// statement, so it succeeds or fails atomically. Callers pre-validate rows
+// (amount/currency/date) so the realistic failure modes are RLS or a bad
+// category_id — both surfaced via the returned PostgrestError.
+export async function bulkCreateExpenses(
+  inputs: CreateExpenseInput[]
+): Promise<Result<ExpenseRow[]>> {
+  const { data, error } = await supabase
+    .from('expenses')
+    .insert(inputs)
+    .select('*');
+  return { data, error };
+}
+
 export async function updateExpense(
   id: string,
   patch: ExpenseUpdate

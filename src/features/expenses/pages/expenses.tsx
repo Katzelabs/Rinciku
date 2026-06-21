@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Plus } from 'lucide-react';
+import { Download, Plus, Upload } from 'lucide-react';
 import { toast } from 'sonner';
 import type { PaginationState } from '@tanstack/react-table';
 import { Button } from '@/components/ui/button';
@@ -25,8 +25,10 @@ import {
   type ExpenseWithRelations,
 } from '../api';
 import { ExpenseDetailDialog } from '../components/expense-detail-dialog';
+import { ExpenseExportDialog } from '../components/expense-export-dialog';
 import { ExpenseFilters } from '../components/expense-filters';
 import { ExpenseForm } from '../components/expense-form';
+import { ExpenseImportDialog } from '../components/expense-import-dialog';
 import { ExpenseTable } from '../components/expense-table';
 import { getCurrentCycle, getCycleRange } from '../lib/cycle';
 
@@ -34,6 +36,8 @@ const DEFAULT_PAGE_SIZE = 10;
 
 type DialogState =
   | { kind: 'create' }
+  | { kind: 'export' }
+  | { kind: 'import' }
   | { kind: 'view'; row: ExpenseWithRelations }
   | { kind: 'edit'; row: ExpenseWithRelations }
   | { kind: 'delete'; row: ExpenseWithRelations }
@@ -169,17 +173,42 @@ export function ExpensesPage() {
 
   return (
     <div className='space-y-6'>
-      <div className='flex items-center justify-between gap-4'>
+      <div className='flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between'>
         <div>
           <h1 className='text-2xl font-semibold'>Expenses</h1>
           <p className='text-sm text-muted-foreground'>
             Log and review your spending for the selected range.
           </p>
         </div>
-        <Button onClick={() => setDialog({ kind: 'create' })}>
-          <Plus className='size-4' />
-          Add expense
-        </Button>
+        <div className='flex items-center gap-2'>
+          <Button
+            variant='outline'
+            onClick={() => setDialog({ kind: 'export' })}
+            aria-label='Export CSV'
+            title='Export CSV'
+            className='w-9 px-0 sm:w-auto sm:px-4'
+          >
+            <Download className='size-4' />
+            <span className='hidden sm:inline'>Export</span>
+          </Button>
+          <Button
+            variant='outline'
+            onClick={() => setDialog({ kind: 'import' })}
+            aria-label='Import CSV'
+            title='Import CSV'
+            className='w-9 px-0 sm:w-auto sm:px-4'
+          >
+            <Upload className='size-4' />
+            <span className='hidden sm:inline'>Import</span>
+          </Button>
+          <Button
+            className='flex-1 sm:flex-none'
+            onClick={() => setDialog({ kind: 'create' })}
+          >
+            <Plus className='size-4' />
+            Add expense
+          </Button>
+        </div>
       </div>
 
       <Card className='gap-0 py-0'>
@@ -237,6 +266,20 @@ export function ExpensesPage() {
           dialog?.kind === 'view' &&
           setDialog({ kind: 'delete', row: dialog.row })
         }
+      />
+
+      <ExpenseExportDialog
+        open={dialog?.kind === 'export'}
+        onOpenChange={(open) => !open && setDialog(null)}
+      />
+
+      <ExpenseImportDialog
+        open={dialog?.kind === 'import'}
+        onOpenChange={(open) => !open && setDialog(null)}
+        onImported={() => {
+          setDialog(null);
+          refetch();
+        }}
       />
 
       <Dialog
