@@ -1,4 +1,5 @@
 import { useEffect, useRef, type ReactNode } from 'react';
+import { ThemeProvider } from 'next-themes';
 import { toast } from 'sonner';
 import { Toaster } from '@/components/ui/sonner';
 import { TooltipProvider } from '@/components/ui/tooltip';
@@ -12,13 +13,20 @@ interface ProvidersProps {
 
 export function Providers({ children }: ProvidersProps) {
   return (
-    <AuthProvider>
-      <TooltipProvider>
-        <FxBootstrapper />
-        {children}
-        <Toaster />
-      </TooltipProvider>
-    </AuthProvider>
+    <ThemeProvider
+      attribute='class'
+      defaultTheme='system'
+      enableSystem
+      disableTransitionOnChange
+    >
+      <AuthProvider>
+        <TooltipProvider>
+          <FxBootstrapper />
+          {children}
+          <Toaster />
+        </TooltipProvider>
+      </AuthProvider>
+    </ThemeProvider>
   );
 }
 
