@@ -10,7 +10,10 @@ import {
   Wallet,
 } from 'lucide-react';
 import { Link, NavLink, Outlet, useMatch } from 'react-router';
-import { AccountMenu } from '@/components/shared/account-menu';
+import {
+  AccountMenu,
+  SidebarAccountMenu,
+} from '@/components/shared/account-menu';
 import { Separator } from '@/components/ui/separator';
 import {
   Sidebar,
@@ -117,7 +120,9 @@ function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
-      <SidebarFooter />
+      <SidebarFooter>
+        <SidebarAccountMenu />
+      </SidebarFooter>
     </Sidebar>
   );
 }

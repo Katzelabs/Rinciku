@@ -1,4 +1,4 @@
-import { LogOut, Settings } from 'lucide-react';
+import { ChevronsUpDown, LogOut, Settings } from 'lucide-react';
 import { Link, useNavigate } from 'react-router';
 import { toast } from 'sonner';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -11,6 +11,12 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  useSidebar,
+} from '@/components/ui/sidebar';
 import { useAuth } from '@/features/auth';
 import { supabase } from '@/lib/supabase';
 
@@ -22,7 +28,14 @@ function initialFor(
   return source.charAt(0).toUpperCase() || '?';
 }
 
-export function AccountMenu() {
+interface AccountData {
+  displayName: string | null;
+  email: string;
+  initial: string;
+  handleSignOut: () => Promise<void>;
+}
+
+function useAccountData(): AccountData | null {
   const { user, profile } = useAuth();
   const navigate = useNavigate();
 
@@ -41,6 +54,50 @@ export function AccountMenu() {
   const displayName = profile?.display_name?.trim() || null;
   const email = user.email ?? '';
 
+  return {
+    displayName,
+    email,
+    initial: initialFor(displayName, email),
+    handleSignOut,
+  };
+}
+
+function AccountMenuItems({
+  account,
+}: {
+  account: Pick<AccountData, 'displayName' | 'email' | 'handleSignOut'>;
+}) {
+  return (
+    <>
+      <DropdownMenuLabel className='flex flex-col gap-0.5 py-2'>
+        {account.displayName ? (
+          <span className='text-sm font-medium text-foreground'>
+            {account.displayName}
+          </span>
+        ) : null}
+        <span className='truncate text-xs text-muted-foreground'>
+          {account.email}
+        </span>
+      </DropdownMenuLabel>
+      <DropdownMenuSeparator />
+      <DropdownMenuItem asChild>
+        <Link to='/account'>
+          <Settings />
+          <span>Settings</span>
+        </Link>
+      </DropdownMenuItem>
+      <DropdownMenuItem variant='destructive' onSelect={account.handleSignOut}>
+        <LogOut />
+        <span>Sign out</span>
+      </DropdownMenuItem>
+    </>
+  );
+}
+
+export function AccountMenu() {
+  const account = useAccountData();
+  if (!account) return null;
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -51,33 +108,60 @@ export function AccountMenu() {
           aria-label='Open account menu'
         >
           <Avatar size='sm'>
-            <AvatarFallback>{initialFor(displayName, email)}</AvatarFallback>
+            <AvatarFallback>{account.initial}</AvatarFallback>
           </Avatar>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align='end' className='min-w-56'>
-        <DropdownMenuLabel className='flex flex-col gap-0.5 py-2'>
-          {displayName ? (
-            <span className='text-sm font-medium text-foreground'>
-              {displayName}
-            </span>
-          ) : null}
-          <span className='truncate text-xs text-muted-foreground'>
-            {email}
-          </span>
-        </DropdownMenuLabel>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem asChild>
-          <Link to='/account'>
-            <Settings />
-            <span>Settings</span>
-          </Link>
-        </DropdownMenuItem>
-        <DropdownMenuItem variant='destructive' onSelect={handleSignOut}>
-          <LogOut />
-          <span>Sign out</span>
-        </DropdownMenuItem>
+        <AccountMenuItems account={account} />
       </DropdownMenuContent>
     </DropdownMenu>
+  );
+}
+
+export function SidebarAccountMenu() {
+  const account = useAccountData();
+  const { isMobile } = useSidebar();
+  if (!account) return null;
+
+  return (
+    <SidebarMenu>
+      <SidebarMenuItem>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <SidebarMenuButton
+              size='lg'
+              tooltip={account.displayName ?? account.email}
+              className='data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground'
+            >
+              <Avatar size='sm' className='rounded-lg'>
+                <AvatarFallback className='rounded-lg'>
+                  {account.initial}
+                </AvatarFallback>
+              </Avatar>
+              <div className='grid flex-1 text-left text-sm leading-tight'>
+                {account.displayName ? (
+                  <span className='truncate font-medium'>
+                    {account.displayName}
+                  </span>
+                ) : null}
+                <span className='truncate text-xs text-muted-foreground'>
+                  {account.email}
+                </span>
+              </div>
+              <ChevronsUpDown className='ml-auto size-4' />
+            </SidebarMenuButton>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent
+            className='min-w-56 rounded-lg'
+            side={isMobile ? 'bottom' : 'right'}
+            align='end'
+            sideOffset={4}
+          >
+            <AccountMenuItems account={account} />
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </SidebarMenuItem>
+    </SidebarMenu>
   );
 }
