@@ -654,6 +654,46 @@ AS $function$
 $function$
 ;
 
+CREATE OR REPLACE FUNCTION public.dashboard_time_series(p_start_at timestamp with time zone, p_end_at timestamp with time zone, p_base text, p_rates jsonb, p_bucket text, p_category_ids uuid[] DEFAULT NULL::uuid[])
+ RETURNS TABLE(bucket date, spent numeric, income numeric)
+ LANGUAGE sql
+ STABLE
+ SET search_path TO ''
+AS $function$
+  with base_rate as (
+    select (p_rates ->> p_base)::numeric as r
+  ),
+  expense_buckets as (
+    select
+      date_trunc(p_bucket, e.occurred_at)::date as bucket,
+      sum(e.amount * (p_rates ->> e.currency)::numeric / nullif((select r from base_rate), 0)) as spent
+    from public.expenses e
+    where e.user_id = (select auth.uid())
+      and e.occurred_at >= p_start_at
+      and e.occurred_at <  p_end_at
+      and (p_category_ids is null or e.category_id = any (p_category_ids))
+    group by 1
+  ),
+  income_buckets as (
+    select
+      date_trunc(p_bucket, i.occurred_at)::date as bucket,
+      sum(i.amount * (p_rates ->> i.currency)::numeric / nullif((select r from base_rate), 0)) as income
+    from public.incomes i
+    where i.user_id = (select auth.uid())
+      and i.occurred_at >= p_start_at
+      and i.occurred_at <  p_end_at
+    group by 1
+  )
+  select
+    coalesce(e.bucket, i.bucket)  as bucket,
+    coalesce(e.spent, 0)          as spent,
+    coalesce(i.income, 0)         as income
+  from expense_buckets e
+  full outer join income_buckets i on i.bucket = e.bucket
+  order by 1;
+$function$
+;
+
 CREATE OR REPLACE FUNCTION public.enforce_category_limit()
  RETURNS trigger
  LANGUAGE plpgsql

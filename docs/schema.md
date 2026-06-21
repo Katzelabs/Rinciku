@@ -726,6 +726,9 @@ Attached to: `profiles`, `tiers`, `categories`, `essentials`, `expenses`, `expen
 ### `public.budget_actuals(p_start_at, p_end_at, p_base, p_rates)`
 Read-side aggregation for the budgets feature. Sums expenses in the half-open window `[p_start_at, p_end_at)`, FX-converted to `p_base` via the same pivot-through-IDR math as `dashboard_monthly_summary`, and returns two jsonb maps: `by_category` (keyed `category_id::text`) and `by_tier` (keyed `tier_id::text`). The dashboard summary only exposes `by_tier`; budgets also needs `by_category` to compare against per-category targets. `security invoker` + RLS-scoped via `auth.uid()`.
 
+### `public.dashboard_time_series(p_start_at, p_end_at, p_base, p_rates, p_bucket, p_category_ids)`
+Time-bucketed read-side aggregation powering the dashboard analytics charts (spending trend + income-vs-expense). Buckets expenses and incomes with `date_trunc(p_bucket, occurred_at)` over the half-open window `[p_start_at, p_end_at)`, FX-converts to `p_base` via the same pivot-through-IDR math as `budget_actuals`, full-outer-joins the two per-bucket sums, and returns `(bucket date, spent numeric, income numeric)` — one row per non-empty bucket (the client zero-fills gaps). `p_bucket` ∈ `'day' | 'week' | 'month'`. `p_category_ids uuid[]` (nullable) filters **expenses** only; incomes carry no category so the income series always reflects all income. Bucketing is UTC (no per-user timezone yet — known v1 simplification). `security invoker` + RLS-scoped via `auth.uid()`.
+
 ### `public.handle_new_user()`
 `AFTER INSERT ON auth.users` trigger. Creates a profile row, seeds 3 default tiers, seeds default categories pointed at those tiers, and seeds 4 default income categories.
 

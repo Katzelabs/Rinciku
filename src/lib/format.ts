@@ -32,6 +32,23 @@ export function fractionDigitsForCurrency(
 }
 
 /**
+ * Compact currency for tight spaces like chart axes, e.g. id-ID → `Rp 1,5 jt`.
+ * Keeps the symbol so axes stay unambiguous without the long digit runs.
+ */
+export function formatCurrencyCompact(
+  amount: number,
+  code: CurrencyCode,
+  locale: string = DEFAULT_LOCALE
+): string {
+  return new Intl.NumberFormat(locale, {
+    style: 'currency',
+    currency: code,
+    notation: 'compact',
+    maximumFractionDigits: 1,
+  }).format(amount);
+}
+
+/**
  * The grouping and decimal separators for a locale, e.g. id-ID → `.` and `,`.
  * Used to configure thousands-grouped amount inputs.
  */

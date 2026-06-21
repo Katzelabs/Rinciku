@@ -128,3 +128,63 @@ $$;
 
 grant execute on function public.budget_actuals(timestamptz, timestamptz, text, jsonb)
   to authenticated;
+
+-- Time-bucketed spend + income for the analytics charts (spending trend and
+-- income-vs-expense). Buckets each row with date_trunc(p_bucket, occurred_at)
+-- and FX-converts with the same pivot-through-IDR math as the functions above.
+-- p_bucket is one of 'day' | 'week' | 'month'. p_category_ids, when non-null,
+-- filters EXPENSES to those categories; incomes are never category-filtered
+-- (they carry no category), so the income series always reflects all income.
+-- Returns one row per non-empty bucket; the caller zero-fills the gaps.
+create or replace function public.dashboard_time_series(
+  p_start_at     timestamptz,
+  p_end_at       timestamptz,
+  p_base         text,
+  p_rates        jsonb,
+  p_bucket       text,
+  p_category_ids uuid[] default null
+) returns table (
+  bucket date,
+  spent  numeric,
+  income numeric
+)
+language sql
+stable
+security invoker
+set search_path = ''
+as $$
+  with base_rate as (
+    select (p_rates ->> p_base)::numeric as r
+  ),
+  expense_buckets as (
+    select
+      date_trunc(p_bucket, e.occurred_at)::date as bucket,
+      sum(e.amount * (p_rates ->> e.currency)::numeric / nullif((select r from base_rate), 0)) as spent
+    from public.expenses e
+    where e.user_id = (select auth.uid())
+      and e.occurred_at >= p_start_at
+      and e.occurred_at <  p_end_at
+      and (p_category_ids is null or e.category_id = any (p_category_ids))
+    group by 1
+  ),
+  income_buckets as (
+    select
+      date_trunc(p_bucket, i.occurred_at)::date as bucket,
+      sum(i.amount * (p_rates ->> i.currency)::numeric / nullif((select r from base_rate), 0)) as income
+    from public.incomes i
+    where i.user_id = (select auth.uid())
+      and i.occurred_at >= p_start_at
+      and i.occurred_at <  p_end_at
+    group by 1
+  )
+  select
+    coalesce(e.bucket, i.bucket)  as bucket,
+    coalesce(e.spent, 0)          as spent,
+    coalesce(i.income, 0)         as income
+  from expense_buckets e
+  full outer join income_buckets i on i.bucket = e.bucket
+  order by 1;
+$$;
+
+grant execute on function public.dashboard_time_series(timestamptz, timestamptz, text, jsonb, text, uuid[])
+  to authenticated;
