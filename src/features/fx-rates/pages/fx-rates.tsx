@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { RefreshCw } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -30,6 +30,12 @@ export function FxRatesPage() {
   const [refreshing, setRefreshing] = useState(false);
 
   const base = (profile?.base_currency ?? 'IDR') as CurrencyCode;
+
+  // Soft refresh on landing: fetches live only when stub/stale, else serves
+  // cache. The Refresh button below still forces a fetch.
+  useEffect(() => {
+    void ensureRates();
+  }, []);
 
   async function handleRefresh() {
     setRefreshing(true);

@@ -1,4 +1,3 @@
-import { FxBanner } from '@/components/shared/fx-banner';
 import { AnalyticsSection } from '../components/analytics-section';
 
 export function DashboardPage() {
@@ -10,8 +9,6 @@ export function DashboardPage() {
           Explore spending across any range. Income isn't category-filtered.
         </p>
       </div>
-
-      <FxBanner />
 
       <AnalyticsSection />
     </div>
