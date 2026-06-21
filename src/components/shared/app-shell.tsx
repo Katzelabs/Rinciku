@@ -1,5 +1,6 @@
 import type { LucideIcon } from 'lucide-react';
 import {
+  ArrowRightLeft,
   Coins,
   LayoutDashboard,
   PiggyBank,
@@ -44,6 +45,7 @@ const navItems: NavItem[] = [
   { title: 'Essentials', to: '/essentials', icon: Wallet },
   { title: 'Categories', to: '/categories', icon: Tag },
   { title: 'Budgets', to: '/budgets', icon: PiggyBank },
+  { title: 'Currency rates', to: '/rates', icon: ArrowRightLeft },
 ];
 
 const comingSoonItems: Pick<NavItem, 'title' | 'icon'>[] = [

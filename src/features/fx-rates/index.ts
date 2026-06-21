@@ -1,0 +1,1 @@
+export { fxRatesRoutes } from './routes';

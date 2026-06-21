@@ -14,6 +14,7 @@ import { categoriesRoutes } from '@/features/categories';
 import { dashboardRoutes } from '@/features/dashboard';
 import { essentialsRoutes } from '@/features/essentials';
 import { expensesRoutes } from '@/features/expenses';
+import { fxRatesRoutes } from '@/features/fx-rates';
 import { incomesRoutes } from '@/features/incomes';
 import { ErrorBoundary } from './error-boundary';
 import { NotFound } from './not-found';
@@ -36,6 +37,7 @@ export const router = createBrowserRouter([
           ...essentialsRoutes,
           ...categoriesRoutes,
           ...budgetsRoutes,
+          ...fxRatesRoutes,
           ...aiChatRoutes,
           ...authRoutes,
         ],
