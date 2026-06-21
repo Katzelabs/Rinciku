@@ -1,6 +1,6 @@
 import type { RouteObject } from 'react-router';
 import { RequireGuest } from './components/require-guest';
-import { AccountPage } from './pages/account';
+import { SettingsPage } from './pages/settings';
 import { OnboardingPage } from './pages/onboarding';
 import { SignInPage } from './pages/sign-in';
 import { SignUpPage } from './pages/sign-up';
@@ -30,5 +30,5 @@ export const onboardingRoutes: RouteObject[] = [
 // Spread into the AppShell children in src/app/router.tsx so they inherit
 // requireOnboardedLoader alongside the rest of the app.
 export const authRoutes: RouteObject[] = [
-  { path: '/account', element: <AccountPage /> },
+  { path: '/settings', element: <SettingsPage /> },
 ];

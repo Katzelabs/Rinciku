@@ -59,6 +59,18 @@ export const signUpSchema = z
 
 export type SignUpInput = z.infer<typeof signUpSchema>;
 
+export const changePasswordSchema = z
+  .object({
+    password: passwordField,
+    confirmPassword: z.string(),
+  })
+  .refine((values) => values.password === values.confirmPassword, {
+    message: 'Passwords do not match',
+    path: ['confirmPassword'],
+  });
+
+export type ChangePasswordInput = z.infer<typeof changePasswordSchema>;
+
 export const onboardingSchema = z.object({
   display_name: z
     .string()

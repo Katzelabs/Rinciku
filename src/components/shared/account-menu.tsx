@@ -81,7 +81,7 @@ function AccountMenuItems({
       </DropdownMenuLabel>
       <DropdownMenuSeparator />
       <DropdownMenuItem asChild>
-        <Link to='/account'>
+        <Link to='/settings'>
           <Settings />
           <span>Settings</span>
         </Link>
