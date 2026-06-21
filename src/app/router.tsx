@@ -2,6 +2,7 @@ import { createBrowserRouter } from 'react-router';
 import { AppShell } from '@/components/shared/app-shell';
 import { aiChatRoutes } from '@/features/ai-chat';
 import {
+  authPublicRoutes,
   authRoutes,
   guestRoutes,
   onboardingRoutes,
@@ -26,6 +27,7 @@ export const router = createBrowserRouter([
     errorElement: <ErrorBoundary />,
     children: [
       { loader: requireGuestLoader, children: guestRoutes },
+      ...authPublicRoutes,
       { loader: requireAuthLoader, children: onboardingRoutes },
       {
         element: <AppShell />,

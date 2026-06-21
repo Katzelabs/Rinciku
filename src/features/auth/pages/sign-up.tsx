@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router';
 import { isAuthApiError, type AuthError } from '@supabase/supabase-js';
 import { MailCheckIcon, WalletIcon } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import {
   Card,
   CardContent,
@@ -10,7 +11,9 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { signUpWithPassword } from '../api';
+import { Spinner } from '@/components/ui/spinner';
+import { resendConfirmation, signUpWithPassword } from '../api';
+import { RESEND_COOLDOWN_SECONDS, useCooldown } from '../hooks/use-cooldown';
 import { RequireGuest } from '../components/require-guest';
 import { SignUpForm } from '../components/sign-up-form';
 import type { SignUpInput } from '../schemas';
@@ -41,8 +44,34 @@ function mapSignUpError(error: AuthError): string {
   return 'Something went wrong. Please try again.';
 }
 
+type ResendState = 'idle' | 'sending' | 'sent' | 'error';
+
 export function SignUpPage() {
   const [pendingEmail, setPendingEmail] = useState<string | null>(null);
+  const [resend, setResend] = useState<ResendState>('idle');
+  const [resendMessage, setResendMessage] = useState<string | null>(null);
+  const cooldown = useCooldown();
+
+  async function handleResend() {
+    if (!pendingEmail || resend === 'sending' || cooldown.active) return;
+    setResend('sending');
+    setResendMessage(null);
+    const { error } = await resendConfirmation(pendingEmail);
+    if (error) {
+      setResend('error');
+      setResendMessage(
+        isAuthApiError(error) &&
+          (error.code === 'over_email_send_rate_limit' ||
+            error.code === 'over_request_rate_limit')
+          ? 'Please wait a moment before requesting another email.'
+          : 'Could not resend the email. Please try again.'
+      );
+      return;
+    }
+    setResend('sent');
+    setResendMessage('Sent! Check your inbox again.');
+    cooldown.start(RESEND_COOLDOWN_SECONDS);
+  }
 
   async function handleSignUp(
     { email, password }: SignUpInput,
@@ -57,6 +86,9 @@ export function SignUpPage() {
 
     if (!data.session && data.user) {
       setPendingEmail(email);
+      // The signup confirmation email just went out — arm the cooldown so the
+      // resend button starts disabled.
+      cooldown.start(RESEND_COOLDOWN_SECONDS);
       return;
     }
 
@@ -96,6 +128,33 @@ export function SignUpPage() {
                   . Click the link to activate your account.
                 </CardDescription>
               </CardHeader>
+              <CardContent className='flex flex-col items-center gap-2 text-center'>
+                <Button
+                  variant='outline'
+                  className='w-full'
+                  onClick={handleResend}
+                  disabled={resend === 'sending' || cooldown.active}
+                >
+                  {resend === 'sending' && <Spinner data-icon='inline-start' />}
+                  {resend === 'sending'
+                    ? 'Resending…'
+                    : cooldown.active
+                      ? `Resend in ${cooldown.remaining}s`
+                      : 'Resend confirmation email'}
+                </Button>
+                {resendMessage && (
+                  <p
+                    role='status'
+                    className={
+                      resend === 'error'
+                        ? 'text-xs text-destructive'
+                        : 'text-xs text-muted-foreground'
+                    }
+                  >
+                    {resendMessage}
+                  </p>
+                )}
+              </CardContent>
               <CardFooter className='justify-center text-sm text-muted-foreground'>
                 <Link
                   to='/sign-in'

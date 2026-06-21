@@ -1,4 +1,9 @@
-export { authRoutes, guestRoutes, onboardingRoutes } from './routes';
+export {
+  authRoutes,
+  authPublicRoutes,
+  guestRoutes,
+  onboardingRoutes,
+} from './routes';
 export { AuthProvider } from './components/auth-provider';
 export { RequireAuth } from './components/require-auth';
 export { RequireGuest } from './components/require-guest';

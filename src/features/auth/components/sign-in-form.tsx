@@ -73,7 +73,7 @@ export function SignInForm({ onSubmit }: SignInFormProps) {
           <div className='flex items-center justify-between'>
             <FieldLabel htmlFor='sign-in-password'>Password</FieldLabel>
             <Link
-              to='/sign-in'
+              to='/forgot-password'
               className='text-xs font-medium text-muted-foreground underline-offset-4 hover:text-foreground hover:underline'
             >
               Forgot password?

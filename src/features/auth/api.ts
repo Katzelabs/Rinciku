@@ -6,13 +6,39 @@ export async function signInWithPassword(input: SignInInput) {
   return supabase.auth.signInWithPassword(input);
 }
 
+// Email confirmation is enabled (supabase/config.toml), so signUp returns a
+// user with no session and sends a confirmation email. The link lands on
+// /auth/callback, which exchanges the code and routes the user onward.
+const emailConfirmRedirect = () => `${window.location.origin}/auth/callback`;
+
 // Email normalization (trim + lowercase) is handled by signUpSchema, so the
 // input reaching here is already normalized. Don't re-introduce raw form values.
 export async function signUpWithPassword(input: {
   email: string;
   password: string;
 }) {
-  return supabase.auth.signUp(input);
+  return supabase.auth.signUp({
+    ...input,
+    options: { emailRedirectTo: emailConfirmRedirect() },
+  });
+}
+
+// Resend the signup confirmation email (e.g. the first one didn't arrive).
+// Rate-limited by Supabase (auth.email.max_frequency, rate_limit.email_sent).
+export async function resendConfirmation(email: string) {
+  return supabase.auth.resend({
+    type: 'signup',
+    email,
+    options: { emailRedirectTo: emailConfirmRedirect() },
+  });
+}
+
+// Send a password-reset email. The link lands on /reset-password, where the
+// recovery session is established and the user sets a new password.
+export async function requestPasswordReset(email: string) {
+  return supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: `${window.location.origin}/reset-password`,
+  });
 }
 
 export async function getProfile(userId: string): Promise<Profile | null> {

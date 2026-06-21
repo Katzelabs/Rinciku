@@ -1,5 +1,8 @@
 import type { RouteObject } from 'react-router';
 import { RequireGuest } from './components/require-guest';
+import { AuthCallbackPage } from './pages/auth-callback';
+import { ForgotPasswordPage } from './pages/forgot-password';
+import { ResetPasswordPage } from './pages/reset-password';
 import { SettingsPage } from './pages/settings';
 import { OnboardingPage } from './pages/onboarding';
 import { SignInPage } from './pages/sign-in';
@@ -18,6 +21,24 @@ export const guestRoutes: RouteObject[] = [
     ),
   },
   { path: '/sign-up', element: <SignUpPage /> },
+  {
+    path: '/forgot-password',
+    element: (
+      <RequireGuest>
+        <ForgotPasswordPage />
+      </RequireGuest>
+    ),
+  },
+];
+
+// Public landing routes for email links (signup confirmation, password
+// recovery). These must NOT sit under requireGuestLoader: the confirmation /
+// recovery link auto-establishes a session via detectSessionInUrl, which the
+// guest loader would treat as "already signed in" and redirect away before the
+// page can act. Wired as standalone children of RootLayout in app/router.tsx.
+export const authPublicRoutes: RouteObject[] = [
+  { path: '/reset-password', element: <ResetPasswordPage /> },
+  { path: '/auth/callback', element: <AuthCallbackPage /> },
 ];
 
 // /onboarding — wired under requireAuthLoader in src/app/router.tsx (NOT

@@ -71,6 +71,18 @@ export const changePasswordSchema = z
 
 export type ChangePasswordInput = z.infer<typeof changePasswordSchema>;
 
+export const forgotPasswordSchema = z.object({
+  email: z.string().trim().toLowerCase().email('Enter a valid email address'),
+});
+
+export type ForgotPasswordInput = z.infer<typeof forgotPasswordSchema>;
+
+// Setting a new password via the recovery link is the same shape as changing
+// it from settings (new password + confirmation, same policy).
+export const resetPasswordSchema = changePasswordSchema;
+
+export type ResetPasswordInput = ChangePasswordInput;
+
 export const onboardingSchema = z.object({
   display_name: z
     .string()
