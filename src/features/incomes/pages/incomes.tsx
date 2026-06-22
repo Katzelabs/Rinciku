@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Outlet, useNavigate } from 'react-router';
 import { Download, Plus, Upload } from 'lucide-react';
 import { toast } from 'sonner';
 import type { PaginationState } from '@tanstack/react-table';
@@ -25,7 +26,6 @@ import {
   sumIncomes,
   type IncomeWithRelations,
 } from '../api';
-import { IncomeDetailDialog } from '../components/income-detail-dialog';
 import { IncomeExportDialog } from '../components/income-export-dialog';
 import { IncomeFilters } from '../components/income-filters';
 import { IncomeForm } from '../components/income-form';
@@ -38,12 +38,11 @@ type DialogState =
   | { kind: 'create' }
   | { kind: 'export' }
   | { kind: 'import' }
-  | { kind: 'view'; row: IncomeWithRelations }
-  | { kind: 'edit'; row: IncomeWithRelations }
   | { kind: 'delete'; row: IncomeWithRelations }
   | null;
 
 export function IncomesPage() {
+  const navigate = useNavigate();
   const { profile } = useAuth();
   const startDay = profile?.month_start_day ?? 1;
   const baseCurrency = (profile?.base_currency ?? 'IDR') as CurrencyCode;
@@ -245,8 +244,12 @@ export function IncomesPage() {
               pagination={pagination}
               pageCount={pageCount}
               onPaginationChange={setPagination}
-              onView={(row) => setDialog({ kind: 'view', row })}
-              onEdit={(row) => setDialog({ kind: 'edit', row })}
+              onView={(row) =>
+                navigate(`/incomes/${row.id}`, { state: { row } })
+              }
+              onEdit={(row) =>
+                navigate(`/incomes/${row.id}/edit`, { state: { row } })
+              }
               onDelete={(row) => setDialog({ kind: 'delete', row })}
               bordered={false}
             />
@@ -254,18 +257,12 @@ export function IncomesPage() {
         </div>
       </Card>
 
-      <IncomeDetailDialog
-        row={dialog?.kind === 'view' ? dialog.row : null}
-        open={dialog?.kind === 'view'}
-        onOpenChange={(open) => !open && setDialog(null)}
-        onEdit={() =>
-          dialog?.kind === 'view' &&
-          setDialog({ kind: 'edit', row: dialog.row })
-        }
-        onDelete={() =>
-          dialog?.kind === 'view' &&
-          setDialog({ kind: 'delete', row: dialog.row })
-        }
+      <Outlet
+        context={{
+          refetch,
+          requestDelete: (row: IncomeWithRelations) =>
+            setDialog({ kind: 'delete', row }),
+        }}
       />
 
       <IncomeExportDialog
@@ -300,43 +297,6 @@ export function IncomesPage() {
               refetch();
             }}
           />
-        </DialogContent>
-      </Dialog>
-
-      <Dialog
-        open={dialog?.kind === 'edit'}
-        onOpenChange={(open) => !open && setDialog(null)}
-      >
-        <DialogContent className='sm:max-w-lg'>
-          <DialogHeader>
-            <DialogTitle>Edit income</DialogTitle>
-            <DialogDescription>Update the details below.</DialogDescription>
-          </DialogHeader>
-          {dialog?.kind === 'edit' && (
-            <IncomeForm
-              mode='edit'
-              defaultValues={{
-                id: dialog.row.id,
-                amount: Number(dialog.row.amount),
-                source_id: dialog.row.source_id ?? '',
-                occurred_at: new Date(dialog.row.occurred_at),
-                note: dialog.row.note ?? '',
-              }}
-              existingAttachment={
-                dialog.row.attachment
-                  ? {
-                      id: dialog.row.attachment.id,
-                      storage_path: dialog.row.attachment.storage_path,
-                      mime_type: dialog.row.attachment.mime_type,
-                    }
-                  : null
-              }
-              onSuccess={() => {
-                setDialog(null);
-                refetch();
-              }}
-            />
-          )}
         </DialogContent>
       </Dialog>
 
