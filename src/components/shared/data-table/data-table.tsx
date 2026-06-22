@@ -20,7 +20,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Spinner } from '@/components/ui/spinner';
+import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import { DataTablePagination } from './data-table-pagination';
 
@@ -58,6 +58,11 @@ type DataTableProps<TData, TValue> = {
 };
 
 const DEFAULT_PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
+
+// Loading placeholder: a handful of skeleton rows that mirror the real column
+// layout, so the table doesn't jump when data lands.
+const SKELETON_ROW_COUNT = 5;
+const SKELETON_WIDTHS = ['w-28', 'w-20', 'w-24', 'w-16', 'w-32'];
 
 export function DataTable<TData, TValue>({
   columns,
@@ -129,13 +134,25 @@ export function DataTable<TData, TValue>({
           </TableHeader>
           <TableBody>
             {isLoading ? (
-              <TableRow>
-                <TableCell colSpan={columns.length} className='py-12'>
-                  <div className='flex items-center justify-center'>
-                    <Spinner />
-                  </div>
-                </TableCell>
-              </TableRow>
+              Array.from({ length: SKELETON_ROW_COUNT }).map((_, rowIdx) => (
+                <TableRow key={`skeleton-${rowIdx}`}>
+                  {columns.map((column, colIdx) => {
+                    const cellClassName = column.meta?.cellClassName;
+                    const alignRight = cellClassName?.includes('text-right');
+                    return (
+                      <TableCell key={colIdx} className={cellClassName}>
+                        <Skeleton
+                          className={cn(
+                            'h-4',
+                            SKELETON_WIDTHS[colIdx % SKELETON_WIDTHS.length],
+                            alignRight && 'ml-auto'
+                          )}
+                        />
+                      </TableCell>
+                    );
+                  })}
+                </TableRow>
+              ))
             ) : hasRows ? (
               rows.map((row) => (
                 <TableRow

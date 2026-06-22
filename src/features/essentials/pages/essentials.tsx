@@ -11,16 +11,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Skeleton } from '@/components/ui/skeleton';
 import { Spinner } from '@/components/ui/spinner';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
 import type { CurrencyCode } from '@/lib/fx';
 import { useAuth } from '@/features/auth';
 import {
@@ -107,9 +98,7 @@ export function EssentialsPage() {
 
       <Card className='gap-0 py-0'>
         <div className='p-4 sm:p-5'>
-          {loading ? (
-            <EssentialTableSkeleton />
-          ) : error ? (
+          {error ? (
             <div className='rounded-md border border-destructive/50 bg-destructive/5 p-4 text-sm text-destructive'>
               Failed to load essentials: {error}
             </div>
@@ -121,6 +110,7 @@ export function EssentialsPage() {
               onEdit={(row) => setDialog({ kind: 'edit', row })}
               onDelete={(row) => setDialog({ kind: 'delete', row })}
               bordered={false}
+              isLoading={loading}
             />
           )}
         </div>
@@ -209,45 +199,6 @@ export function EssentialsPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
-  );
-}
-
-function EssentialTableSkeleton() {
-  return (
-    <div>
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Name</TableHead>
-            <TableHead>Category</TableHead>
-            <TableHead className='text-right'>Amount</TableHead>
-            <TableHead>Notes</TableHead>
-            <TableHead className='w-[120px] text-right'>Actions</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {[0, 1, 2].map((i) => (
-            <TableRow key={i}>
-              <TableCell>
-                <Skeleton className='h-4 w-32' />
-              </TableCell>
-              <TableCell>
-                <Skeleton className='h-4 w-28' />
-              </TableCell>
-              <TableCell className='text-right'>
-                <Skeleton className='ml-auto h-4 w-20' />
-              </TableCell>
-              <TableCell>
-                <Skeleton className='h-4 w-16' />
-              </TableCell>
-              <TableCell className='text-right'>
-                <Skeleton className='ml-auto h-4 w-16' />
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
     </div>
   );
 }
