@@ -154,7 +154,7 @@ export function BudgetsPage() {
         </div>
       )}
 
-      <div className='grid grid-cols-1 items-start gap-4 md:grid-cols-2'>
+      <div className='grid grid-cols-1 items-start gap-4 lg:grid-cols-2'>
         {isLoading && !data ? (
           <>
             <Skeleton className='h-40 w-full' />

@@ -176,7 +176,7 @@ export function CategoriesPage() {
             </div>
           )}
 
-          <div className='grid grid-cols-1 items-start gap-4 md:grid-cols-2 xl:grid-cols-3'>
+          <div className='grid grid-cols-1 items-start gap-4 lg:grid-cols-2 xl:grid-cols-3'>
             {loading ? (
               <Card>
                 <CardHeader>
@@ -412,13 +412,6 @@ function TierCard({
             </span>
           )}
         </CardTitle>
-        <p className='text-sm text-muted-foreground'>
-          {tier
-            ? tier.is_essential
-              ? 'Counts toward your monthly essentials baseline.'
-              : 'Discretionary — not part of the essentials baseline.'
-            : 'Categories whose tier was deleted. Edit them to reassign a tier.'}
-        </p>
         {tier && (
           <CardAction className='flex items-center gap-1'>
             <Button
