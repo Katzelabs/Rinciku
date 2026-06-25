@@ -1,6 +1,14 @@
+import { useState } from 'react';
+import { Check, Copy } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 import type { ChatItem } from '../types';
+import { ChatAvatar } from './chat-avatar';
 
 const MARKDOWN_CLASS = cn(
   'space-y-2 text-sm leading-relaxed',
@@ -12,11 +20,29 @@ const MARKDOWN_CLASS = cn(
 
 export function MessageBubble({ item }: { item: ChatItem }) {
   const isUser = item.role === 'user';
+  const [copied, setCopied] = useState(false);
+
+  async function copy() {
+    try {
+      await navigator.clipboard.writeText(item.content);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      // Clipboard may be unavailable (insecure context); fail silently.
+    }
+  }
+
   return (
-    <div className={cn('flex w-full', isUser ? 'justify-end' : 'justify-start')}>
+    <div
+      className={cn(
+        'group flex w-full items-end gap-2 duration-300 animate-in fade-in slide-in-from-bottom-2',
+        isUser ? 'flex-row-reverse' : 'flex-row'
+      )}
+    >
+      <ChatAvatar role={item.role} />
       <div
         className={cn(
-          'max-w-[85%] rounded-2xl px-4 py-2.5 text-sm',
+          'relative max-w-[85%] rounded-2xl px-4 py-2.5 text-sm sm:max-w-[75%]',
           isUser
             ? 'rounded-br-sm bg-primary text-primary-foreground'
             : 'rounded-bl-sm bg-muted text-foreground'
@@ -25,9 +51,28 @@ export function MessageBubble({ item }: { item: ChatItem }) {
         {isUser ? (
           <p className='whitespace-pre-wrap'>{item.content}</p>
         ) : (
-          <div className={MARKDOWN_CLASS}>
-            <ReactMarkdown>{item.content}</ReactMarkdown>
-          </div>
+          <>
+            <div className={MARKDOWN_CLASS}>
+              <ReactMarkdown>{item.content}</ReactMarkdown>
+            </div>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  type='button'
+                  onClick={copy}
+                  aria-label='Copy message'
+                  className='absolute -bottom-3 -right-2 flex size-7 items-center justify-center rounded-full border bg-background text-muted-foreground opacity-0 shadow-sm transition-opacity hover:text-foreground focus-visible:opacity-100 group-hover:opacity-100'
+                >
+                  {copied ? (
+                    <Check className='size-3.5 text-primary' />
+                  ) : (
+                    <Copy className='size-3.5' />
+                  )}
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>{copied ? 'Copied' : 'Copy'}</TooltipContent>
+            </Tooltip>
+          </>
         )}
       </div>
     </div>

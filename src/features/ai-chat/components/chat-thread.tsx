@@ -1,11 +1,13 @@
-import { useEffect, useRef } from 'react';
-import { Sparkles } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { ChevronDown, Sparkles } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
 import type { ActiveProposal } from '../hooks/use-chat';
 import type { ChatItem } from '../types';
 import { ExpenseProposalCard } from './expense-proposal-card';
 import { IncomeProposalCard } from './income-proposal-card';
 import { MessageBubble } from './message-bubble';
+import { TypingIndicator } from './typing-indicator';
 
 const EXAMPLES = [
   'Can I afford a Rp 800.000 keyboard right now?',
@@ -13,11 +15,14 @@ const EXAMPLES = [
   'How much do I have left this month?',
 ];
 
+const NEAR_BOTTOM_PX = 120;
+
 type Props = {
   messages: ChatItem[];
   isLoading: boolean;
   sending: boolean;
   proposal: ActiveProposal | null;
+  onSendExample: (text: string) => void;
   onProposalConfirmed: (note: string) => void;
   onProposalCancel: () => void;
 };
@@ -27,14 +32,35 @@ export function ChatThread({
   isLoading,
   sending,
   proposal,
+  onSendExample,
   onProposalConfirmed,
   onProposalCancel,
 }: Props) {
+  const scrollRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const [nearBottom, setNearBottom] = useState(true);
 
+  function handleScroll() {
+    const el = scrollRef.current;
+    if (!el) return;
+    const distance = el.scrollHeight - el.scrollTop - el.clientHeight;
+    setNearBottom(distance < NEAR_BOTTOM_PX);
+  }
+
+  function scrollToBottom(behavior: ScrollBehavior = 'smooth') {
+    bottomRef.current?.scrollIntoView({ behavior });
+  }
+
+  // Auto-follow new content only when the user is already near the bottom, so
+  // scrolling up to read history is never interrupted.
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, sending, proposal]);
+    if (nearBottom) scrollToBottom('smooth');
+  }, [messages, sending, proposal, nearBottom]);
+
+  // Jump to the latest message instantly after a conversation loads.
+  useEffect(() => {
+    if (!isLoading) scrollToBottom('auto');
+  }, [isLoading]);
 
   if (isLoading) {
     return (
@@ -46,62 +72,87 @@ export function ChatThread({
 
   if (messages.length === 0 && !proposal) {
     return (
-      <div className='flex flex-1 flex-col items-center justify-center gap-4 px-6 text-center'>
-        <div className='flex size-12 items-center justify-center rounded-full bg-primary/10 text-primary'>
-          <Sparkles className='size-6' />
+      <div className='flex flex-1 flex-col items-center justify-center gap-5 px-6 text-center'>
+        <div className='flex size-14 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-sidebar-primary text-sidebar-primary-foreground shadow-sm shadow-primary/30 ring-1 ring-primary/20'>
+          <Sparkles className='size-7' />
         </div>
         <div className='space-y-1'>
-          <p className='font-medium'>Ask Rinciku anything about your money</p>
-          <p className='text-sm text-muted-foreground'>
-            Get a grounded answer before you spend, or log expenses and income by
-            chatting or sending a receipt.
+          <p className='text-lg font-semibold'>
+            Ask Rinciku anything about your money
+          </p>
+          <p className='max-w-md text-sm text-muted-foreground'>
+            Get a grounded answer before you spend, or log expenses and income
+            by chatting or sending a receipt.
           </p>
         </div>
-        <ul className='space-y-1 text-sm text-muted-foreground'>
+        <div className='flex flex-wrap justify-center gap-2'>
           {EXAMPLES.map((ex) => (
-            <li key={ex} className='italic'>
-              “{ex}”
-            </li>
+            <Button
+              key={ex}
+              type='button'
+              variant='outline'
+              size='sm'
+              className='h-auto rounded-full py-1.5 text-muted-foreground hover:text-foreground'
+              onClick={() => onSendExample(ex)}
+            >
+              {ex}
+            </Button>
           ))}
-        </ul>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className='flex-1 overflow-y-auto'>
-      <div className='mx-auto flex max-w-3xl flex-col gap-4 p-4'>
-        {messages.map((item) => (
-          <MessageBubble key={item.id} item={item} />
-        ))}
+    <div className='relative flex min-h-0 flex-1 flex-col'>
+      <div
+        ref={scrollRef}
+        onScroll={handleScroll}
+        className='flex-1 overflow-y-auto'
+      >
+        <div className='mx-auto flex max-w-3xl flex-col gap-4 p-4'>
+          {messages.map((item) => (
+            <MessageBubble key={item.id} item={item} />
+          ))}
 
-        {proposal ? (
-          proposal.proposal.kind === 'income' ? (
-            <IncomeProposalCard
-              proposal={proposal.proposal}
-              attachment={proposal.attachment}
-              onConfirmed={onProposalConfirmed}
-              onCancel={onProposalCancel}
-            />
-          ) : (
-            <ExpenseProposalCard
-              proposal={proposal.proposal}
-              attachment={proposal.attachment}
-              onConfirmed={onProposalConfirmed}
-              onCancel={onProposalCancel}
-            />
-          )
-        ) : null}
+          {proposal ? (
+            <div className='duration-300 animate-in fade-in slide-in-from-bottom-2'>
+              {proposal.proposal.kind === 'income' ? (
+                <IncomeProposalCard
+                  proposal={proposal.proposal}
+                  attachment={proposal.attachment}
+                  onConfirmed={onProposalConfirmed}
+                  onCancel={onProposalCancel}
+                />
+              ) : (
+                <ExpenseProposalCard
+                  proposal={proposal.proposal}
+                  attachment={proposal.attachment}
+                  onConfirmed={onProposalConfirmed}
+                  onCancel={onProposalCancel}
+                />
+              )}
+            </div>
+          ) : null}
 
-        {sending ? (
-          <div className='flex items-center gap-2 px-1 text-sm text-muted-foreground'>
-            <Spinner className='size-3.5' />
-            Rinciku is thinking…
-          </div>
-        ) : null}
+          {sending ? <TypingIndicator /> : null}
 
-        <div ref={bottomRef} />
+          <div ref={bottomRef} />
+        </div>
       </div>
+
+      {!nearBottom ? (
+        <Button
+          type='button'
+          size='icon'
+          variant='outline'
+          onClick={() => scrollToBottom('smooth')}
+          aria-label='Scroll to latest message'
+          className='absolute bottom-4 right-4 rounded-full shadow-md duration-200 animate-in fade-in zoom-in-95'
+        >
+          <ChevronDown className='size-4' />
+        </Button>
+      ) : null}
     </div>
   );
 }
