@@ -29,10 +29,12 @@ import { ExpenseExportDialog } from '../components/expense-export-dialog';
 import { ExpenseFilters } from '../components/expense-filters';
 import { ExpenseForm } from '../components/expense-form';
 import { ExpenseImportDialog } from '../components/expense-import-dialog';
+import { ExpenseSummary } from '../components/expense-summary';
 import { ExpenseTable } from '../components/expense-table';
 import { getCurrentCycle, getCycleRange } from '../lib/cycle';
 
 const DEFAULT_PAGE_SIZE = 10;
+const MS_PER_DAY = 86_400_000;
 
 type DialogState =
   | { kind: 'create' }
@@ -140,7 +142,12 @@ export function ExpensesPage() {
   const error = response?.error ?? null;
   const rows = response?.rows ?? [];
   const total = response?.total ?? 0;
-  const pageCount = Math.ceil((response?.count ?? 0) / pageSize);
+  const count = response?.count ?? 0;
+  const pageCount = Math.ceil(count / pageSize);
+  const days = Math.max(
+    1,
+    Math.round((dateRange.to.getTime() - dateRange.from.getTime()) / MS_PER_DAY)
+  );
 
   function resetToFirstPage() {
     setPagination((prev) => ({ ...prev, pageIndex: 0 }));
@@ -209,6 +216,14 @@ export function ExpensesPage() {
           </Button>
         </div>
       </div>
+
+      <ExpenseSummary
+        total={total}
+        count={count}
+        days={days}
+        baseCurrency={baseCurrency}
+        loading={loading}
+      />
 
       <Card className='gap-0 py-0'>
         <div className='border-b p-4 sm:p-5'>

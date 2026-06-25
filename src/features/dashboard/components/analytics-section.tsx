@@ -1,4 +1,4 @@
-import { useState, type ElementType, type ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import {
   AlertCircle,
   CalendarDays,
@@ -9,7 +9,7 @@ import {
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { cn } from '@/lib/utils';
+import { SummaryCard } from '@/components/shared/summary-card';
 import { getCurrentCycle } from '@/lib/cycle';
 import { formatCurrency } from '@/lib/format';
 import type { CurrencyCode } from '@/lib/fx';
@@ -158,64 +158,6 @@ export function AnalyticsSection() {
         </>
       )}
     </div>
-  );
-}
-
-function SummaryCard({
-  label,
-  value,
-  icon: Icon,
-  accent,
-  hint,
-  tone,
-  loading,
-}: {
-  label: string;
-  value: string;
-  icon: ElementType;
-  accent: string;
-  hint?: string;
-  tone?: 'negative';
-  loading: boolean;
-}) {
-  return (
-    <Card className='relative overflow-hidden transition-shadow hover:shadow-sm'>
-      {/* Accent bar keys the card to the metric's chart color. */}
-      <span
-        aria-hidden
-        className='absolute inset-x-0 top-0 h-0.5'
-        style={{ backgroundColor: accent }}
-      />
-      <CardContent className='py-2'>
-        <div className='flex items-center justify-between gap-2'>
-          <p className='text-sm font-medium text-muted-foreground'>{label}</p>
-          <span
-            aria-hidden
-            className='flex size-9 shrink-0 items-center justify-center rounded-lg'
-            style={{
-              backgroundColor: `color-mix(in oklab, ${accent} 14%, transparent)`,
-            }}
-          >
-            <Icon className='size-5' style={{ color: accent }} />
-          </span>
-        </div>
-        {loading ? (
-          <Skeleton className='mt-3 h-8 w-32' />
-        ) : (
-          <p
-            className={cn(
-              'mt-2 text-2xl font-semibold tracking-tight tabular-nums',
-              tone === 'negative' && 'text-destructive'
-            )}
-          >
-            {value}
-          </p>
-        )}
-        {hint && !loading ? (
-          <p className='mt-1 text-xs text-muted-foreground'>{hint}</p>
-        ) : null}
-      </CardContent>
-    </Card>
   );
 }
 

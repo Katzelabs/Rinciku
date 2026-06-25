@@ -30,9 +30,11 @@ import { IncomeExportDialog } from '../components/income-export-dialog';
 import { IncomeFilters } from '../components/income-filters';
 import { IncomeForm } from '../components/income-form';
 import { IncomeImportDialog } from '../components/income-import-dialog';
+import { IncomeSummary } from '../components/income-summary';
 import { IncomeTable } from '../components/income-table';
 
 const DEFAULT_PAGE_SIZE = 10;
+const MS_PER_DAY = 86_400_000;
 
 type DialogState =
   | { kind: 'create' }
@@ -140,7 +142,12 @@ export function IncomesPage() {
   const error = response?.error ?? null;
   const rows = response?.rows ?? [];
   const total = response?.total ?? 0;
-  const pageCount = Math.ceil((response?.count ?? 0) / pageSize);
+  const count = response?.count ?? 0;
+  const pageCount = Math.ceil(count / pageSize);
+  const days = Math.max(
+    1,
+    Math.round((dateRange.to.getTime() - dateRange.from.getTime()) / MS_PER_DAY)
+  );
 
   function resetToFirstPage() {
     setPagination((prev) => ({ ...prev, pageIndex: 0 }));
@@ -209,6 +216,14 @@ export function IncomesPage() {
           </Button>
         </div>
       </div>
+
+      <IncomeSummary
+        total={total}
+        count={count}
+        days={days}
+        baseCurrency={baseCurrency}
+        loading={loading}
+      />
 
       <Card className='gap-0 py-0'>
         <div className='border-b p-4 sm:p-5'>

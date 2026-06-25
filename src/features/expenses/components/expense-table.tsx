@@ -12,6 +12,7 @@ import {
 } from '@/components/shared/data-table';
 import { RowActions } from '@/components/shared/row-actions';
 import { TableCell, TableRow } from '@/components/ui/table';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
 import { formatCurrency } from '@/lib/format';
 import { convertToBase, type CurrencyCode } from '@/lib/fx';
@@ -44,6 +45,10 @@ export function ExpenseTable({
   onDelete,
   bordered,
 }: Props) {
+  // On narrow screens drop the Category and Actions columns to fit Date · Note ·
+  // Amount without horizontal scroll; row tap opens the detail view for edits.
+  const isMobile = useIsMobile();
+
   async function openAttachment(path: string) {
     const { data, error } = await getAttachmentSignedUrl(path);
     if (error || !data?.signedUrl) {
@@ -66,15 +71,19 @@ export function ExpenseTable({
       ),
       meta: { headerClassName: 'w-[130px]' },
     },
-    {
-      id: 'category',
-      accessorFn: (row) => row.category?.name ?? '',
-      header: ({ column }) => (
-        <DataTableColumnHeader column={column} title='Category' />
-      ),
-      cell: ({ row }) => <CategoryTag category={row.original.category} />,
-      sortingFn: 'text',
-    },
+    ...(isMobile
+      ? []
+      : [
+          {
+            id: 'category',
+            accessorFn: (row) => row.category?.name ?? '',
+            header: ({ column }) => (
+              <DataTableColumnHeader column={column} title='Category' />
+            ),
+            cell: ({ row }) => <CategoryTag category={row.original.category} />,
+            sortingFn: 'text',
+          } satisfies ColumnDef<ExpenseWithRelations>,
+        ]),
     {
       id: 'note',
       enableSorting: false,
@@ -82,7 +91,8 @@ export function ExpenseTable({
       cell: ({ row }) => (
         <span
           className={cn(
-            'block max-w-[280px] truncate',
+            'block truncate',
+            isMobile ? 'max-w-[120px]' : 'max-w-[280px]',
             !row.original.note && 'text-muted-foreground italic'
           )}
           title={row.original.note ?? undefined}
@@ -117,38 +127,46 @@ export function ExpenseTable({
       sortingFn: 'basic',
       meta: { headerClassName: 'text-right', cellClassName: 'text-right' },
     },
-    {
-      id: 'actions',
-      enableSorting: false,
-      header: 'Actions',
-      cell: ({ row }) => (
-        <div onClick={(event) => event.stopPropagation()}>
-          <RowActions
-            editLabel='Edit expense'
-            deleteLabel='Delete expense'
-            onEdit={() => onEdit(row.original)}
-            onDelete={() => onDelete(row.original)}
-            onOpenAttachment={
-              row.original.attachment
-                ? () => openAttachment(row.original.attachment!.storage_path)
-                : undefined
-            }
-          />
-        </div>
-      ),
-      meta: { headerClassName: 'w-[120px] text-right', cellClassName: 'text-right' },
-    },
+    ...(isMobile
+      ? []
+      : [
+          {
+            id: 'actions',
+            enableSorting: false,
+            header: 'Actions',
+            cell: ({ row }) => (
+              <div onClick={(event) => event.stopPropagation()}>
+                <RowActions
+                  editLabel='Edit expense'
+                  deleteLabel='Delete expense'
+                  onEdit={() => onEdit(row.original)}
+                  onDelete={() => onDelete(row.original)}
+                  onOpenAttachment={
+                    row.original.attachment
+                      ? () =>
+                          openAttachment(row.original.attachment!.storage_path)
+                      : undefined
+                  }
+                />
+              </div>
+            ),
+            meta: {
+              headerClassName: 'w-[120px] text-right',
+              cellClassName: 'text-right',
+            },
+          } satisfies ColumnDef<ExpenseWithRelations>,
+        ]),
   ];
 
   const footer = (
     <TableRow>
-      <TableCell colSpan={3} className='text-right'>
+      <TableCell colSpan={isMobile ? 2 : 3} className='text-right'>
         Total ({baseCurrency})
       </TableCell>
       <TableCell className='text-right font-semibold whitespace-nowrap tabular-nums'>
         {formatCurrency(total, baseCurrency)}
       </TableCell>
-      <TableCell />
+      {!isMobile && <TableCell />}
     </TableRow>
   );
 
