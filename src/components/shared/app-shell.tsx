@@ -72,15 +72,7 @@ const navGroups: NavGroup[] = [
   },
   {
     label: 'Assistant',
-    items: [
-      {
-        title: 'AI Chat',
-        to: '/ai-chat',
-        icon: Sparkles,
-        badge: 'Soon',
-        disabled: true,
-      },
-    ],
+    items: [{ title: 'AI Chat', to: '/ai-chat', icon: Sparkles }],
   },
 ];
 
