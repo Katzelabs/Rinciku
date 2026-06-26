@@ -23,7 +23,13 @@
 
 import { execSync } from 'node:child_process';
 import {
-  readFileSync, writeFileSync, mkdirSync, readdirSync, existsSync, copyFileSync, statSync,
+  readFileSync,
+  writeFileSync,
+  mkdirSync,
+  readdirSync,
+  existsSync,
+  copyFileSync,
+  statSync,
 } from 'node:fs';
 import { join, resolve, dirname, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -52,7 +58,8 @@ function listFiles() {
       const sub = join(dir, name);
       if (name.endsWith('.tsx')) out.push(`${group}/${name}`);
       else if (statSync(sub).isDirectory()) {
-        for (const f of readdirSync(sub)) if (f.endsWith('.tsx')) out.push(`${group}/${name}/${f}`);
+        for (const f of readdirSync(sub))
+          if (f.endsWith('.tsx')) out.push(`${group}/${name}/${f}`);
       }
     }
   }
@@ -62,7 +69,8 @@ function listFiles() {
 function exportsOf(abs) {
   const src = readFileSync(abs, 'utf8');
   const names = new Set();
-  const reInline = /export\s+(?:default\s+)?(?:const|let|var|function|class)\s+([A-Z][A-Za-z0-9]*)/g;
+  const reInline =
+    /export\s+(?:default\s+)?(?:const|let|var|function|class)\s+([A-Z][A-Za-z0-9]*)/g;
   const reList = /export\s*\{([^}]*)\}/g;
   let m;
   while ((m = reInline.exec(src))) names.add(m[1]);
@@ -79,8 +87,14 @@ function exportsOf(abs) {
 }
 
 function pascalFromFile(rel) {
-  const base = rel.split('/').pop().replace(/\.tsx$/, '');
-  return base.split('-').map((s) => s[0].toUpperCase() + s.slice(1)).join('');
+  const base = rel
+    .split('/')
+    .pop()
+    .replace(/\.tsx$/, '');
+  return base
+    .split('-')
+    .map((s) => s[0].toUpperCase() + s.slice(1))
+    .join('');
 }
 
 // Primary (card-level) component name per file.
@@ -95,7 +109,10 @@ function buildMap() {
   const map = {};
   for (const rel of listFiles()) {
     const name = primaryOf(rel);
-    if (!name) { console.error(`! no PascalCase export in ${rel}`); continue; }
+    if (!name) {
+      console.error(`! no PascalCase export in ${rel}`);
+      continue;
+    }
     map[name] = `src/components/${rel}`;
   }
   return map;
@@ -104,7 +121,8 @@ function buildMap() {
 const mode = process.argv[2];
 
 if (mode === 'report') {
-  for (const rel of listFiles()) console.log(`${rel}\n  ${exportsOf(join(COMP, rel)).join(', ')}`);
+  for (const rel of listFiles())
+    console.log(`${rel}\n  ${exportsOf(join(COMP, rel)).join(', ')}`);
   process.exit(0);
 }
 
@@ -118,22 +136,45 @@ mkdirSync(CACHE, { recursive: true });
 
 // 1. Build the app so Tailwind compiles every utility class the components use.
 console.error('» vite build (for compiled Tailwind css)…');
-execSync('pnpm exec vite build', { cwd: ROOT, stdio: 'inherit', env: { ...process.env, COREPACK_ENABLE_STRICT: '0' } });
+execSync('pnpm exec vite build', {
+  cwd: ROOT,
+  stdio: 'inherit',
+  env: { ...process.env, COREPACK_ENABLE_STRICT: '0' },
+});
 
 // 2. Pick the largest dist css, strip @font-face, write a stable compiled.css.
 const assets = join(ROOT, 'dist/assets');
-const cssFiles = readdirSync(assets).filter((f) => f.endsWith('.css')).map((f) => join(assets, f));
-if (!cssFiles.length) { console.error('! no css emitted by vite build'); process.exit(1); }
+const cssFiles = readdirSync(assets)
+  .filter((f) => f.endsWith('.css'))
+  .map((f) => join(assets, f));
+if (!cssFiles.length) {
+  console.error('! no css emitted by vite build');
+  process.exit(1);
+}
 const biggest = cssFiles.sort((a, b) => statSync(b).size - statSync(a).size)[0];
-const css = readFileSync(biggest, 'utf8').replace(/@font-face\s*\{[^}]*\}/g, '');
+const css = readFileSync(biggest, 'utf8').replace(
+  /@font-face\s*\{[^}]*\}/g,
+  ''
+);
 const compiled = join(CACHE, 'compiled.css');
 writeFileSync(compiled, css);
-console.error(`  compiled.css ← ${relative(ROOT, biggest)} (@font-face stripped)`);
+console.error(
+  `  compiled.css ← ${relative(ROOT, biggest)} (@font-face stripped)`
+);
 
 // 3. Write the curated bundle entry (absolute paths; @/ imports inside the files
 //    resolve via the converter's tsconfig-paths plugin).
 const files = listFiles();
 const entry = join(CACHE, 'bundle-entry.tsx');
-writeFileSync(entry, files.map((rel) => `export * from ${JSON.stringify(join(COMP, rel))};`).join('\n') + '\n');
-console.error(`  bundle-entry.tsx ← ${files.length} files (account-menu excluded)`);
-console.error('done. run the converter with --entry .design-sync/.cache/bundle-entry.tsx');
+writeFileSync(
+  entry,
+  files
+    .map((rel) => `export * from ${JSON.stringify(join(COMP, rel))};`)
+    .join('\n') + '\n'
+);
+console.error(
+  `  bundle-entry.tsx ← ${files.length} files (account-menu excluded)`
+);
+console.error(
+  'done. run the converter with --entry .design-sync/.cache/bundle-entry.tsx'
+);

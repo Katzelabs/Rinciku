@@ -23,7 +23,11 @@ import {
 } from '@/components/ui/input-group';
 import { Spinner } from '@/components/ui/spinner';
 import { cn } from '@/lib/utils';
-import { passwordPolicy, resetPasswordSchema, type ResetPasswordInput } from '../schemas';
+import {
+  passwordPolicy,
+  resetPasswordSchema,
+  type ResetPasswordInput,
+} from '../schemas';
 
 interface ResetPasswordFormProps {
   onSubmit: (

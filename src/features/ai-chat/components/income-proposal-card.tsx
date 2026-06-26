@@ -7,7 +7,12 @@ import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
-import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
+import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+} from '@/components/ui/card';
 import {
   Field,
   FieldError,
@@ -202,7 +207,10 @@ export function IncomeProposalCard({
               render={({ field, fieldState }) => (
                 <Field data-invalid={fieldState.invalid || undefined}>
                   <FieldLabel htmlFor='ip-date'>Date</FieldLabel>
-                  <Popover open={datePickerOpen} onOpenChange={setDatePickerOpen}>
+                  <Popover
+                    open={datePickerOpen}
+                    onOpenChange={setDatePickerOpen}
+                  >
                     <PopoverTrigger asChild>
                       <Button
                         id='ip-date'

@@ -111,7 +111,10 @@ export function AttachmentPreview({
         />
       ) : (
         <div className='flex h-20 w-20 items-center justify-center rounded-md bg-muted'>
-          <FileText className='size-8 text-muted-foreground' aria-hidden='true' />
+          <FileText
+            className='size-8 text-muted-foreground'
+            aria-hidden='true'
+          />
         </div>
       )}
       <div className='min-w-0 flex-1'>

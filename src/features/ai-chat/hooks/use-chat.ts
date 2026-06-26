@@ -182,7 +182,10 @@ export function useChat(options: UseChatOptions = {}): UseChatResult {
           ? summarizeProposal(parsed)
           : 'Sorry, I could not generate a response.');
 
-      setMessages((m) => [...m, { id: tempId(), role: 'assistant', content: text }]);
+      setMessages((m) => [
+        ...m,
+        { id: tempId(), role: 'assistant', content: text },
+      ]);
       await appendMessage({
         conversation_id: convId,
         user_id: profile.id,
@@ -248,7 +251,9 @@ export function useChat(options: UseChatOptions = {}): UseChatResult {
           imageFile: file,
         });
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Could not read the image.');
+        setError(
+          err instanceof Error ? err.message : 'Could not read the image.'
+        );
       }
     })();
   }
@@ -260,7 +265,10 @@ export function useChat(options: UseChatOptions = {}): UseChatResult {
   // Appends + persists a short confirmation note after a proposal is saved.
   function noteConfirmation(text: string) {
     setProposal(null);
-    setMessages((m) => [...m, { id: tempId(), role: 'assistant', content: text }]);
+    setMessages((m) => [
+      ...m,
+      { id: tempId(), role: 'assistant', content: text },
+    ]);
     const convId = currentIdRef.current;
     if (convId && profile) {
       void appendMessage({

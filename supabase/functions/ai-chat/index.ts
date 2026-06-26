@@ -27,7 +27,12 @@ type ImageBlock = {
   type: 'image';
   source: { type: 'base64'; media_type: string; data: string };
 };
-type ToolUseBlock = { type: 'tool_use'; id: string; name: string; input: unknown };
+type ToolUseBlock = {
+  type: 'tool_use';
+  id: string;
+  name: string;
+  input: unknown;
+};
 type InContent = string | Array<TextBlock | ImageBlock | ToolUseBlock>;
 type InMessage = { role: 'user' | 'assistant'; content: InContent };
 type InTool = {

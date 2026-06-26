@@ -1,10 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { Profile } from '@/features/auth';
-import {
-  getBudgetVsActual,
-  getCategoryBreakdown,
-  getSpendTrend,
-} from '../api';
+import { getBudgetVsActual, getCategoryBreakdown, getSpendTrend } from '../api';
 import type {
   AnalyticsFilters,
   BudgetComparisonItem,

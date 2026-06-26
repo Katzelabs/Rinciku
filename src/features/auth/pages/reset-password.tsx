@@ -109,8 +109,8 @@ export function ResetPasswordPage() {
               </span>
               <CardTitle>Link expired or invalid</CardTitle>
               <CardDescription>
-                This password reset link is no longer valid. Request a new one to
-                try again.
+                This password reset link is no longer valid. Request a new one
+                to try again.
               </CardDescription>
             </CardHeader>
             <CardFooter className='justify-center text-sm text-muted-foreground'>

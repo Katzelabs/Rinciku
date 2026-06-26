@@ -55,7 +55,10 @@ export function bucketKey(date: Date): string {
   return format(date, 'yyyy-MM-dd');
 }
 
-export function formatBucketLabel(date: Date, bucket: BucketGranularity): string {
+export function formatBucketLabel(
+  date: Date,
+  bucket: BucketGranularity
+): string {
   if (bucket === 'month') return format(date, 'MMM yyyy');
   return format(date, 'd MMM');
 }

@@ -125,10 +125,15 @@ export function SignInPage() {
                 const { error } = await signInWithPassword(values);
 
                 if (error) {
-                  if (isAuthApiError(error) && error.code === 'email_not_confirmed') {
+                  if (
+                    isAuthApiError(error) &&
+                    error.code === 'email_not_confirmed'
+                  ) {
                     setUnverifiedEmail(values.email);
                     setResendMessage(null);
-                    setRootError('Please confirm your email before signing in.');
+                    setRootError(
+                      'Please confirm your email before signing in.'
+                    );
                   } else if (
                     isAuthApiError(error) &&
                     (error.code === 'invalid_credentials' ||

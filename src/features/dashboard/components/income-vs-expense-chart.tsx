@@ -56,7 +56,11 @@ export function IncomeVsExpenseChart({
           }
         />
         <ChartLegend content={<ChartLegendContent />} />
-        <Bar dataKey='income' fill='var(--color-income)' radius={[4, 4, 0, 0]} />
+        <Bar
+          dataKey='income'
+          fill='var(--color-income)'
+          radius={[4, 4, 0, 0]}
+        />
         <Bar dataKey='spent' fill='var(--color-spent)' radius={[4, 4, 0, 0]} />
       </BarChart>
     </ChartContainer>

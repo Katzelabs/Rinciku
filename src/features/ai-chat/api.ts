@@ -4,7 +4,10 @@ import { CURRENCY_CODES, type CurrencyCode } from '@/lib/fx';
 import { formatCurrency } from '@/lib/format';
 import { supabase } from '@/lib/supabase';
 import type { Profile } from '@/features/auth';
-import { getMonthlySummary, type MonthlySummary } from '@/features/dashboard/api';
+import {
+  getMonthlySummary,
+  type MonthlySummary,
+} from '@/features/dashboard/api';
 import {
   createAttachment,
   createExpense,
@@ -122,17 +125,24 @@ export async function buildBudgetContext(
 ): Promise<Result<{ system: string; summary: MonthlySummary }>> {
   const { data, error } = await getMonthlySummary(profile);
   if (error || !data) {
-    return { data: null, error: error ?? new Error('Could not load budget state') };
+    return {
+      data: null,
+      error: error ?? new Error('Could not load budget state'),
+    };
   }
-  return { data: { system: buildSystemPrompt(data), summary: data }, error: null };
+  return {
+    data: { system: buildSystemPrompt(data), summary: data },
+    error: null,
+  };
 }
 
 function buildSystemPrompt(s: MonthlySummary): string {
   const base = s.base_currency;
   const fmt = (n: number) => formatCurrency(n, base);
   const tierLines =
-    s.tiers.map((t) => `  - ${t.name}: ${fmt(s.by_tier[t.id] ?? 0)}`).join('\n') ||
-    '  - (no spending categorized yet)';
+    s.tiers
+      .map((t) => `  - ${t.name}: ${fmt(s.by_tier[t.id] ?? 0)}`)
+      .join('\n') || '  - (no spending categorized yet)';
   const cycleStart = isoDate(s.cycle.start);
   const cycleEnd = isoDate(s.cycle.end);
 

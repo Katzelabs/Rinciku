@@ -233,9 +233,7 @@ export async function getCategoryBreakdown(
   const cats = catsRes.data ?? [];
   const tiers = tiersRes.data ?? [];
   const selected = new Set(filters.categoryIds);
-  const visible = cats.filter(
-    (c) => selected.size === 0 || selected.has(c.id)
-  );
+  const visible = cats.filter((c) => selected.size === 0 || selected.has(c.id));
 
   const byCategory = visible
     .map((c) => ({
