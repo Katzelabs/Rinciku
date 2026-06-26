@@ -106,11 +106,7 @@ export function ConversationList({
   return (
     <div className='flex h-full flex-col'>
       <div className='p-3'>
-        <Button
-          className='w-full justify-start'
-          variant='outline'
-          onClick={onNew}
-        >
+        <Button className='w-full justify-start' onClick={onNew}>
           <Plus className='size-4' />
           New chat
         </Button>

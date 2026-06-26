@@ -117,6 +117,75 @@
   --sidebar-ring: oklch(0.58 0.031 107.3);
 }
 
+/* highlight.js tokens — olive-tuned, theme-aware (no JS theme import). */
+.hljs {
+  color: var(--foreground);
+  background: transparent;
+}
+.hljs-comment,
+.hljs-quote {
+  color: var(--muted-foreground);
+  font-style: italic;
+}
+.hljs-keyword,
+.hljs-selector-tag,
+.hljs-built_in,
+.hljs-name,
+.hljs-tag {
+  color: oklch(0.5 0.16 131);
+}
+.hljs-string,
+.hljs-attr,
+.hljs-symbol,
+.hljs-bullet,
+.hljs-regexp {
+  color: oklch(0.52 0.12 66);
+}
+.hljs-number,
+.hljs-literal,
+.hljs-type,
+.hljs-meta {
+  color: var(--chart-3);
+}
+.hljs-attribute,
+.hljs-variable,
+.hljs-template-variable {
+  color: var(--chart-4);
+}
+.hljs-title,
+.hljs-section,
+.hljs-selector-id,
+.hljs-selector-class {
+  color: var(--foreground);
+  font-weight: 600;
+}
+.hljs-emphasis {
+  font-style: italic;
+}
+.hljs-strong {
+  font-weight: 600;
+}
+.dark .hljs-keyword,
+.dark .hljs-selector-tag,
+.dark .hljs-built_in,
+.dark .hljs-name,
+.dark .hljs-tag {
+  color: oklch(0.8 0.2 131);
+}
+.dark .hljs-string,
+.dark .hljs-attr,
+.dark .hljs-symbol,
+.dark .hljs-bullet,
+.dark .hljs-regexp {
+  color: oklch(0.82 0.13 80);
+}
+.dark .hljs-number,
+.dark .hljs-literal,
+.dark .hljs-type,
+.dark .hljs-meta {
+  color: oklch(0.78 0.16 50);
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;

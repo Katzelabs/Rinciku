@@ -1,19 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
-import { ChevronDown, Sparkles } from 'lucide-react';
+import { ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Spinner } from '@/components/ui/spinner';
 import type { ActiveProposal } from '../hooks/use-chat';
 import type { ChatItem } from '../types';
+import { ChatMessage } from './chat-message';
+import { ChatThreadSkeleton } from './chat-thread-skeleton';
 import { ExpenseProposalCard } from './expense-proposal-card';
 import { IncomeProposalCard } from './income-proposal-card';
-import { MessageBubble } from './message-bubble';
 import { TypingIndicator } from './typing-indicator';
-
-const EXAMPLES = [
-  'Can I afford a Rp 800.000 keyboard right now?',
-  'Spent 45k on lunch',
-  'How much do I have left this month?',
-];
+import { WelcomeScreen } from './welcome-screen';
 
 const NEAR_BOTTOM_PX = 120;
 
@@ -63,44 +58,11 @@ export function ChatThread({
   }, [isLoading]);
 
   if (isLoading) {
-    return (
-      <div className='flex flex-1 items-center justify-center text-muted-foreground'>
-        <Spinner />
-      </div>
-    );
+    return <ChatThreadSkeleton />;
   }
 
   if (messages.length === 0 && !proposal) {
-    return (
-      <div className='flex flex-1 flex-col items-center justify-center gap-5 px-6 text-center'>
-        <div className='flex size-14 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-sidebar-primary text-sidebar-primary-foreground shadow-sm shadow-primary/30 ring-1 ring-primary/20'>
-          <Sparkles className='size-7' />
-        </div>
-        <div className='space-y-1'>
-          <p className='text-lg font-semibold'>
-            Ask Rinciku anything about your money
-          </p>
-          <p className='max-w-md text-sm text-muted-foreground'>
-            Get a grounded answer before you spend, or log expenses and income
-            by chatting or sending a receipt.
-          </p>
-        </div>
-        <div className='flex flex-wrap justify-center gap-2'>
-          {EXAMPLES.map((ex) => (
-            <Button
-              key={ex}
-              type='button'
-              variant='outline'
-              size='sm'
-              className='h-auto rounded-full py-1.5 text-muted-foreground hover:text-foreground'
-              onClick={() => onSendExample(ex)}
-            >
-              {ex}
-            </Button>
-          ))}
-        </div>
-      </div>
-    );
+    return <WelcomeScreen onSend={onSendExample} />;
   }
 
   return (
@@ -110,9 +72,9 @@ export function ChatThread({
         onScroll={handleScroll}
         className='flex-1 overflow-y-auto'
       >
-        <div className='mx-auto flex max-w-3xl flex-col gap-4 p-4'>
+        <div className='mx-auto flex min-w-0 max-w-3xl flex-col gap-6 px-4 py-6'>
           {messages.map((item) => (
-            <MessageBubble key={item.id} item={item} />
+            <ChatMessage key={item.id} item={item} />
           ))}
 
           {proposal ? (

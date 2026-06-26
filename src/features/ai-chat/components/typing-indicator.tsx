@@ -1,10 +1,10 @@
-import { ChatAvatar } from './chat-avatar';
+import { AssistantLabel } from './chat-message';
 
 export function TypingIndicator() {
   return (
-    <div className='flex w-full items-end gap-2 duration-300 animate-in fade-in slide-in-from-bottom-2'>
-      <ChatAvatar role='assistant' />
-      <div className='flex items-center gap-1 rounded-2xl rounded-bl-sm bg-muted px-4 py-3'>
+    <div className='flex w-full flex-col gap-2 duration-300 animate-in fade-in slide-in-from-bottom-1'>
+      <AssistantLabel />
+      <div className='flex items-center gap-1 py-1'>
         <span className='size-2 animate-bounce rounded-full bg-muted-foreground/50 [animation-delay:0ms]' />
         <span className='size-2 animate-bounce rounded-full bg-muted-foreground/50 [animation-delay:150ms]' />
         <span className='size-2 animate-bounce rounded-full bg-muted-foreground/50 [animation-delay:300ms]' />

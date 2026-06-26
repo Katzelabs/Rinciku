@@ -1,7 +1,5 @@
 import { useState } from 'react';
-import { PanelLeft, Plus } from 'lucide-react';
 import { toast } from 'sonner';
-import { Button } from '@/components/ui/button';
 import {
   Sheet,
   SheetContent,
@@ -9,6 +7,7 @@ import {
   SheetTitle,
 } from '@/components/ui/sheet';
 import { deleteConversation, touchConversation } from '../api';
+import { ChatHeader } from '../components/chat-header';
 import { ChatThread } from '../components/chat-thread';
 import { ConversationList } from '../components/conversation-list';
 import { MessageComposer } from '../components/message-composer';
@@ -24,6 +23,9 @@ export function ChatPage() {
 
   const chat = useChat({ onConversationsChanged: refetch });
   const [historyOpen, setHistoryOpen] = useState(false);
+
+  const activeConversation =
+    conversations?.find((c) => c.id === chat.activeId) ?? null;
 
   function handleSelect(id: string) {
     chat.selectConversation(id);
@@ -70,23 +72,13 @@ export function ChatPage() {
       </aside>
 
       <section className='flex min-w-0 flex-1 flex-col'>
-        <div className='flex items-center justify-between gap-2 border-b p-2 md:hidden'>
-          <div className='flex items-center gap-1'>
-            <Button
-              variant='ghost'
-              size='icon'
-              onClick={() => setHistoryOpen(true)}
-              aria-label='Open conversation history'
-            >
-              <PanelLeft className='size-4' />
-            </Button>
-            <span className='text-sm font-medium'>AI Chat</span>
-          </div>
-          <Button variant='outline' size='sm' onClick={chat.startNew}>
-            <Plus className='size-4' />
-            New
-          </Button>
-        </div>
+        <ChatHeader
+          conversation={activeConversation}
+          onRename={handleRename}
+          onDelete={handleDelete}
+          onNew={handleNew}
+          onOpenHistory={() => setHistoryOpen(true)}
+        />
 
         {chat.error ? (
           <p className='border-b bg-destructive/10 px-4 py-2 text-sm text-destructive'>
