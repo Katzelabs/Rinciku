@@ -27,8 +27,10 @@
 -- 2. Demo account + sample data
 -- ---------------------------------------------------------------------------
 -- Inserting the auth.users row fires the handle_new_user trigger, which seeds
--- the profile, 3 tiers, 10 categories, and 4 income categories automatically.
--- We then enrich the profile and add essentials / expenses / incomes / budgets.
+-- the profile, 1 tier (Needs) + 3 categories, and 4 income categories
+-- automatically. The demo account wants richer sample data than a real new
+-- user, so this seed adds the extra tiers/categories itself before enriching
+-- the profile and adding essentials / expenses / incomes / budgets.
 
 do $$
 declare
@@ -44,7 +46,11 @@ declare
   v_prev_start  timestamptz := date_trunc('month', v_now) - interval '1 month';
   v_elapsed     interval    := v_now - date_trunc('month', v_now);
 
-  -- spending category ids (seeded by handle_new_user)
+  -- tier ids (Needs seeded by handle_new_user; Fixed/Wants added below)
+  v_fixed uuid; v_needs uuid; v_wants uuid;
+
+  -- spending category ids (rent/groceries/transport seeded by handle_new_user;
+  -- the rest added by this seed for richer demo data)
   v_rent uuid; v_internet uuid; v_electricity uuid; v_water uuid;
   v_groceries uuid; v_transport uuid; v_health uuid;
   v_dining uuid; v_subscriptions uuid; v_entertainment uuid;
@@ -96,6 +102,24 @@ begin
     month_start_day                  = 1,
     onboarded_at                     = v_now
   where id = v_user_id;
+
+  -- The trigger only seeds the "Needs" tier now. Add the extra demo tiers and
+  -- the categories the sample data below references.
+  select id into v_needs from public.tiers where user_id = v_user_id and name = 'Needs';
+
+  insert into public.tiers (user_id, name, color, is_essential, sort_order)
+    values (v_user_id, 'Fixed', '#7a8d6a', true, 1) returning id into v_fixed;
+  insert into public.tiers (user_id, name, color, is_essential, sort_order)
+    values (v_user_id, 'Wants', '#c4a86b', false, 2) returning id into v_wants;
+
+  insert into public.categories (user_id, name, tier_id, icon, color, sort_order) values
+    (v_user_id, 'internet',      v_fixed, 'wifi',        '#7a8d6a', 1),
+    (v_user_id, 'electricity',   v_fixed, 'plug-zap',    '#7a8d6a', 2),
+    (v_user_id, 'water',         v_fixed, 'droplets',    '#7a8d6a', 3),
+    (v_user_id, 'health',        v_needs, 'heart-pulse', '#a3a86b', 3),
+    (v_user_id, 'dining out',    v_wants, 'utensils',    '#c4a86b', 0),
+    (v_user_id, 'subscriptions', v_wants, 'credit-card', '#c4a86b', 1),
+    (v_user_id, 'entertainment', v_wants, 'gamepad-2',   '#c4a86b', 2);
 
   -- Resolve seeded category ids by name.
   select id into v_rent          from public.categories where user_id = v_user_id and name = 'rent';

@@ -197,7 +197,7 @@ create policy "profiles: update own" on public.profiles for update to authentica
 
 ## 4. `tiers`
 
-Per-user, **free-form** spending tiers. Replaces the old hardcoded `fixed|needs|wants` enum on `categories`: users name, color, order, and delete their own tiers. The `is_essential` flag drives the dashboard baseline-covered math (see [`dashboard_monthly_summary`](#14-helper-functions--triggers) and `src/features/dashboard/api.ts`) — spending in essential tiers is what counts against the essentials baseline. Seeded with three defaults on signup.
+Per-user, **free-form** spending tiers. Replaces the old hardcoded `fixed|needs|wants` enum on `categories`: users name, color, order, and delete their own tiers. The `is_essential` flag drives the dashboard baseline-covered math (see [`dashboard_monthly_summary`](#14-helper-functions--triggers) and `src/features/dashboard/api.ts`) — spending in essential tiers is what counts against the essentials baseline. Seeded with a single default tier on signup.
 
 ### Columns
 
@@ -228,11 +228,9 @@ Per-user, **free-form** spending tiers. Replaces the old hardcoded `fixed|needs|
 Standard pattern on `user_id`.
 
 ### Default seed (created by `handle_new_user`)
-- **Fixed** (`is_essential = true`, sort 0)
-- **Needs** (`is_essential = true`, sort 1)
-- **Wants** (`is_essential = false`, sort 2)
+- **Needs** (`is_essential = true`, sort 0)
 
-Flagging Fixed + Needs essential preserves the old "fixed + needs = essentials" behavior out of the box.
+A new user starts with a single essential tier and three categories under it (see [`categories`](#4a-categories)), kept deliberately minimal so first-run isn't overwhelming. Users add more tiers/categories as needed (up to the limits above).
 
 ---
 
@@ -271,11 +269,9 @@ Per-user spending categories, each pointing at a [tier](#4-tiers). Seeded with d
 Standard pattern on `user_id`.
 
 ### Default seed (created by `handle_new_user`)
-- **Fixed:** rent, internet, electricity, water
-- **Needs:** groceries, transport, health
-- **Wants:** dining out, subscriptions, entertainment
+- **Needs:** rent, groceries, transport
 
-Colors and icons are chosen by the seeder; not encoded here so they can evolve without a schema change.
+A minimal starter set under the single default [tier](#4-tiers). Colors and icons are chosen by the seeder; not encoded here so they can evolve without a schema change.
 
 ---
 
@@ -730,7 +726,7 @@ Read-side aggregation for the budgets feature. Sums expenses in the half-open wi
 Time-bucketed read-side aggregation powering the dashboard analytics charts (spending trend + income-vs-expense). Buckets expenses and incomes with `date_trunc(p_bucket, occurred_at)` over the half-open window `[p_start_at, p_end_at)`, FX-converts to `p_base` via the same pivot-through-IDR math as `budget_actuals`, full-outer-joins the two per-bucket sums, and returns `(bucket date, spent numeric, income numeric)` — one row per non-empty bucket (the client zero-fills gaps). `p_bucket` ∈ `'day' | 'week' | 'month'`. `p_category_ids uuid[]` (nullable) filters **expenses** only; incomes carry no category so the income series always reflects all income. Bucketing is UTC (no per-user timezone yet — known v1 simplification). `security invoker` + RLS-scoped via `auth.uid()`.
 
 ### `public.handle_new_user()`
-`AFTER INSERT ON auth.users` trigger. Creates a profile row, seeds 3 default tiers, seeds default categories pointed at those tiers, and seeds 4 default income categories.
+`AFTER INSERT ON auth.users` trigger. Creates a profile row, seeds 1 default tier, seeds 3 default categories pointed at that tier, and seeds 4 default income categories. Kept minimal so first-run isn't overwhelming.
 
 ```sql
 create or replace function public.handle_new_user()
@@ -740,32 +736,19 @@ security definer
 set search_path = ''
 as $$
 declare
-  v_fixed uuid;
   v_needs uuid;
-  v_wants uuid;
 begin
   insert into public.profiles (id, email)
   values (new.id, new.email);
 
-  -- seed default tiers (Fixed/Needs essential, Wants not)
+  -- seed the single default tier (essential)
   insert into public.tiers (user_id, name, color, is_essential, sort_order)
-    values (new.id, 'Fixed', '#7a8d6a', true, 0) returning id into v_fixed;
-  insert into public.tiers (user_id, name, color, is_essential, sort_order)
-    values (new.id, 'Needs', '#a3a86b', true, 1) returning id into v_needs;
-  insert into public.tiers (user_id, name, color, is_essential, sort_order)
-    values (new.id, 'Wants', '#c4a86b', false, 2) returning id into v_wants;
+    values (new.id, 'Needs', '#a3a86b', true, 0) returning id into v_needs;
 
   insert into public.categories (user_id, name, tier_id, icon, color, sort_order) values
-    (new.id, 'rent',          v_fixed, 'home',          '#7a8d6a', 0),
-    (new.id, 'internet',      v_fixed, 'wifi',          '#7a8d6a', 1),
-    (new.id, 'electricity',   v_fixed, 'plug-zap',      '#7a8d6a', 2),
-    (new.id, 'water',         v_fixed, 'droplets',      '#7a8d6a', 3),
-    (new.id, 'groceries',     v_needs, 'shopping-cart', '#a3a86b', 0),
-    (new.id, 'transport',     v_needs, 'bus',           '#a3a86b', 1),
-    (new.id, 'health',        v_needs, 'heart-pulse',   '#a3a86b', 2),
-    (new.id, 'dining out',    v_wants, 'utensils',      '#c4a86b', 0),
-    (new.id, 'subscriptions', v_wants, 'credit-card',   '#c4a86b', 1),
-    (new.id, 'entertainment', v_wants, 'gamepad-2',     '#c4a86b', 2);
+    (new.id, 'rent',      v_needs, 'home',          '#a3a86b', 0),
+    (new.id, 'groceries', v_needs, 'shopping-cart', '#a3a86b', 1),
+    (new.id, 'transport', v_needs, 'bus',           '#a3a86b', 2);
 
   -- Flat income source taxonomy (no tier). PascalCase lucide icon names.
   insert into public.income_categories (user_id, name, icon, color, sort_order) values
