@@ -7,4 +7,8 @@ export const aiChatRoutes: RouteObject[] = [
     path: 'ai-chat',
     element: protectedRoute(<ChatPage />),
   },
+  {
+    path: 'ai-chat/:conversationId',
+    element: protectedRoute(<ChatPage />),
+  },
 ];

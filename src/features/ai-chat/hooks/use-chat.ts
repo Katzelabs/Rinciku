@@ -51,6 +51,9 @@ export type ActiveProposal = {
 export type UseChatOptions = {
   // Called after any write so the page can re-sort / refresh the sidebar list.
   onConversationsChanged?: () => void;
+  // Called once a conversation is lazily created on the first send, so the page
+  // can reflect the new id in the URL (/ai-chat/:conversationId).
+  onConversationCreated?: (id: string) => void;
 };
 
 export type UseChatResult = {
@@ -181,6 +184,7 @@ export function useChat(options: UseChatOptions = {}): UseChatResult {
         convId = data.id;
         currentIdRef.current = convId;
         setActiveId(convId);
+        options.onConversationCreated?.(convId);
       }
 
       // 2. Optimistic user bubble + persist.

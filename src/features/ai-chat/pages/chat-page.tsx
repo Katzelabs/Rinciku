@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { useNavigate, useParams } from 'react-router';
 import { toast } from 'sonner';
 import {
   Sheet,
@@ -15,25 +16,46 @@ import { useChat } from '../hooks/use-chat';
 import { useConversations } from '../hooks/use-conversations';
 
 export function ChatPage() {
+  const { conversationId } = useParams();
+  const navigate = useNavigate();
+
   const {
     data: conversations,
     isLoading: conversationsLoading,
     refetch,
   } = useConversations();
 
-  const chat = useChat({ onConversationsChanged: refetch });
+  const chat = useChat({
+    onConversationsChanged: refetch,
+    // First send creates the conversation lazily — reflect its id in the URL.
+    // Replace so the empty /ai-chat doesn't linger in the back stack.
+    onConversationCreated: (id) =>
+      navigate(`/ai-chat/${id}`, { replace: true }),
+  });
   const [historyOpen, setHistoryOpen] = useState(false);
+
+  // URL is the source of truth: load the conversation from the path (or reset to
+  // a fresh thread on bare /ai-chat). A ref tracks the last-synced id so this
+  // only acts on real param changes, not on every render.
+  const syncedIdRef = useRef<string | null | undefined>(undefined);
+  useEffect(() => {
+    const target = conversationId ?? null;
+    if (syncedIdRef.current === target) return;
+    syncedIdRef.current = target;
+    if (target) chat.selectConversation(target);
+    else chat.startNew();
+  }, [conversationId, chat]);
 
   const activeConversation =
     conversations?.find((c) => c.id === chat.activeId) ?? null;
 
   function handleSelect(id: string) {
-    chat.selectConversation(id);
+    navigate(`/ai-chat/${id}`);
     setHistoryOpen(false);
   }
 
   function handleNew() {
-    chat.startNew();
+    navigate('/ai-chat');
     setHistoryOpen(false);
   }
 
@@ -52,7 +74,7 @@ export function ChatPage() {
       toast.error('Could not delete the chat.');
       return;
     }
-    if (chat.activeId === id) chat.startNew();
+    if (chat.activeId === id) navigate('/ai-chat');
     refetch();
     toast.success('Chat deleted.');
   }
@@ -64,8 +86,8 @@ export function ChatPage() {
           conversations={conversations}
           isLoading={conversationsLoading}
           activeId={chat.activeId}
-          onSelect={chat.selectConversation}
-          onNew={chat.startNew}
+          onSelect={handleSelect}
+          onNew={handleNew}
           onRename={handleRename}
           onDelete={handleDelete}
         />
