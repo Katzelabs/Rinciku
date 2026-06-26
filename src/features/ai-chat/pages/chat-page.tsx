@@ -91,9 +91,13 @@ export function ChatPage() {
           isLoading={chat.isLoading}
           sending={chat.sending}
           proposal={chat.proposal}
+          pendingChange={chat.pendingChange}
+          confirmingChange={chat.confirmingChange}
           onSendExample={chat.send}
           onProposalConfirmed={chat.noteConfirmation}
           onProposalCancel={chat.dismissProposal}
+          onChangeConfirm={chat.confirmChange}
+          onChangeCancel={chat.dismissChange}
         />
 
         <MessageComposer

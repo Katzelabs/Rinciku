@@ -21,12 +21,28 @@ export function ChatMessage({ item }: { item: ChatItem }) {
 
   if (isUser) {
     return (
-      <div className='flex w-full justify-end duration-300 animate-in fade-in slide-in-from-bottom-1'>
-        <div className='max-w-[80%] rounded-3xl rounded-br-md bg-muted px-4 py-2.5 text-base text-foreground'>
-          <p className={cn('whitespace-pre-wrap', '[overflow-wrap:anywhere]')}>
-            {item.content}
-          </p>
-        </div>
+      <div className='flex w-full flex-col items-end gap-1.5 duration-300 animate-in fade-in slide-in-from-bottom-1'>
+        {item.imageUrl ? (
+          <a
+            href={item.imageUrl}
+            target='_blank'
+            rel='noopener noreferrer'
+            className='block max-w-[75%] overflow-hidden rounded-2xl rounded-br-md border bg-muted'
+          >
+            <img
+              src={item.imageUrl}
+              alt='Attached image'
+              className='max-h-80 w-full object-cover'
+            />
+          </a>
+        ) : null}
+        {item.content ? (
+          <div className='max-w-[80%] rounded-3xl rounded-br-md bg-muted px-4 py-2.5 text-base text-foreground'>
+            <p className={cn('whitespace-pre-wrap', '[overflow-wrap:anywhere]')}>
+              {item.content}
+            </p>
+          </div>
+        ) : null}
       </div>
     );
   }

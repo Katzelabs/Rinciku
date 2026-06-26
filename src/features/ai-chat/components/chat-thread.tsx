@@ -2,7 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import { ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import type { ActiveProposal } from '../hooks/use-chat';
-import type { ChatItem } from '../types';
+import type { ChatItem, ProposedChange } from '../types';
+import { ActionProposalCard } from './action-proposal-card';
 import { ChatMessage } from './chat-message';
 import { ChatThreadSkeleton } from './chat-thread-skeleton';
 import { ExpenseProposalCard } from './expense-proposal-card';
@@ -17,9 +18,13 @@ type Props = {
   isLoading: boolean;
   sending: boolean;
   proposal: ActiveProposal | null;
+  pendingChange: ProposedChange | null;
+  confirmingChange: boolean;
   onSendExample: (text: string) => void;
   onProposalConfirmed: (note: string) => void;
   onProposalCancel: () => void;
+  onChangeConfirm: () => void;
+  onChangeCancel: () => void;
 };
 
 export function ChatThread({
@@ -27,9 +32,13 @@ export function ChatThread({
   isLoading,
   sending,
   proposal,
+  pendingChange,
+  confirmingChange,
   onSendExample,
   onProposalConfirmed,
   onProposalCancel,
+  onChangeConfirm,
+  onChangeCancel,
 }: Props) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -50,7 +59,7 @@ export function ChatThread({
   // scrolling up to read history is never interrupted.
   useEffect(() => {
     if (nearBottom) scrollToBottom('smooth');
-  }, [messages, sending, proposal, nearBottom]);
+  }, [messages, sending, proposal, pendingChange, nearBottom]);
 
   // Jump to the latest message instantly after a conversation loads.
   useEffect(() => {
@@ -61,7 +70,7 @@ export function ChatThread({
     return <ChatThreadSkeleton />;
   }
 
-  if (messages.length === 0 && !proposal) {
+  if (messages.length === 0 && !proposal && !pendingChange) {
     return <WelcomeScreen onSend={onSendExample} />;
   }
 
@@ -94,6 +103,17 @@ export function ChatThread({
                   onCancel={onProposalCancel}
                 />
               )}
+            </div>
+          ) : null}
+
+          {pendingChange ? (
+            <div className='duration-300 animate-in fade-in slide-in-from-bottom-2'>
+              <ActionProposalCard
+                change={pendingChange}
+                confirming={confirmingChange}
+                onConfirm={onChangeConfirm}
+                onCancel={onChangeCancel}
+              />
             </div>
           ) : null}
 

@@ -11,6 +11,7 @@ import {
 import {
   createAttachment,
   createExpense,
+  getAttachmentSignedUrl,
   updateAttachment,
   uploadAttachment,
 } from '@/features/expenses/api';
@@ -63,15 +64,31 @@ export async function createConversation(
   return { data, error };
 }
 
+// A message row plus its linked image attachment (if any). The FK
+// messages.attachment_id references expense_attachments, so the embed is a
+// single row or null.
+export type ChatMessageRowWithImage = ChatMessageRow & {
+  attachment: { storage_path: string } | null;
+};
+
 export async function getMessages(
   conversationId: string
-): Promise<Result<ChatMessageRow[]>> {
+): Promise<Result<ChatMessageRowWithImage[]>> {
   const { data, error } = await supabase
     .from('messages')
-    .select('*')
+    .select('*, attachment:expense_attachments(storage_path)')
     .eq('conversation_id', conversationId)
     .order('created_at', { ascending: true });
-  return { data, error };
+  return { data: data as ChatMessageRowWithImage[] | null, error };
+}
+
+// Resolves a time-limited URL the browser can render for a stored chat image.
+// Returns null on failure so a broken attachment never blocks the thread.
+export async function chatImageUrl(
+  storagePath: string
+): Promise<string | null> {
+  const { data } = await getAttachmentSignedUrl(storagePath, 60 * 60);
+  return data?.signedUrl ?? null;
 }
 
 export type AppendMessageInput = {
@@ -152,6 +169,9 @@ function buildSystemPrompt(s: MonthlySummary): string {
     '',
     'When the user asks whether they can afford a purchase, reason explicitly against their remaining budget, the still-uncovered essentials baseline, and the days left in the cycle. Give a clear yes / no / maybe with the numbers behind it.',
     'When the user states a transaction in natural language (e.g. "spent 45k on lunch", "got paid 2 million") OR sends an image of a receipt, transfer proof, invoice, or e-wallet screenshot, call the matching tool (propose_expense or propose_income) to draft it for review. Do NOT claim it is logged — the user confirms in the UI. Indonesian amounts use dot thousands separators (e.g. "45.000" = 45000, "1,2jt" = 1200000).',
+    '',
+    'You have READ tools to inspect the real data before answering: get_financial_overview, query_expenses (group_by category/tier to find where money goes), query_incomes, list_categories, list_income_categories, list_tiers, list_essentials, list_budgets. When the user asks anything analytical ("what wastes my money most?", "how much did I spend on food?", "am I over budget?"), CALL these tools and answer from the returned numbers — never guess. The budget snapshot below is just a starting point; use the tools for specifics and detail.',
+    'You can also CHANGE data with propose_change (for categories, income sources, essentials, budgets, tiers, and for EDITING or DELETING an existing expense/income). ALWAYS look up the real record id with a read tool first (e.g. query_expenses with group_by="none" to find an expense id). Like the transaction proposals, a propose_change is only a draft — the user confirms it in the UI, so never say it is done until they do. Write clear summaries on each proposal.',
     '',
     `Current budget state (base currency: ${base}):`,
     `- Cycle: ${cycleStart} to ${cycleEnd} (${s.days_left} day(s) left)`,
@@ -299,6 +319,30 @@ export function fileToBase64(
       reject(reader.error ?? new Error('Could not read file'));
     reader.readAsDataURL(file);
   });
+}
+
+// Stores a chat image up front — before the model decides expense vs income —
+// so the sent message can render it immediately and reload it later. Lives in
+// the expense-attachments bucket because messages.attachment_id references
+// expense_attachments; it stays unconfirmed (no expense_id) and is independent
+// of any transaction attachment created later when a proposal is confirmed.
+export async function uploadChatImage(
+  file: File,
+  userId: string
+): Promise<Result<{ attachmentId: string; storagePath: string }>> {
+  const up = await uploadAttachment(file, { userId, occurredAt: new Date() });
+  if (up.error || !up.data) return { data: null, error: up.error };
+  const row = await createAttachment({
+    user_id: userId,
+    storage_path: up.data.storage_path,
+    mime_type: file.type,
+    file_size_bytes: file.size,
+  });
+  if (row.error || !row.data) return { data: null, error: row.error };
+  return {
+    data: { attachmentId: row.data.id, storagePath: up.data.storage_path },
+    error: null,
+  };
 }
 
 // Uploads the image to the bucket matching the resolved kind and records the

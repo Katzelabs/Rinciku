@@ -18,7 +18,9 @@ const OPENROUTER_BASE_URL = 'https://openrouter.ai/api/v1';
 // Model is env-configurable (any OpenRouter slug, Claude or otherwise). Set
 // OPENROUTER_MODEL in supabase/functions/.env and `supabase secrets`.
 const DEFAULT_MODEL = 'google/gemini-3.1-flash-lite';
-const DEFAULT_MAX_TOKENS = 2048;
+// Headroom for the agentic loop: a turn may interleave reasoning, tool calls,
+// and a final summary. Still env-overridable per request via max_tokens.
+const DEFAULT_MAX_TOKENS = 4096;
 
 // --- Internal (client-facing) request shapes -------------------------------
 
@@ -33,7 +35,16 @@ type ToolUseBlock = {
   name: string;
   input: unknown;
 };
-type InContent = string | Array<TextBlock | ImageBlock | ToolUseBlock>;
+// Result of a client-executed (read) tool, replayed back so the model can
+// reason over the data it asked for. content is an opaque JSON/text string.
+type ToolResultBlock = {
+  type: 'tool_result';
+  tool_use_id: string;
+  content: string;
+};
+type InContent =
+  | string
+  | Array<TextBlock | ImageBlock | ToolUseBlock | ToolResultBlock>;
 type InMessage = { role: 'user' | 'assistant'; content: InContent };
 type InTool = {
   name: string;
@@ -62,7 +73,10 @@ function json(body: unknown, status = 200): Response {
 
 // --- Translation: internal -> OpenAI ---------------------------------------
 
-function toOpenAIContent(
+// User-turn content (text + images). tool_result blocks are handled at the
+// message level (they translate to separate `tool` role messages), so they're
+// ignored here.
+function toOpenAIUserContent(
   content: InContent
 ): OpenAI.Chat.Completions.ChatCompletionContentPart[] | string {
   if (typeof content === 'string') return content;
@@ -78,33 +92,75 @@ function toOpenAIContent(
         },
       });
     }
-    // tool_use blocks are never sent from the client (history is text-only).
   }
   return parts;
 }
 
+// Translates our internal turn list into OpenAI Chat Completions messages.
+// The agentic loop interleaves three new shapes that must map precisely:
+//   - assistant message with tool_use blocks  -> assistant msg + `tool_calls`
+//   - user message with tool_result blocks    -> one `tool` role msg per result
+//   - plain user/assistant text (+ images)    -> as before
 function toOpenAIMessages(
   system: string | undefined,
   messages: InMessage[]
 ): OpenAI.Chat.Completions.ChatCompletionMessageParam[] {
   const out: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [];
   if (system) out.push({ role: 'system', content: system });
+
   for (const m of messages) {
+    const blocks = Array.isArray(m.content) ? m.content : null;
+
     if (m.role === 'assistant') {
-      // Assistant history is always plain text in this app.
-      out.push({
-        role: 'assistant',
-        content:
-          typeof m.content === 'string'
-            ? m.content
-            : m.content
-                .filter((b): b is TextBlock => b.type === 'text')
-                .map((b) => b.text)
-                .join('\n'),
-      });
-    } else {
-      out.push({ role: 'user', content: toOpenAIContent(m.content) });
+      const text =
+        typeof m.content === 'string'
+          ? m.content
+          : (blocks ?? [])
+              .filter((b): b is TextBlock => b.type === 'text')
+              .map((b) => b.text)
+              .join('\n');
+      const toolCalls = (blocks ?? [])
+        .filter((b): b is ToolUseBlock => b.type === 'tool_use')
+        .map((b) => ({
+          id: b.id,
+          type: 'function' as const,
+          function: {
+            name: b.name,
+            arguments: JSON.stringify(b.input ?? {}),
+          },
+        }));
+      if (toolCalls.length > 0) {
+        // OpenAI rejects an assistant message with an empty-string content
+        // alongside tool_calls — omit content entirely when there's no text.
+        out.push({
+          role: 'assistant',
+          ...(text ? { content: text } : {}),
+          tool_calls: toolCalls,
+        });
+      } else {
+        out.push({ role: 'assistant', content: text });
+      }
+      continue;
     }
+
+    // role === 'user'
+    const toolResults = (blocks ?? []).filter(
+      (b): b is ToolResultBlock => b.type === 'tool_result'
+    );
+    if (toolResults.length > 0) {
+      // A tool-result turn carries only tool_result blocks (never text/images),
+      // and each becomes its own `tool` message keyed to the originating call.
+      for (const r of toolResults) {
+        out.push({
+          role: 'tool',
+          tool_call_id: r.tool_use_id,
+          content: r.content,
+        });
+      }
+      continue;
+    }
+
+    out.push({ role: 'user', content: toOpenAIUserContent(m.content) });
   }
   return out;
 }

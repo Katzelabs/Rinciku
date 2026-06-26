@@ -10,6 +10,9 @@ export type ChatItem = {
   id: string;
   role: 'user' | 'assistant';
   content: string;
+  // Displayable URL for an attached image (object URL while optimistic, signed
+  // storage URL once reloaded from history). Null for text-only messages.
+  imageUrl?: string | null;
 };
 
 // --- Minimal Anthropic wire shapes ----------------------------------------
@@ -30,11 +33,21 @@ export type ToolUseBlock = {
   input: unknown;
 };
 
+// Result of a client-executed read tool, replayed to the model so it can reason
+// over the data it asked for. `content` is an opaque JSON/text string.
+export type ToolResultBlock = {
+  type: 'tool_result';
+  tool_use_id: string;
+  content: string;
+};
+
 export type ContentBlock = TextBlock | ToolUseBlock;
 
 export type MessageParam = {
   role: 'user' | 'assistant';
-  content: string | Array<TextBlock | ImageBlock | ToolUseBlock>;
+  content:
+    | string
+    | Array<TextBlock | ImageBlock | ToolUseBlock | ToolResultBlock>;
 };
 
 export type ToolDef = {
@@ -90,4 +103,32 @@ export type ProposedTransaction = {
 export type PendingAttachment = {
   id: string;
   kind: ProposalKind;
+};
+
+// --- Generic data mutations (agent CRUD) ----------------------------------
+// Non-transaction writes (and expense/income edits/deletes) flow through one
+// generic proposal tool. The model resolves concrete ids via read tools first,
+// then proposes a change the user confirms in a single action card.
+
+export type ChangeAction = 'create' | 'update' | 'delete';
+
+export type ChangeEntity =
+  | 'expense'
+  | 'income'
+  | 'category'
+  | 'income_category'
+  | 'essential'
+  | 'budget'
+  | 'tier';
+
+// Normalized output of a propose_change tool call.
+export type ProposedChange = {
+  action: ChangeAction;
+  entity: ChangeEntity;
+  // Required for update/delete; null for create.
+  id: string | null;
+  // Fields to set for create/update; null for delete.
+  data: Record<string, unknown> | null;
+  // Human-readable one-liner the model writes for the confirmation card.
+  summary: string;
 };

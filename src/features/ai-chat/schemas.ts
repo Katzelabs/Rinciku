@@ -70,3 +70,25 @@ export const incomeConfirmSchema = z.object({
 });
 
 export type IncomeConfirmInput = z.infer<typeof incomeConfirmSchema>;
+
+// Validates the raw `input` of a propose_change tool call (the generic CRUD
+// proposal for categories, essentials, budgets, tiers, income sources, and
+// expense/income edits + deletes). `data` is entity-specific and validated
+// again at apply time by the dispatcher.
+export const changeToolInputSchema = z.object({
+  action: z.enum(['create', 'update', 'delete']),
+  entity: z.enum([
+    'expense',
+    'income',
+    'category',
+    'income_category',
+    'essential',
+    'budget',
+    'tier',
+  ]),
+  id: z.string().nullish(),
+  data: z.record(z.string(), z.unknown()).nullish(),
+  summary: z.string().min(1),
+});
+
+export type ChangeToolInput = z.infer<typeof changeToolInputSchema>;
