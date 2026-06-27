@@ -11,6 +11,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
+import { LanguageSelect } from '@/components/shared/language-select';
 import { Spinner } from '@/components/ui/spinner';
 import { requestPasswordReset } from '../api';
 import { ForgotPasswordForm } from '../components/forgot-password-form';
@@ -45,7 +46,7 @@ export function ForgotPasswordPage() {
 
   return (
     <RequireGuest>
-      <div className='flex min-h-svh flex-col items-center justify-center gap-6 p-6'>
+      <div className='flex min-h-svh flex-col items-center justify-center gap-4 p-6'>
         <Link
           to='/'
           className='flex items-center gap-2 text-foreground'
@@ -58,6 +59,10 @@ export function ForgotPasswordPage() {
             Rinciku
           </span>
         </Link>
+
+        <div className='flex w-full max-w-sm justify-end'>
+          <LanguageSelect />
+        </div>
 
         <Card className='w-full max-w-sm'>
           {sentTo ? (

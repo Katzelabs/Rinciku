@@ -39,6 +39,7 @@
     "language": {
       "label": "Bahasa",
       "placeholder": "Pilih bahasa",
+      "toggle": "Ganti bahasa",
       "saveError": "Tidak dapat mengubah bahasa. Silakan coba lagi."
     }
   },

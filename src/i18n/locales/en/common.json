@@ -39,6 +39,7 @@
     "language": {
       "label": "Language",
       "placeholder": "Select a language",
+      "toggle": "Change language",
       "saveError": "Could not change the language. Please try again."
     }
   },

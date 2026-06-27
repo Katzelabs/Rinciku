@@ -13,6 +13,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
+import { LanguageSelect } from '@/components/shared/language-select';
 import { Spinner } from '@/components/ui/spinner';
 import { resendConfirmation, signUpWithPassword } from '../api';
 import { RESEND_COOLDOWN_SECONDS, useCooldown } from '../hooks/use-cooldown';
@@ -101,7 +102,7 @@ export function SignUpPage() {
 
   return (
     <RequireGuest>
-      <div className='flex min-h-svh flex-col items-center justify-center gap-6 p-6'>
+      <div className='flex min-h-svh flex-col items-center justify-center gap-4 p-6'>
         <Link
           to='/'
           className='flex items-center gap-2 text-foreground'
@@ -114,6 +115,10 @@ export function SignUpPage() {
             Rinciku
           </span>
         </Link>
+
+        <div className='flex w-full max-w-sm justify-end'>
+          <LanguageSelect />
+        </div>
 
         <Card className='w-full max-w-sm'>
           {pendingEmail ? (
