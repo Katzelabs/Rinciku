@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { isAuthApiError } from '@supabase/supabase-js';
-import { WalletIcon } from 'lucide-react';
 import { Link, useNavigate, useSearchParams } from 'react-router';
+import { Logo } from '@/components/shared/logo';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -66,17 +66,8 @@ export function SignInPage() {
   return (
     <RequireGuest>
       <div className='flex min-h-svh flex-col items-center justify-center gap-4 p-6'>
-        <Link
-          to='/'
-          className='flex items-center gap-2 text-foreground'
-          aria-label='Rinciku'
-        >
-          <span className='flex size-8 items-center justify-center rounded-2xl bg-primary text-primary-foreground'>
-            <WalletIcon className='size-4' />
-          </span>
-          <span className='font-heading text-lg font-semibold tracking-tight'>
-            Rinciku
-          </span>
+        <Link to='/' aria-label='Rinciku'>
+          <Logo />
         </Link>
 
         <div className='flex w-full max-w-sm justify-end'>

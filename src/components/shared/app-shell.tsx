@@ -1,7 +1,6 @@
 import type { LucideIcon } from 'lucide-react';
 import {
   ArrowRightLeft,
-  Coins,
   LayoutDashboard,
   PiggyBank,
   Receipt,
@@ -16,6 +15,7 @@ import {
   AccountMenu,
   SidebarAccountMenu,
 } from '@/components/shared/account-menu';
+import { LogoMark } from '@/components/shared/logo';
 import { ThemeToggle } from '@/components/shared/theme-toggle';
 import { Separator } from '@/components/ui/separator';
 import {
@@ -105,9 +105,10 @@ function AppSidebar() {
           <SidebarMenuItem>
             <SidebarMenuButton size='lg' asChild>
               <Link to='/'>
-                <div className='flex aspect-square size-8 items-center justify-center rounded-lg bg-linear-to-br from-primary to-sidebar-primary text-sidebar-primary-foreground shadow-sm shadow-primary/30 ring-1 ring-primary/20'>
-                  <Coins className='size-4' />
-                </div>
+                <LogoMark
+                  aria-hidden
+                  className='size-8 rounded-lg shadow-sm shadow-primary/30 ring-1 ring-primary/20'
+                />
                 <div className='grid flex-1 text-left text-sm leading-tight'>
                   <span className='truncate font-semibold'>
                     {t('brand.name')}

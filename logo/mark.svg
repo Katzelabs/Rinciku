@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100" role="img">
+  <title>Rinciku mark</title>
+  <desc>Rinciku logo mark — three stacked lines of decreasing width inside a rounded square</desc>
+  <rect x="0" y="0" width="100" height="100" rx="25" fill="#4a7a42"/>
+  <rect x="16" y="28" width="68" height="12" rx="6" fill="#ffffff" opacity="0.93"/>
+  <rect x="16" y="46" width="48" height="12" rx="6" fill="#ffffff" opacity="0.65"/>
+  <rect x="16" y="64" width="30" height="12" rx="6" fill="#ffffff" opacity="0.37"/>
+</svg>

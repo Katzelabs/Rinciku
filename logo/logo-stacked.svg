@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 160" width="200" height="160" role="img">
+  <title>Rinciku — stacked lockup</title>
+  <desc>Rinciku stacked logo lockup — mark centered above wordmark and tagline</desc>
+  <!-- Mark, centered -->
+  <rect x="60" y="0" width="80" height="80" rx="20" fill="#4a7a42"/>
+  <rect x="73" y="22" width="54" height="11" rx="5.5" fill="#ffffff" opacity="0.93"/>
+  <rect x="73" y="37" width="38" height="11" rx="5.5" fill="#ffffff" opacity="0.65"/>
+  <rect x="73" y="52" width="24" height="11" rx="5.5" fill="#ffffff" opacity="0.37"/>
+  <!-- Wordmark -->
+  <text x="100" y="114"
+    text-anchor="middle"
+    font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
+    font-size="28"
+    font-weight="600"
+    letter-spacing="-0.6"
+    fill="#2e4e28">rinciku</text>
+  <!-- Tagline -->
+  <text x="100" y="132"
+    text-anchor="middle"
+    font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
+    font-size="11"
+    letter-spacing="1"
+    fill="#8aaa80">my financial details</text>
+</svg>

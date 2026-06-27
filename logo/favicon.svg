@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32" role="img">
+  <title>Rinciku favicon</title>
+  <desc>Rinciku favicon — three stacked lines inside a rounded square, 32px</desc>
+  <rect x="0" y="0" width="32" height="32" rx="8" fill="#4a7a42"/>
+  <rect x="5" y="8" width="22" height="5" rx="2.5" fill="#ffffff" opacity="0.93"/>
+  <rect x="5" y="16" width="15" height="5" rx="2.5" fill="#ffffff" opacity="0.65"/>
+  <rect x="5" y="24" width="9" height="5" rx="2.5" fill="#ffffff" opacity="0.37"/>
+</svg>
