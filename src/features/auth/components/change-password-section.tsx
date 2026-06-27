@@ -193,7 +193,7 @@ export function ChangePasswordSection() {
             <FieldError errors={errors.root ? [errors.root] : undefined} />
           </FieldGroup>
         </CardContent>
-        <CardFooter className='justify-end border-t'>
+        <CardFooter className='justify-end mt-6'>
           <Button type='submit' disabled={isSubmitting}>
             {isSubmitting && <Spinner data-icon='inline-start' />}
             {isSubmitting

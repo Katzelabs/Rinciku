@@ -102,7 +102,7 @@ export function ProfileDetailsSection() {
             </Field>
           </FieldGroup>
         </CardContent>
-        <CardFooter className='justify-end border-t'>
+        <CardFooter className='justify-end mt-6'>
           <Button type='submit' disabled={isSubmitting || !isDirty}>
             {isSubmitting && <Spinner data-icon='inline-start' />}
             {isSubmitting ? t('common:actions.saving') : t('common:actions.save')}
