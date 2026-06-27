@@ -191,19 +191,23 @@ export function SignUpPage() {
         {!pendingEmail && (
           <p className='max-w-sm text-balance text-center text-xs text-muted-foreground'>
             {t('signUp.terms.prefix')}{' '}
-            <a
-              href='#'
+            <Link
+              to='/terms'
+              target='_blank'
+              rel='noreferrer'
               className='underline underline-offset-2 hover:text-foreground'
             >
               {t('signUp.terms.tos')}
-            </a>{' '}
+            </Link>{' '}
             {t('signUp.terms.and')}{' '}
-            <a
-              href='#'
+            <Link
+              to='/privacy'
+              target='_blank'
+              rel='noreferrer'
               className='underline underline-offset-2 hover:text-foreground'
             >
               {t('signUp.terms.privacy')}
-            </a>
+            </Link>
             .
           </p>
         )}

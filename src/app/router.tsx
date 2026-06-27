@@ -17,6 +17,7 @@ import { essentialsRoutes } from '@/features/essentials';
 import { expensesRoutes } from '@/features/expenses';
 import { fxRatesRoutes } from '@/features/fx-rates';
 import { incomesRoutes } from '@/features/incomes';
+import { legalRoutes } from '@/features/legal';
 import { ErrorBoundary } from './error-boundary';
 import { NotFound } from './not-found';
 import { RootLayout } from './root-layout';
@@ -28,6 +29,7 @@ export const router = createBrowserRouter([
     children: [
       { loader: requireGuestLoader, children: guestRoutes },
       ...authPublicRoutes,
+      ...legalRoutes,
       { loader: requireAuthLoader, children: onboardingRoutes },
       {
         element: <AppShell />,
