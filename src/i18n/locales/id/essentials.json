@@ -1,0 +1,82 @@
+{
+  "page": {
+    "title": "Kebutuhan Pokok",
+    "subtitle": "Pengeluaran wajib bulanan Anda. Totalnya menjadi dasar acuan yang dikonsultasikan AI.",
+    "addButton": "Tambah kebutuhan",
+    "loadError": "Gagal memuat kebutuhan pokok: {{error}}"
+  },
+  "dialog": {
+    "create": {
+      "title": "Tambah kebutuhan",
+      "description": "Tambahkan item bulanan baru ke acuan Anda."
+    },
+    "edit": {
+      "title": "Ubah kebutuhan",
+      "description": "Perbarui detail di bawah ini."
+    },
+    "delete": {
+      "title": "Hapus kebutuhan?",
+      "description": "Tindakan ini menghapus kebutuhan ini dari acuan Anda secara permanen.",
+      "deleting": "Menghapus…"
+    }
+  },
+  "form": {
+    "name": {
+      "label": "Nama",
+      "placeholder": "Sewa, internet, …"
+    },
+    "amount": {
+      "label": "Perkiraan jumlah"
+    },
+    "category": {
+      "label": "Kategori",
+      "placeholder": "Pilih kategori",
+      "loading": "Memuat kategori…",
+      "error": "Gagal memuat kategori",
+      "untiered": "Tanpa tingkat"
+    },
+    "notes": {
+      "label": "Catatan (opsional)",
+      "placeholder": "Ada yang perlu diingat tentang item ini?"
+    },
+    "submit": {
+      "add": "Tambah kebutuhan",
+      "update": "Perbarui kebutuhan",
+      "adding": "Menyimpan…",
+      "updating": "Memperbarui…"
+    }
+  },
+  "table": {
+    "name": "Nama",
+    "category": "Kategori",
+    "amount": "Jumlah",
+    "actions": "Aksi",
+    "editLabel": "Ubah kebutuhan",
+    "deleteLabel": "Hapus kebutuhan",
+    "empty": "Belum ada kebutuhan pokok.",
+    "addFirst": "Tambahkan kebutuhan pertama Anda"
+  },
+  "summary": {
+    "label": "Acuan bulanan",
+    "labelInline": "Acuan bulanan: ",
+    "error": "Tidak dapat memuat acuan."
+  },
+  "toast": {
+    "added": "Kebutuhan ditambahkan",
+    "updated": "Kebutuhan diperbarui",
+    "deleted": "Kebutuhan dihapus",
+    "deleteError": "Tidak dapat menghapus kebutuhan.",
+    "saveError": "Tidak dapat menyimpan kebutuhan. Silakan coba lagi.",
+    "signInRequired": "Anda perlu masuk untuk menyimpan kebutuhan.",
+    "missingId": "ID kebutuhan tidak ditemukan untuk pengubahan."
+  },
+  "errors": {
+    "nameRequired": "Nama wajib diisi",
+    "nameMax": "Nama maksimal 80 karakter",
+    "amountRequired": "Masukkan perkiraan jumlah",
+    "amountPositive": "Jumlah harus lebih dari 0",
+    "currencyRequired": "Pilih mata uang",
+    "categoryRequired": "Pilih kategori",
+    "notesMax": "Catatan maksimal 280 karakter"
+  }
+}

@@ -1,25 +1,28 @@
 import { z } from 'zod';
+import type { TFunction } from 'i18next';
 
 import { CURRENCY_CODES } from '@/lib/fx';
 
-export const essentialSchema = z.object({
-  name: z
-    .string()
-    .trim()
-    .min(1, 'Name is required')
-    .max(80, 'Name must be 80 characters or fewer'),
-  estimated_amount: z
-    .number({ message: 'Enter an estimated amount' })
-    .refine((v) => !Number.isNaN(v), { message: 'Enter an estimated amount' })
-    .positive('Amount must be greater than 0'),
-  currency: z.enum(CURRENCY_CODES, { message: 'Pick a currency' }),
-  category_id: z.string().uuid('Pick a category'),
-  notes: z
-    .string()
-    .trim()
-    .max(280, 'Notes must be 280 characters or fewer')
-    .optional()
-    .or(z.literal('')),
-});
+export function makeEssentialSchema(t: TFunction) {
+  return z.object({
+    name: z
+      .string()
+      .trim()
+      .min(1, t('errors.nameRequired'))
+      .max(80, t('errors.nameMax')),
+    estimated_amount: z
+      .number({ message: t('errors.amountRequired') })
+      .refine((v) => !Number.isNaN(v), { message: t('errors.amountRequired') })
+      .positive(t('errors.amountPositive')),
+    currency: z.enum(CURRENCY_CODES, { message: t('errors.currencyRequired') }),
+    category_id: z.string().uuid(t('errors.categoryRequired')),
+    notes: z
+      .string()
+      .trim()
+      .max(280, t('errors.notesMax'))
+      .optional()
+      .or(z.literal('')),
+  });
+}
 
-export type EssentialInput = z.infer<typeof essentialSchema>;
+export type EssentialInput = z.infer<ReturnType<typeof makeEssentialSchema>>;

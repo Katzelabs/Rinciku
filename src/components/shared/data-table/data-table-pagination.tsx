@@ -4,6 +4,7 @@ import {
   ChevronsLeft,
   ChevronsRight,
 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import type { Table } from '@tanstack/react-table';
 import { Button } from '@/components/ui/button';
 import {
@@ -27,13 +28,14 @@ export function DataTablePagination<TData>({
   // compiler so the page indicator + rows-per-page select stay current.
   'use no memo';
 
+  const { t } = useTranslation('common');
   const { pageIndex, pageSize } = table.getState().pagination;
   const pageCount = Math.max(table.getPageCount(), 1);
 
   return (
     <div className='flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between'>
       <div className='flex items-center gap-2 text-sm text-muted-foreground'>
-        <span>Rows per page</span>
+        <span>{t('table.rowsPerPage')}</span>
         <Select
           value={String(pageSize)}
           onValueChange={(value) => table.setPageSize(Number(value))}
@@ -53,7 +55,7 @@ export function DataTablePagination<TData>({
 
       <div className='flex items-center gap-3'>
         <span className='text-sm text-muted-foreground'>
-          Page {pageIndex + 1} of {pageCount}
+          {t('table.pageOf', { page: pageIndex + 1, count: pageCount })}
         </span>
         <div className='flex items-center gap-1'>
           <Button
@@ -61,7 +63,7 @@ export function DataTablePagination<TData>({
             size='icon-sm'
             onClick={() => table.setPageIndex(0)}
             disabled={!table.getCanPreviousPage()}
-            aria-label='First page'
+            aria-label={t('table.firstPage')}
           >
             <ChevronsLeft />
           </Button>
@@ -70,7 +72,7 @@ export function DataTablePagination<TData>({
             size='icon-sm'
             onClick={() => table.previousPage()}
             disabled={!table.getCanPreviousPage()}
-            aria-label='Previous page'
+            aria-label={t('table.previousPage')}
           >
             <ChevronLeft />
           </Button>
@@ -79,7 +81,7 @@ export function DataTablePagination<TData>({
             size='icon-sm'
             onClick={() => table.nextPage()}
             disabled={!table.getCanNextPage()}
-            aria-label='Next page'
+            aria-label={t('table.nextPage')}
           >
             <ChevronRight />
           </Button>
@@ -88,7 +90,7 @@ export function DataTablePagination<TData>({
             size='icon-sm'
             onClick={() => table.setPageIndex(pageCount - 1)}
             disabled={!table.getCanNextPage()}
-            aria-label='Last page'
+            aria-label={t('table.lastPage')}
           >
             <ChevronsRight />
           </Button>

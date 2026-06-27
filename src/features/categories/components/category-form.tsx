@@ -1,6 +1,8 @@
+import { useMemo } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -21,7 +23,7 @@ import { Spinner } from '@/components/ui/spinner';
 import { useAuth } from '@/features/auth';
 
 import { createCategory, updateCategory } from '../api';
-import { categorySchema, type CategoryInput } from '../schemas';
+import { makeCategorySchema, type CategoryInput } from '../schemas';
 import type { Tier } from '../hooks/use-categories';
 import { PRESET_COLORS } from '../lib/colors';
 import { ColorPicker } from './color-picker';
@@ -41,6 +43,8 @@ export function CategoryForm({
   onSuccess,
 }: CategoryFormProps) {
   const { user } = useAuth();
+  const { t } = useTranslation('categories');
+  const schema = useMemo(() => makeCategorySchema(t), [t]);
 
   const {
     register,
@@ -48,7 +52,7 @@ export function CategoryForm({
     handleSubmit,
     formState: { errors, isSubmitting },
   } = useForm<CategoryInput>({
-    resolver: zodResolver(categorySchema),
+    resolver: zodResolver(schema),
     defaultValues: {
       name: defaultValues?.name ?? '',
       tier_id: defaultValues?.tier_id ?? tiers[0]?.id ?? '',
@@ -59,22 +63,22 @@ export function CategoryForm({
 
   const submit = handleSubmit(async (values) => {
     if (!user) {
-      toast.error('You need to be signed in to manage categories.');
+      toast.error(t('toast.signInRequiredCategory'));
       return;
     }
     if (mode === 'edit' && !defaultValues?.id) {
-      toast.error('Missing category id for edit.');
+      toast.error(t('toast.missingCategoryId'));
       return;
     }
     try {
       if (mode === 'edit') {
         const { error } = await updateCategory(defaultValues!.id!, values);
         if (error) throw error;
-        toast.success('Category updated');
+        toast.success(t('toast.categoryUpdated'));
       } else {
         const { error } = await createCategory({ ...values, user_id: user.id });
         if (error) throw error;
-        toast.success('Category added');
+        toast.success(t('toast.categoryAdded'));
       }
       onSuccess();
     } catch (err) {
@@ -82,7 +86,7 @@ export function CategoryForm({
       const message =
         err && typeof err === 'object' && 'message' in err
           ? String((err as { message: unknown }).message)
-          : 'Could not save category. Please try again.';
+          : t('toast.saveCategoryError');
       toast.error(message);
     }
   });
@@ -91,12 +95,12 @@ export function CategoryForm({
     <form onSubmit={submit} noValidate>
       <FieldGroup>
         <Field data-invalid={errors.name ? true : undefined}>
-          <FieldLabel htmlFor='category-name'>Name</FieldLabel>
+          <FieldLabel htmlFor='category-name'>{t('form.name')}</FieldLabel>
           <Input
             id='category-name'
             type='text'
             autoFocus
-            placeholder='Groceries'
+            placeholder={t('form.categoryNamePlaceholder')}
             aria-invalid={errors.name ? true : undefined}
             {...register('name')}
           />
@@ -108,14 +112,14 @@ export function CategoryForm({
           name='tier_id'
           render={({ field, fieldState }) => (
             <Field data-invalid={fieldState.invalid || undefined}>
-              <FieldLabel htmlFor='category-tier'>Tier</FieldLabel>
+              <FieldLabel htmlFor='category-tier'>{t('form.tier')}</FieldLabel>
               <Select value={field.value} onValueChange={field.onChange}>
                 <SelectTrigger
                   id='category-tier'
                   className='w-full'
                   aria-invalid={fieldState.invalid || undefined}
                 >
-                  <SelectValue placeholder='Pick a tier' />
+                  <SelectValue placeholder={t('form.pickTier')} />
                 </SelectTrigger>
                 <SelectContent>
                   {tiers.map((tier) => (
@@ -137,7 +141,7 @@ export function CategoryForm({
           name='icon'
           render={({ field, fieldState }) => (
             <Field data-invalid={fieldState.invalid || undefined}>
-              <FieldLabel htmlFor='category-icon'>Icon</FieldLabel>
+              <FieldLabel htmlFor='category-icon'>{t('form.icon')}</FieldLabel>
               <IconPicker
                 id='category-icon'
                 value={field.value}
@@ -156,7 +160,7 @@ export function CategoryForm({
           name='color'
           render={({ field, fieldState }) => (
             <Field data-invalid={fieldState.invalid || undefined}>
-              <FieldLabel htmlFor='category-color'>Color</FieldLabel>
+              <FieldLabel htmlFor='category-color'>{t('form.color')}</FieldLabel>
               <ColorPicker
                 id='category-color'
                 value={field.value}
@@ -174,11 +178,11 @@ export function CategoryForm({
           {isSubmitting && <Spinner data-icon='inline-start' />}
           {isSubmitting
             ? mode === 'create'
-              ? 'Saving…'
-              : 'Updating…'
+              ? t('buttons.saving')
+              : t('buttons.updating')
             : mode === 'create'
-              ? 'Add category'
-              : 'Update category'}
+              ? t('buttons.addCategory')
+              : t('buttons.updateCategory')}
         </Button>
       </FieldGroup>
     </form>

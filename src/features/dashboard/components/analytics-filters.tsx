@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import {
   DateRangePicker,
   type DateRangeValue,
@@ -23,6 +24,7 @@ export function AnalyticsFilters({
   categoryIds,
   onCategoryIdsChange,
 }: Props) {
+  const { t } = useTranslation('dashboard');
   const { data: categories } = useCategories();
   const options: MultiSelectOption[] = (categories ?? []).map((category) => ({
     label: category.name,
@@ -36,9 +38,9 @@ export function AnalyticsFilters({
         options={options}
         value={categoryIds}
         onChange={onCategoryIdsChange}
-        placeholder='All categories'
-        searchPlaceholder='Search categories…'
-        emptyText='No categories.'
+        placeholder={t('filters.allCategories')}
+        searchPlaceholder={t('filters.searchCategories')}
+        emptyText={t('filters.noCategories')}
         className='w-full sm:w-[220px]'
       />
       <DateRangePicker

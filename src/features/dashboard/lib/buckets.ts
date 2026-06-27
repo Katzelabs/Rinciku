@@ -8,6 +8,7 @@ import {
   startOfMonth,
   startOfWeek,
 } from 'date-fns';
+import { formatDate } from '@/lib/locale';
 import type { BucketGranularity } from '../types';
 
 // Auto-pick the time granularity for the trend charts from the range length, so
@@ -59,8 +60,8 @@ export function formatBucketLabel(
   date: Date,
   bucket: BucketGranularity
 ): string {
-  if (bucket === 'month') return format(date, 'MMM yyyy');
-  return format(date, 'd MMM');
+  if (bucket === 'month') return formatDate(date, 'MMM yyyy');
+  return formatDate(date, 'd MMM');
 }
 
 // Each calendar month the range touches, as {year, month} with month 1-12 — the

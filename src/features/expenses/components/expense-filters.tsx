@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import {
   DateRangePicker,
   type DateRangeValue,
@@ -26,6 +27,7 @@ export function ExpenseFilters({
   dateRange,
   onDateRangeChange,
 }: Props) {
+  const { t } = useTranslation('expenses');
   const { data: categories } = useCategories();
   const options: MultiSelectOption[] = (categories ?? []).map((category) => ({
     label: category.name,
@@ -36,7 +38,7 @@ export function ExpenseFilters({
   return (
     <div className='flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center'>
       <Input
-        placeholder='Search notes…'
+        placeholder={t('filters.searchPlaceholder')}
         value={search}
         onChange={(event) => onSearchChange(event.target.value)}
         className='sm:max-w-[240px]'
@@ -45,9 +47,9 @@ export function ExpenseFilters({
         options={options}
         value={categoryIds}
         onChange={onCategoryIdsChange}
-        placeholder='All categories'
-        searchPlaceholder='Search categories…'
-        emptyText='No categories.'
+        placeholder={t('filters.allCategories')}
+        searchPlaceholder={t('filters.searchCategories')}
+        emptyText={t('filters.noCategories')}
         className='w-full sm:w-[220px]'
       />
       <DateRangePicker

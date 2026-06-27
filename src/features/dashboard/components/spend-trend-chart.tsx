@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from 'recharts';
 import {
   ChartContainer,
@@ -10,10 +11,6 @@ import type { CurrencyCode } from '@/lib/fx';
 import type { TrendPoint } from '../types';
 import { currencyTooltipRow } from './chart-utils';
 
-const config = {
-  spent: { label: 'Spent', color: 'var(--chart-1)' },
-} satisfies ChartConfig;
-
 export function SpendTrendChart({
   data,
   base,
@@ -21,6 +18,11 @@ export function SpendTrendChart({
   data: TrendPoint[];
   base: CurrencyCode;
 }) {
+  const { t } = useTranslation('dashboard');
+  const config = {
+    spent: { label: t('charts.series.spent'), color: 'var(--chart-1)' },
+  } satisfies ChartConfig;
+
   return (
     <ChartContainer config={config} className='h-[240px] w-full'>
       <AreaChart data={data} margin={{ left: 4, right: 8, top: 8 }}>

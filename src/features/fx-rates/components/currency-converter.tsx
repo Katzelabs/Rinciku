@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { ArrowRightLeft } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -16,6 +17,7 @@ type Props = {
 };
 
 export function CurrencyConverter({ base }: Props) {
+  const { t } = useTranslation('fxRates');
   const [amount, setAmount] = useState<number | undefined>(100);
   const [from, setFrom] = useState<CurrencyCode>(
     base === 'USD' ? 'IDR' : 'USD'
@@ -34,12 +36,14 @@ export function CurrencyConverter({ base }: Props) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Convert</CardTitle>
+        <CardTitle>{t('converter.title')}</CardTitle>
       </CardHeader>
       <CardContent className='flex flex-col gap-4'>
         <div className='grid grid-cols-1 items-end gap-3 sm:grid-cols-[1fr_auto_1fr]'>
           <Field>
-            <FieldLabel htmlFor='converter-amount'>From</FieldLabel>
+            <FieldLabel htmlFor='converter-amount'>
+              {t('converter.from')}
+            </FieldLabel>
             <CurrencySelect value={from} onChange={setFrom} />
             <CurrencyAmountInput
               id='converter-amount'
@@ -54,14 +58,14 @@ export function CurrencyConverter({ base }: Props) {
             variant='outline'
             size='icon'
             onClick={handleSwap}
-            aria-label='Swap currencies'
+            aria-label={t('converter.swap')}
             className='mx-auto my-1 rotate-90 sm:mb-1 sm:rotate-0'
           >
             <ArrowRightLeft />
           </Button>
 
           <Field>
-            <FieldLabel>To</FieldLabel>
+            <FieldLabel>{t('converter.to')}</FieldLabel>
             <CurrencySelect value={to} onChange={setTo} />
             <div className='flex h-9 items-center gap-2 rounded-md border bg-muted/40 px-3'>
               <span aria-hidden className='text-base leading-none'>
@@ -75,8 +79,12 @@ export function CurrencyConverter({ base }: Props) {
         </div>
 
         <p className='text-xs text-muted-foreground'>
-          1 {from} = {formatCurrency(unitRate, to)} &middot; 1 {to} ={' '}
-          {formatCurrency(convertToBase(1, to, from).amount_base, from)}
+          {t('converter.rateLine', {
+            from,
+            fromRate: formatCurrency(unitRate, to),
+            to,
+            toRate: formatCurrency(convertToBase(1, to, from).amount_base, from),
+          })}
         </p>
       </CardContent>
     </Card>

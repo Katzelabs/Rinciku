@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Controller, useForm, useWatch } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { format } from 'date-fns';
 import { CalendarIcon, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -36,12 +36,13 @@ import { Textarea } from '@/components/ui/textarea';
 import { CurrencyAmountInput } from '@/components/shared/currency-amount-input';
 import { CurrencySelect } from '@/components/shared/currency-select';
 import { formatCurrency } from '@/lib/format';
+import { formatDate } from '@/lib/locale';
 import type { CurrencyCode } from '@/lib/fx';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/features/auth';
 import { useIncomeCategories } from '@/features/incomes/hooks/use-income-categories';
 import { confirmIncomeProposal } from '../api';
-import { incomeConfirmSchema, type IncomeConfirmInput } from '../schemas';
+import { makeIncomeConfirmSchema, type IncomeConfirmInput } from '../schemas';
 import type { PendingAttachment, ProposedTransaction } from '../types';
 import { matchCategoryId, toIsoDate } from './proposal-utils';
 
@@ -61,16 +62,19 @@ export function IncomeProposalCard({
   onConfirmed,
   onCancel,
 }: Props) {
+  const { t } = useTranslation('aiChat');
   const { user } = useAuth();
   const { data: sources, isLoading: sourcesLoading } = useIncomeCategories();
   const [datePickerOpen, setDatePickerOpen] = useState(false);
+
+  const schema = useMemo(() => makeIncomeConfirmSchema(t), [t]);
 
   const {
     control,
     handleSubmit,
     formState: { isSubmitting },
   } = useForm<IncomeConfirmInput>({
-    resolver: zodResolver(incomeConfirmSchema),
+    resolver: zodResolver(schema),
     defaultValues: {
       amount: proposal.amount,
       currency: proposal.currency,
@@ -84,7 +88,7 @@ export function IncomeProposalCard({
 
   const submit = handleSubmit(async (values) => {
     if (!user) {
-      toast.error('You need to be signed in.');
+      toast.error(t('toast.signInRequired'));
       return;
     }
     const note = values.note?.trim() ? values.note.trim() : null;
@@ -106,12 +110,15 @@ export function IncomeProposalCard({
         : null,
     });
     if (error) {
-      toast.error('Could not save the income. Please try again.');
+      toast.error(t('toast.incomeSaveError'));
       return;
     }
-    toast.success('Income logged');
+    toast.success(t('toast.incomeLogged'));
+    const amount = formatCurrency(values.amount, values.currency);
     onConfirmed(
-      `✓ Logged income of ${formatCurrency(values.amount, values.currency)}${note ? ` — ${note}` : ''}.`
+      note
+        ? t('proposal.loggedIncomeNote', { amount, note })
+        : t('proposal.loggedIncome', { amount })
     );
   });
 
@@ -119,10 +126,12 @@ export function IncomeProposalCard({
     <Card className='border-primary/30 bg-primary/[0.03]'>
       <CardHeader className='flex-row items-center gap-2 space-y-0 pb-2'>
         <Sparkles className='size-4 text-primary' />
-        <span className='text-sm font-medium'>Review income</span>
+        <span className='text-sm font-medium'>{t('proposal.reviewIncome')}</span>
         {proposal.confidence != null ? (
           <span className='ml-auto text-xs text-muted-foreground'>
-            {Math.round(proposal.confidence * 100)}% confident
+            {t('proposal.confident', {
+              percent: Math.round(proposal.confidence * 100),
+            })}
           </span>
         ) : null}
       </CardHeader>
@@ -135,7 +144,9 @@ export function IncomeProposalCard({
                 name='amount'
                 render={({ field, fieldState }) => (
                   <Field data-invalid={fieldState.invalid || undefined}>
-                    <FieldLabel htmlFor='ip-amount'>Amount</FieldLabel>
+                    <FieldLabel htmlFor='ip-amount'>
+                      {t('proposal.amount')}
+                    </FieldLabel>
                     <CurrencyAmountInput
                       id='ip-amount'
                       currency={currency as CurrencyCode}
@@ -157,7 +168,9 @@ export function IncomeProposalCard({
                 name='currency'
                 render={({ field }) => (
                   <Field>
-                    <FieldLabel htmlFor='ip-currency'>Currency</FieldLabel>
+                    <FieldLabel htmlFor='ip-currency'>
+                      {t('proposal.currency')}
+                    </FieldLabel>
                     <CurrencySelect
                       id='ip-currency'
                       value={field.value as CurrencyCode}
@@ -173,7 +186,9 @@ export function IncomeProposalCard({
               name='source_id'
               render={({ field }) => (
                 <Field>
-                  <FieldLabel htmlFor='ip-source'>Source (optional)</FieldLabel>
+                  <FieldLabel htmlFor='ip-source'>
+                    {t('proposal.source')}
+                  </FieldLabel>
                   <Select
                     value={field.value ? field.value : NO_SOURCE}
                     onValueChange={(v) =>
@@ -184,12 +199,16 @@ export function IncomeProposalCard({
                     <SelectTrigger id='ip-source' className='w-full'>
                       <SelectValue
                         placeholder={
-                          sourcesLoading ? 'Loading sources…' : 'No source'
+                          sourcesLoading
+                            ? t('proposal.loadingSources')
+                            : t('proposal.noSource')
                         }
                       />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value={NO_SOURCE}>No source</SelectItem>
+                      <SelectItem value={NO_SOURCE}>
+                        {t('proposal.noSource')}
+                      </SelectItem>
                       {sources?.map((source) => (
                         <SelectItem key={source.id} value={source.id}>
                           {source.name}
@@ -206,7 +225,7 @@ export function IncomeProposalCard({
               name='occurred_at'
               render={({ field, fieldState }) => (
                 <Field data-invalid={fieldState.invalid || undefined}>
-                  <FieldLabel htmlFor='ip-date'>Date</FieldLabel>
+                  <FieldLabel htmlFor='ip-date'>{t('proposal.date')}</FieldLabel>
                   <Popover
                     open={datePickerOpen}
                     onOpenChange={setDatePickerOpen}
@@ -223,8 +242,8 @@ export function IncomeProposalCard({
                       >
                         <CalendarIcon className='mr-2 size-4' />
                         {field.value
-                          ? format(field.value, 'd MMM yyyy')
-                          : 'Pick a date'}
+                          ? formatDate(field.value, 'd MMM yyyy')
+                          : t('proposal.pickDate')}
                       </Button>
                     </PopoverTrigger>
                     <PopoverContent className='w-auto p-0' align='start'>
@@ -254,11 +273,11 @@ export function IncomeProposalCard({
               name='note'
               render={({ field }) => (
                 <Field>
-                  <FieldLabel htmlFor='ip-note'>Note (optional)</FieldLabel>
+                  <FieldLabel htmlFor='ip-note'>{t('proposal.note')}</FieldLabel>
                   <Textarea
                     id='ip-note'
                     rows={2}
-                    placeholder='Where did this come from?'
+                    placeholder={t('proposal.incomeNotePlaceholder')}
                     value={field.value ?? ''}
                     onChange={field.onChange}
                     onBlur={field.onBlur}
@@ -276,11 +295,13 @@ export function IncomeProposalCard({
           onClick={onCancel}
           disabled={isSubmitting}
         >
-          Cancel
+          {t('common:actions.cancel')}
         </Button>
         <Button type='submit' form='income-proposal' disabled={isSubmitting}>
           {isSubmitting && <Spinner data-icon='inline-start' />}
-          {isSubmitting ? 'Saving…' : 'Confirm income'}
+          {isSubmitting
+            ? t('common:actions.saving')
+            : t('proposal.confirmIncome')}
         </Button>
       </CardFooter>
     </Card>

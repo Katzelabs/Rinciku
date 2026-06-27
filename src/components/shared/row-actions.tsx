@@ -1,4 +1,5 @@
 import { Paperclip, Pencil, Trash2 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 
 type Props = {
@@ -21,6 +22,7 @@ export function RowActions({
   onDelete,
   onOpenAttachment,
 }: Props) {
+  const { t } = useTranslation('common');
   return (
     <div className='flex justify-end gap-1'>
       {onOpenAttachment ? (
@@ -28,7 +30,7 @@ export function RowActions({
           type='button'
           variant='ghost'
           size='icon'
-          aria-label='Open attachment'
+          aria-label={t('rowActions.openAttachment')}
           onClick={onOpenAttachment}
         >
           <Paperclip className='size-4' />

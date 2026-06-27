@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm, useWatch } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
 import {
   CheckIcon,
   CircleIcon,
@@ -24,8 +25,8 @@ import {
 import { Spinner } from '@/components/ui/spinner';
 import { cn } from '@/lib/utils';
 import {
+  makeResetPasswordSchema,
   passwordPolicy,
-  resetPasswordSchema,
   type ResetPasswordInput,
 } from '../schemas';
 
@@ -37,6 +38,7 @@ interface ResetPasswordFormProps {
 }
 
 function PasswordRules({ value }: { value: string }) {
+  const { t } = useTranslation('auth');
   return (
     <ul className='mt-1 grid gap-1 text-xs' aria-live='polite'>
       {passwordPolicy.map((rule) => {
@@ -54,8 +56,10 @@ function PasswordRules({ value }: { value: string }) {
             ) : (
               <CircleIcon className='size-3.5' aria-hidden />
             )}
-            <span>{rule.label}</span>
-            <span className='sr-only'>{ok ? ' — met' : ' — not yet met'}</span>
+            <span>{t(rule.labelKey)}</span>
+            <span className='sr-only'>
+              {ok ? t('passwordRules.met') : t('passwordRules.notMet')}
+            </span>
           </li>
         );
       })}
@@ -64,8 +68,10 @@ function PasswordRules({ value }: { value: string }) {
 }
 
 export function ResetPasswordForm({ onSubmit }: ResetPasswordFormProps) {
+  const { t } = useTranslation('auth');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const schema = useMemo(() => makeResetPasswordSchema(t), [t]);
 
   const {
     control,
@@ -75,7 +81,7 @@ export function ResetPasswordForm({ onSubmit }: ResetPasswordFormProps) {
     clearErrors,
     formState: { errors, isSubmitting },
   } = useForm<ResetPasswordInput>({
-    resolver: zodResolver(resetPasswordSchema),
+    resolver: zodResolver(schema),
     defaultValues: { password: '', confirmPassword: '' },
   });
 
@@ -92,7 +98,9 @@ export function ResetPasswordForm({ onSubmit }: ResetPasswordFormProps) {
     <form onSubmit={submit} noValidate>
       <FieldGroup>
         <Field data-invalid={errors.password ? true : undefined}>
-          <FieldLabel htmlFor='reset-password'>New password</FieldLabel>
+          <FieldLabel htmlFor='reset-password'>
+            {t('fields.newPassword')}
+          </FieldLabel>
           <InputGroup>
             <InputGroupAddon>
               <LockIcon />
@@ -102,7 +110,7 @@ export function ResetPasswordForm({ onSubmit }: ResetPasswordFormProps) {
               type={showPassword ? 'text' : 'password'}
               autoComplete='new-password'
               autoFocus
-              placeholder='At least 8 characters'
+              placeholder={t('fields.passwordMinPlaceholder')}
               aria-invalid={errors.password ? true : undefined}
               aria-describedby='reset-password-rules'
               {...register('password')}
@@ -110,7 +118,11 @@ export function ResetPasswordForm({ onSubmit }: ResetPasswordFormProps) {
             <InputGroupAddon align='inline-end'>
               <InputGroupButton
                 size='icon-xs'
-                aria-label={showPassword ? 'Hide password' : 'Show password'}
+                aria-label={
+                  showPassword
+                    ? t('fields.hidePassword')
+                    : t('fields.showPassword')
+                }
                 aria-pressed={showPassword}
                 onClick={() => setShowPassword((value) => !value)}
               >
@@ -128,7 +140,7 @@ export function ResetPasswordForm({ onSubmit }: ResetPasswordFormProps) {
 
         <Field data-invalid={errors.confirmPassword ? true : undefined}>
           <FieldLabel htmlFor='reset-confirm-password'>
-            Confirm password
+            {t('fields.confirmPassword')}
           </FieldLabel>
           <InputGroup>
             <InputGroupAddon>
@@ -138,7 +150,7 @@ export function ResetPasswordForm({ onSubmit }: ResetPasswordFormProps) {
               id='reset-confirm-password'
               type={showConfirmPassword ? 'text' : 'password'}
               autoComplete='new-password'
-              placeholder='Repeat your password'
+              placeholder={t('fields.passwordRepeatPlaceholder')}
               aria-invalid={errors.confirmPassword ? true : undefined}
               {...register('confirmPassword')}
             />
@@ -146,7 +158,9 @@ export function ResetPasswordForm({ onSubmit }: ResetPasswordFormProps) {
               <InputGroupButton
                 size='icon-xs'
                 aria-label={
-                  showConfirmPassword ? 'Hide password' : 'Show password'
+                  showConfirmPassword
+                    ? t('fields.hidePassword')
+                    : t('fields.showPassword')
                 }
                 aria-pressed={showConfirmPassword}
                 onClick={() => setShowConfirmPassword((value) => !value)}
@@ -166,7 +180,9 @@ export function ResetPasswordForm({ onSubmit }: ResetPasswordFormProps) {
 
         <Button type='submit' disabled={isSubmitting}>
           {isSubmitting && <Spinner data-icon='inline-start' />}
-          {isSubmitting ? 'Updating…' : 'Update password'}
+          {isSubmitting
+            ? t('resetPasswordForm.submitting')
+            : t('resetPasswordForm.submit')}
         </Button>
       </FieldGroup>
     </form>

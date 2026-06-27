@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Outlet, useNavigate } from 'react-router';
 import { Download, Plus, Upload } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import type { PaginationState } from '@tanstack/react-table';
 import { Button } from '@/components/ui/button';
@@ -45,6 +46,7 @@ type DialogState =
 
 export function IncomesPage() {
   const navigate = useNavigate();
+  const { t } = useTranslation('incomes');
   const { profile } = useAuth();
   const startDay = profile?.month_start_day ?? 1;
   const baseCurrency = (profile?.base_currency ?? 'IDR') as CurrencyCode;
@@ -169,10 +171,10 @@ export function IncomesPage() {
     }
     setDeleting(false);
     if (error) {
-      toast.error('Could not delete income.');
+      toast.error(t('toast.deleteError'));
       return;
     }
-    toast.success('Income deleted');
+    toast.success(t('toast.deleteSuccess'));
     setDialog(null);
     refetch();
   }
@@ -181,38 +183,36 @@ export function IncomesPage() {
     <div className='space-y-6'>
       <div className='flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between'>
         <div>
-          <h1 className='text-2xl font-semibold'>Incomes</h1>
-          <p className='text-sm text-muted-foreground'>
-            Log received income and keep transfer proofs in one place.
-          </p>
+          <h1 className='text-2xl font-semibold'>{t('page.title')}</h1>
+          <p className='text-sm text-muted-foreground'>{t('page.subtitle')}</p>
         </div>
         <div className='flex items-center gap-2'>
           <Button
             variant='outline'
             onClick={() => setDialog({ kind: 'export' })}
-            aria-label='Export CSV'
-            title='Export CSV'
+            aria-label={t('page.exportAria')}
+            title={t('page.exportAria')}
             className='w-9 px-0 sm:w-auto sm:px-4'
           >
             <Download className='size-4' />
-            <span className='hidden sm:inline'>Export</span>
+            <span className='hidden sm:inline'>{t('page.export')}</span>
           </Button>
           <Button
             variant='outline'
             onClick={() => setDialog({ kind: 'import' })}
-            aria-label='Import CSV'
-            title='Import CSV'
+            aria-label={t('page.importAria')}
+            title={t('page.importAria')}
             className='w-9 px-0 sm:w-auto sm:px-4'
           >
             <Upload className='size-4' />
-            <span className='hidden sm:inline'>Import</span>
+            <span className='hidden sm:inline'>{t('page.import')}</span>
           </Button>
           <Button
             className='flex-1 sm:flex-none'
             onClick={() => setDialog({ kind: 'create' })}
           >
             <Plus className='size-4' />
-            Add income
+            {t('page.addIncome')}
           </Button>
         </div>
       </div>
@@ -248,7 +248,7 @@ export function IncomesPage() {
         <div className='p-4 sm:p-5'>
           {error ? (
             <div className='rounded-md border border-destructive/50 bg-destructive/5 p-4 text-sm text-destructive'>
-              Failed to load incomes: {error}
+              {t('page.loadError', { error })}
             </div>
           ) : (
             <IncomeTable
@@ -300,10 +300,8 @@ export function IncomesPage() {
       >
         <DialogContent className='sm:max-w-lg'>
           <DialogHeader>
-            <DialogTitle>Add income</DialogTitle>
-            <DialogDescription>
-              Log income received in the current cycle.
-            </DialogDescription>
+            <DialogTitle>{t('page.createTitle')}</DialogTitle>
+            <DialogDescription>{t('page.createDescription')}</DialogDescription>
           </DialogHeader>
           <IncomeForm
             mode='create'
@@ -321,10 +319,8 @@ export function IncomesPage() {
       >
         <DialogContent className='sm:max-w-md'>
           <DialogHeader>
-            <DialogTitle>Delete income?</DialogTitle>
-            <DialogDescription>
-              This permanently removes the income and any attached proof.
-            </DialogDescription>
+            <DialogTitle>{t('page.deleteTitle')}</DialogTitle>
+            <DialogDescription>{t('page.deleteDescription')}</DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button
@@ -332,7 +328,7 @@ export function IncomesPage() {
               onClick={() => setDialog(null)}
               disabled={deleting}
             >
-              Cancel
+              {t('common:actions.cancel')}
             </Button>
             <Button
               variant='destructive'
@@ -340,7 +336,7 @@ export function IncomesPage() {
               disabled={deleting}
             >
               {deleting && <Spinner data-icon='inline-start' />}
-              {deleting ? 'Deleting…' : 'Delete'}
+              {deleting ? t('actions.deleting') : t('common:actions.delete')}
             </Button>
           </DialogFooter>
         </DialogContent>

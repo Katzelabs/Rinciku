@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import i18n from '@/i18n';
 import type { Profile } from '@/features/auth';
 import { getBudgetVsActual, getCategoryBreakdown, getSpendTrend } from '../api';
 import type {
@@ -76,7 +77,9 @@ export function useAnalytics(
           key,
           data: null,
           error:
-            err instanceof Error ? err.message : 'Failed to load analytics.',
+            err instanceof Error
+              ? err.message
+              : i18n.t('dashboard:toast.analyticsLoadError'),
         });
       });
 

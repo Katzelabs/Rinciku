@@ -1,0 +1,146 @@
+{
+  "welcome": {
+    "heading": "Ask Rinciku anything about your money",
+    "description": "Get a grounded answer before you spend, or log expenses and income by chatting or sending a receipt.",
+    "groups": {
+      "affordability": "Check affordability",
+      "logTransaction": "Log a transaction",
+      "monthlySummary": "Monthly summary"
+    },
+    "examples": {
+      "afford1": "Can I afford a Rp 800.000 keyboard right now?",
+      "afford2": "Is it okay to spend 250k on dinner tonight?",
+      "log1": "Spent 45k on lunch",
+      "log2": "Got my 5jt salary today",
+      "summary1": "How much do I have left this month?",
+      "summary2": "Where did most of my money go?"
+    }
+  },
+  "composer": {
+    "placeholderDefault": "Ask if you can afford something, or log a transaction…",
+    "placeholderImage": "Add a note about this image (optional)…",
+    "attachImage": "Attach a receipt or transfer image",
+    "removeImage": "Remove image",
+    "send": "Send message",
+    "previewAlt": "Selected attachment preview",
+    "disclaimer": "Rinciku can make mistakes. Verify important numbers.",
+    "toSend": "to send",
+    "newline": "newline",
+    "invalidImage": "Please pick an image (JPG, PNG, WEBP, or HEIC).",
+    "imageTooLarge": "Image must be 10 MB or smaller."
+  },
+  "header": {
+    "newChat": "New chat",
+    "untitled": "Untitled chat",
+    "openHistory": "Open conversation history",
+    "options": "Chat options",
+    "rename": "Rename",
+    "save": "Save"
+  },
+  "rename": {
+    "title": "Rename chat",
+    "description": "Give this conversation a name you'll recognize later.",
+    "placeholder": "Chat name"
+  },
+  "delete": {
+    "title": "Delete chat?",
+    "description": "This permanently removes this chat and all of its messages."
+  },
+  "list": {
+    "newChat": "New chat",
+    "options": "Conversation options",
+    "empty": "No conversations yet.",
+    "title": "Conversations",
+    "groups": {
+      "today": "Today",
+      "yesterday": "Yesterday",
+      "previous7Days": "Previous 7 days",
+      "previous30Days": "Previous 30 days",
+      "older": "Older"
+    }
+  },
+  "message": {
+    "imageAlt": "Attached image",
+    "copyMessage": "Copy message",
+    "thinking": "Rinciku is thinking…",
+    "scrollToLatest": "Scroll to latest message"
+  },
+  "copy": {
+    "copy": "Copy",
+    "copied": "Copied",
+    "copyCode": "Copy code",
+    "codeFallback": "code"
+  },
+  "actionCard": {
+    "actions": {
+      "create": "Create",
+      "update": "Update",
+      "delete": "Delete"
+    },
+    "applying": "Applying…",
+    "entities": {
+      "expense": "expense",
+      "income": "income",
+      "category": "category",
+      "income_category": "income source",
+      "essential": "essential",
+      "budget": "budget",
+      "tier": "tier"
+    }
+  },
+  "proposal": {
+    "reviewExpense": "Review expense",
+    "reviewIncome": "Review income",
+    "confident": "{{percent}}% confident",
+    "amount": "Amount",
+    "currency": "Currency",
+    "category": "Category",
+    "source": "Source (optional)",
+    "date": "Date",
+    "note": "Note (optional)",
+    "pickDate": "Pick a date",
+    "pickCategory": "Pick a category",
+    "loadingCategories": "Loading categories…",
+    "untiered": "Untiered",
+    "expenseNotePlaceholder": "What was this for?",
+    "incomeNotePlaceholder": "Where did this come from?",
+    "loadingSources": "Loading sources…",
+    "noSource": "No source",
+    "confirmExpense": "Confirm expense",
+    "confirmIncome": "Confirm income",
+    "loggedExpense": "✓ Logged an expense of {{amount}}.",
+    "loggedExpenseNote": "✓ Logged an expense of {{amount}} — {{note}}.",
+    "loggedIncome": "✓ Logged income of {{amount}}.",
+    "loggedIncomeNote": "✓ Logged income of {{amount}} — {{note}}."
+  },
+  "toast": {
+    "signInRequired": "You need to be signed in.",
+    "expenseSaveError": "Could not save the expense. Please try again.",
+    "expenseLogged": "Expense logged",
+    "incomeSaveError": "Could not save the income. Please try again.",
+    "incomeLogged": "Income logged",
+    "renameError": "Could not rename the chat.",
+    "deleteError": "Could not delete the chat.",
+    "chatDeleted": "Chat deleted."
+  },
+  "errors": {
+    "amountRequired": "Enter an amount",
+    "amountPositive": "Amount must be greater than 0",
+    "currencyRequired": "Pick a currency",
+    "categoryRequired": "Pick a category",
+    "dateRequired": "Pick a date",
+    "dateFuture": "Date cannot be in the future",
+    "noteTooLong": "Note must be 280 characters or fewer"
+  },
+  "chat": {
+    "signInRequired": "You need to be signed in to chat.",
+    "startError": "Could not start a chat.",
+    "budgetError": "Could not load your budget state.",
+    "noResponse": "The assistant could not respond.",
+    "genericResponse": "Sorry, I could not generate a response.",
+    "somethingWrong": "Something went wrong.",
+    "imageReadError": "Could not read the image.",
+    "sharedImage": "Shared an image",
+    "done": "Done — {{summary}}"
+  }
+}

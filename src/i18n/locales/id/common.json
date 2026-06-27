@@ -1,0 +1,103 @@
+{
+  "brand": {
+    "name": "Rinciku",
+    "tagline": "Keuangan pribadi"
+  },
+  "nav": {
+    "groups": {
+      "overview": "Ringkasan",
+      "money": "Keuangan",
+      "manage": "Kelola",
+      "assistant": "Asisten"
+    },
+    "items": {
+      "dashboard": "Dasbor",
+      "expenses": "Pengeluaran",
+      "incomes": "Pemasukan",
+      "essentials": "Kebutuhan Pokok",
+      "budgets": "Anggaran",
+      "categories": "Kategori",
+      "rates": "Kurs mata uang",
+      "aiChat": "Obrolan AI"
+    }
+  },
+  "settings": {
+    "title": "Pengaturan",
+    "subtitle": "Kelola profil, preferensi, dan akun Anda."
+  },
+  "appearance": {
+    "title": "Tampilan",
+    "description": "Pilih tampilan Rinciku. Berlaku seketika.",
+    "theme": {
+      "label": "Tema",
+      "placeholder": "Pilih tema",
+      "light": "Terang",
+      "dark": "Gelap",
+      "system": "Sistem",
+      "toggle": "Ganti tema"
+    },
+    "language": {
+      "label": "Bahasa",
+      "placeholder": "Pilih bahasa",
+      "saveError": "Tidak dapat mengubah bahasa. Silakan coba lagi."
+    }
+  },
+  "actions": {
+    "save": "Simpan perubahan",
+    "saving": "Menyimpan…",
+    "cancel": "Batal",
+    "confirm": "Konfirmasi",
+    "delete": "Hapus",
+    "close": "Tutup"
+  },
+  "fx": {
+    "refreshFailed": "Gagal memperbarui kurs",
+    "fallbackSnapshot": "Menampilkan data cadangan dari {{date}}."
+  },
+  "account": {
+    "openMenu": "Buka menu akun",
+    "settings": "Pengaturan",
+    "signOut": "Keluar",
+    "signOutError": "Tidak dapat mengeluarkan Anda. Silakan coba lagi."
+  },
+  "currency": {
+    "search": "Cari mata uang…",
+    "empty": "Mata uang tidak ditemukan."
+  },
+  "multiSelect": {
+    "all": "Semua",
+    "empty": "Tidak ada pilihan.",
+    "search": "Cari…",
+    "selectedCount": "{{count}} dipilih",
+    "clear": "Hapus pilihan"
+  },
+  "attachment": {
+    "dropzoneHint": "Jatuhkan berkas atau klik untuk menelusuri",
+    "invalidType": "Tipe berkas tidak diizinkan.",
+    "oversized": "Berkas harus berukuran {{size}} MB atau lebih kecil.",
+    "remove": "Hapus lampiran",
+    "replaceOrRemove": "Ganti atau hapus",
+    "previewAlt": "Pratinjau lampiran",
+    "previewUnavailable": "Pratinjau tidak tersedia",
+    "openFullSize": "Buka ukuran penuh",
+    "openDocument": "Buka dokumen",
+    "open": "Buka",
+    "openError": "Tidak dapat membuka lampiran.",
+    "unknownType": "Tipe tidak diketahui"
+  },
+  "rowActions": {
+    "openAttachment": "Buka lampiran"
+  },
+  "table": {
+    "noResults": "Tidak ada hasil.",
+    "rowsPerPage": "Baris per halaman",
+    "pageOf": "Halaman {{page}} dari {{count}}",
+    "firstPage": "Halaman pertama",
+    "previousPage": "Halaman sebelumnya",
+    "nextPage": "Halaman berikutnya",
+    "lastPage": "Halaman terakhir"
+  },
+  "categoryTag": {
+    "uncategorized": "Tidak berkategori"
+  }
+}

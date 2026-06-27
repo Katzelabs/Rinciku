@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
 import { zodResolver } from '@hookform/resolvers/zod';
 
 import { Button } from '@/components/ui/button';
@@ -21,7 +22,7 @@ import { Spinner } from '@/components/ui/spinner';
 import type { CurrencyCode } from '@/lib/fx';
 import { CurrencyAmountInput } from '@/components/shared/currency-amount-input';
 
-import { budgetTargetSchema, type BudgetTargetInput } from '../schemas';
+import { makeBudgetTargetSchema, type BudgetTargetInput } from '../schemas';
 
 type TargetDialogProps = {
   open: boolean;
@@ -46,14 +47,16 @@ export function TargetDialog({
   onSave,
   onRemove,
 }: TargetDialogProps) {
+  const { t } = useTranslation('budgets');
   const [removing, setRemoving] = useState(false);
+  const schema = useMemo(() => makeBudgetTargetSchema(t), [t]);
   const {
     control,
     handleSubmit,
     reset,
     formState: { isSubmitting },
   } = useForm<BudgetTargetInput>({
-    resolver: zodResolver(budgetTargetSchema),
+    resolver: zodResolver(schema),
     defaultValues: {
       amount: defaultAmount ?? (undefined as unknown as number),
       currency,
@@ -101,7 +104,7 @@ export function TargetDialog({
               render={({ field, fieldState }) => (
                 <Field data-invalid={fieldState.invalid || undefined}>
                   <FieldLabel htmlFor='target-amount'>
-                    Monthly target
+                    {t('dialog.monthlyTarget')}
                   </FieldLabel>
                   <CurrencyAmountInput
                     id='target-amount'
@@ -130,14 +133,14 @@ export function TargetDialog({
                   disabled={busy}
                 >
                   {removing && <Spinner data-icon='inline-start' />}
-                  {removing ? 'Removing…' : 'Remove target'}
+                  {removing ? t('dialog.removing') : t('dialog.removeTarget')}
                 </Button>
               ) : (
                 <span />
               )}
               <Button type='submit' disabled={busy}>
                 {isSubmitting && <Spinner data-icon='inline-start' />}
-                {isSubmitting ? 'Saving…' : 'Save target'}
+                {isSubmitting ? t('dialog.saving') : t('dialog.saveTarget')}
               </Button>
             </DialogFooter>
           </FieldGroup>

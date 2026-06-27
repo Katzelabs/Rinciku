@@ -97,6 +97,22 @@ export async function updateProfile(
   return data;
 }
 
+// Persist the UI language to the profile so it follows the user across devices.
+// The picker also updates i18next + localStorage immediately for instant effect.
+export async function updateLanguage(
+  userId: string,
+  language: 'en' | 'id'
+): Promise<Profile> {
+  const { data, error } = await supabase
+    .from('profiles')
+    .update({ language })
+    .eq('id', userId)
+    .select('*')
+    .single();
+  if (error) throw error;
+  return data;
+}
+
 export async function updatePassword(password: string) {
   return supabase.auth.updateUser({ password });
 }

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { FileText, ImagePlus, X } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
@@ -27,11 +28,12 @@ export function AttachmentDropzone({
   accept,
   allowedMime,
   maxBytes = DEFAULT_MAX_BYTES,
-  hintLabel = 'Drop a file or click to browse',
+  hintLabel,
   hintFormats,
-  invalidTypeMessage = 'File type is not allowed.',
+  invalidTypeMessage,
   oversizedMessage,
 }: AttachmentDropzoneProps) {
+  const { t } = useTranslation('common');
   const inputRef = useRef<HTMLInputElement>(null);
   const [isDragging, setIsDragging] = useState(false);
   const isImage = value?.type.startsWith('image/');
@@ -47,13 +49,15 @@ export function AttachmentDropzone({
 
   function acceptFile(file: File) {
     if (!allowedMime.has(file.type)) {
-      toast.error(invalidTypeMessage);
+      toast.error(invalidTypeMessage ?? t('attachment.invalidType'));
       return;
     }
     if (file.size > maxBytes) {
       toast.error(
         oversizedMessage ??
-          `File must be ${Math.round(maxBytes / 1024 / 1024)} MB or smaller.`
+          t('attachment.oversized', {
+            size: Math.round(maxBytes / 1024 / 1024),
+          })
       );
       return;
     }
@@ -108,7 +112,7 @@ export function AttachmentDropzone({
           size='icon'
           onClick={handleRemove}
           disabled={disabled}
-          aria-label='Remove attachment'
+          aria-label={t('attachment.remove')}
         >
           <X className='size-4' />
         </Button>
@@ -143,7 +147,9 @@ export function AttachmentDropzone({
       )}
     >
       <ImagePlus className='size-6 text-muted-foreground' aria-hidden='true' />
-      <p className='text-sm font-medium'>{hintLabel}</p>
+      <p className='text-sm font-medium'>
+        {hintLabel ?? t('attachment.dropzoneHint')}
+      </p>
       {hintFormats && (
         <p className='text-xs text-muted-foreground'>{hintFormats}</p>
       )}

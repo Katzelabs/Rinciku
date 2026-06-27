@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { ChatItem } from '../types';
@@ -17,6 +18,7 @@ export function AssistantLabel() {
 }
 
 export function ChatMessage({ item }: { item: ChatItem }) {
+  const { t } = useTranslation('aiChat');
   const isUser = item.role === 'user';
 
   if (isUser) {
@@ -31,7 +33,7 @@ export function ChatMessage({ item }: { item: ChatItem }) {
           >
             <img
               src={item.imageUrl}
-              alt='Attached image'
+              alt={t('message.imageAlt')}
               className='max-h-80 w-full object-cover'
             />
           </a>

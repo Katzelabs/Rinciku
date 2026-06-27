@@ -1,11 +1,10 @@
 import type { CurrencyCode } from './fx';
-
-const DEFAULT_LOCALE = 'id-ID';
+import { activeLocale } from './locale';
 
 export function formatCurrency(
   amount: number,
   code: CurrencyCode,
-  locale: string = DEFAULT_LOCALE
+  locale: string = activeLocale()
 ): string {
   return new Intl.NumberFormat(locale, {
     style: 'currency',
@@ -21,7 +20,7 @@ export function formatCurrency(
  */
 export function fractionDigitsForCurrency(
   code: CurrencyCode,
-  locale: string = DEFAULT_LOCALE
+  locale: string = activeLocale()
 ): number {
   return (
     new Intl.NumberFormat(locale, {
@@ -38,7 +37,7 @@ export function fractionDigitsForCurrency(
 export function formatCurrencyCompact(
   amount: number,
   code: CurrencyCode,
-  locale: string = DEFAULT_LOCALE
+  locale: string = activeLocale()
 ): string {
   return new Intl.NumberFormat(locale, {
     style: 'currency',
@@ -52,7 +51,7 @@ export function formatCurrencyCompact(
  * The grouping and decimal separators for a locale, e.g. id-ID → `.` and `,`.
  * Used to configure thousands-grouped amount inputs.
  */
-export function localeSeparators(locale: string = DEFAULT_LOCALE): {
+export function localeSeparators(locale: string = activeLocale()): {
   group: string;
   decimal: string;
 } {

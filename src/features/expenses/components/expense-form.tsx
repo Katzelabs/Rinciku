@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Controller, useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { format } from 'date-fns';
+import { useTranslation } from 'react-i18next';
 import { CalendarIcon } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -30,6 +30,7 @@ import {
 import { Spinner } from '@/components/ui/spinner';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
+import { formatDate } from '@/lib/locale';
 import { defineAttachmentConfig } from '@/lib/attachments';
 import type { CurrencyCode } from '@/lib/fx';
 import { CurrencyAmountInput } from '@/components/shared/currency-amount-input';
@@ -51,7 +52,7 @@ import {
   updateExpense,
   uploadAttachment,
 } from '../api';
-import { expenseSchema, type ExpenseInput } from '../schemas';
+import { makeExpenseSchema, type ExpenseInput } from '../schemas';
 
 // Single source of truth for accepted types + size limit (kept in sync with the
 // expense-attachments bucket in supabase/seed.sql).
@@ -82,6 +83,7 @@ export function ExpenseForm({
   existingAttachment,
   onSuccess,
 }: ExpenseFormProps) {
+  const { t } = useTranslation('expenses');
   const { user, profile } = useAuth();
   const {
     data: categories,
@@ -103,13 +105,15 @@ export function ExpenseForm({
   const baseCurrency = (profile?.base_currency ?? 'IDR') as CurrencyCode;
   const lockedCurrency: CurrencyCode = defaultValues?.currency ?? baseCurrency;
 
+  const schema = useMemo(() => makeExpenseSchema(t), [t]);
+
   const {
     register,
     control,
     handleSubmit,
     formState: { errors, isSubmitting },
   } = useForm<ExpenseInput>({
-    resolver: zodResolver(expenseSchema),
+    resolver: zodResolver(schema),
     defaultValues: {
       amount: defaultValues?.amount ?? (undefined as unknown as number),
       currency: lockedCurrency,
@@ -123,11 +127,11 @@ export function ExpenseForm({
 
   const submit = handleSubmit(async (values) => {
     if (!user) {
-      toast.error('You need to be signed in to log an expense.');
+      toast.error(t('toast.signInRequired'));
       return;
     }
     if (mode === 'edit' && !defaultValues?.id) {
-      toast.error('Missing expense id for edit.');
+      toast.error(t('toast.missingEditId'));
       return;
     }
     try {
@@ -191,7 +195,7 @@ export function ExpenseForm({
           await deleteAttachmentObject(existingAttachment.storage_path);
         }
 
-        toast.success('Expense updated');
+        toast.success(t('toast.updated'));
         onSuccess();
         return;
       }
@@ -199,7 +203,7 @@ export function ExpenseForm({
       if (!attachment) {
         const { error } = await createExpense(basePayload);
         if (error) throw error;
-        toast.success('Expense added');
+        toast.success(t('toast.added'));
         onSuccess();
         return;
       }
@@ -242,11 +246,11 @@ export function ExpenseForm({
         console.warn('Attachment confirm step failed', confirm.error);
       }
 
-      toast.success('Expense added');
+      toast.success(t('toast.added'));
       onSuccess();
     } catch (err) {
       console.error('Failed to save expense', err);
-      toast.error('Could not save expense. Please try again.');
+      toast.error(t('toast.saveError'));
     }
   });
 
@@ -258,7 +262,7 @@ export function ExpenseForm({
           name='amount'
           render={({ field, fieldState }) => (
             <Field data-invalid={fieldState.invalid || undefined}>
-              <FieldLabel htmlFor='expense-amount'>Amount</FieldLabel>
+              <FieldLabel htmlFor='expense-amount'>{t('form.amount')}</FieldLabel>
               <CurrencyAmountInput
                 id='expense-amount'
                 currency={currency}
@@ -282,7 +286,9 @@ export function ExpenseForm({
           name='category_id'
           render={({ field, fieldState }) => (
             <Field data-invalid={fieldState.invalid || undefined}>
-              <FieldLabel htmlFor='expense-category'>Category</FieldLabel>
+              <FieldLabel htmlFor='expense-category'>
+                {t('form.category')}
+              </FieldLabel>
               <Select
                 value={field.value || undefined}
                 onValueChange={field.onChange}
@@ -296,10 +302,10 @@ export function ExpenseForm({
                   <SelectValue
                     placeholder={
                       categoriesLoading
-                        ? 'Loading categories…'
+                        ? t('form.categoryLoading')
                         : categoriesError
-                          ? 'Failed to load categories'
-                          : 'Pick a category'
+                          ? t('form.categoryError')
+                          : t('form.categoryPlaceholder')
                     }
                   />
                 </SelectTrigger>
@@ -310,7 +316,7 @@ export function ExpenseForm({
                     return (
                       <SelectGroup key={key}>
                         <SelectLabel>
-                          {group.tier?.name ?? 'Untiered'}
+                          {group.tier?.name ?? t('form.untiered')}
                         </SelectLabel>
                         {group.categories.map((category) => (
                           <SelectItem key={category.id} value={category.id}>
@@ -334,7 +340,7 @@ export function ExpenseForm({
           name='occurred_at'
           render={({ field, fieldState }) => (
             <Field data-invalid={fieldState.invalid || undefined}>
-              <FieldLabel htmlFor='expense-date'>Date</FieldLabel>
+              <FieldLabel htmlFor='expense-date'>{t('form.date')}</FieldLabel>
               <Popover open={datePickerOpen} onOpenChange={setDatePickerOpen}>
                 <PopoverTrigger asChild>
                   <Button
@@ -349,8 +355,8 @@ export function ExpenseForm({
                   >
                     <CalendarIcon className='mr-2 size-4' />
                     {field.value
-                      ? format(field.value, 'd MMM yyyy')
-                      : 'Pick a date'}
+                      ? formatDate(field.value, 'd MMM yyyy')
+                      : t('form.datePlaceholder')}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className='w-auto p-0' align='start'>
@@ -376,11 +382,11 @@ export function ExpenseForm({
         />
 
         <Field data-invalid={errors.note ? true : undefined}>
-          <FieldLabel htmlFor='expense-note'>Note (optional)</FieldLabel>
+          <FieldLabel htmlFor='expense-note'>{t('form.note')}</FieldLabel>
           <Textarea
             id='expense-note'
             rows={3}
-            placeholder='What was this for?'
+            placeholder={t('form.notePlaceholder')}
             aria-invalid={errors.note ? true : undefined}
             {...register('note')}
           />
@@ -388,7 +394,7 @@ export function ExpenseForm({
         </Field>
 
         <Field>
-          <FieldLabel>Receipt (optional)</FieldLabel>
+          <FieldLabel>{t('form.receipt')}</FieldLabel>
           <AttachmentField
             file={attachment}
             onFileChange={setAttachment}
@@ -400,10 +406,10 @@ export function ExpenseForm({
             accept={EXPENSE_ATTACHMENT.accept}
             allowedMime={EXPENSE_ATTACHMENT.allowedMime}
             maxBytes={EXPENSE_ATTACHMENT.maxBytes}
-            hintLabel='Drop a receipt or click to browse'
-            hintFormats='JPG, PNG, WEBP, HEIC, or PDF · 10 MB max'
-            invalidTypeMessage='File must be an image (JPG, PNG, WEBP, HEIC) or PDF.'
-            oversizedMessage='File must be 10 MB or smaller.'
+            hintLabel={t('form.attachmentHint')}
+            hintFormats={t('form.attachmentFormats')}
+            invalidTypeMessage={t('form.attachmentInvalidType')}
+            oversizedMessage={t('form.attachmentOversized')}
           />
         </Field>
 
@@ -411,11 +417,11 @@ export function ExpenseForm({
           {isSubmitting && <Spinner data-icon='inline-start' />}
           {isSubmitting
             ? mode === 'create'
-              ? 'Saving…'
-              : 'Updating…'
+              ? t('form.saving')
+              : t('form.updating')
             : mode === 'create'
-              ? 'Add expense'
-              : 'Update expense'}
+              ? t('form.submitCreate')
+              : t('form.submitEdit')}
         </Button>
       </FieldGroup>
     </form>

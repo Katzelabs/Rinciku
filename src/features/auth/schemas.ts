@@ -1,105 +1,124 @@
 import { z } from 'zod';
+import type { TFunction } from 'i18next';
 
 import { CURRENCY_CODES } from '@/lib/fx';
 
-export const signInSchema = z.object({
-  email: z.string().email('Enter a valid email address'),
-  password: z.string().min(1, 'Password is required'),
-});
+export function makeSignInSchema(t: TFunction) {
+  return z.object({
+    email: z.string().email(t('errors.emailInvalid')),
+    password: z.string().min(1, t('errors.passwordRequired')),
+  });
+}
 
-export type SignInInput = z.infer<typeof signInSchema>;
+export type SignInInput = z.infer<ReturnType<typeof makeSignInSchema>>;
 
 // Single source of truth — drives both the resolver and the on-screen checklist.
 // Keep in sync with supabase/config.toml `password_requirements`.
+// `labelKey` is an i18n key (auth namespace) so both the resolver messages and
+// the checklist UI render the same translated label.
 export const passwordPolicy = [
   {
     id: 'length',
-    label: 'At least 8 characters',
+    labelKey: 'passwordRules.length',
     test: (v: string) => v.length >= 8,
   },
   {
     id: 'upper',
-    label: 'An uppercase letter (A–Z)',
+    labelKey: 'passwordRules.upper',
     test: (v: string) => /[A-Z]/.test(v),
   },
   {
     id: 'lower',
-    label: 'A lowercase letter (a–z)',
+    labelKey: 'passwordRules.lower',
     test: (v: string) => /[a-z]/.test(v),
   },
   {
     id: 'digit',
-    label: 'A number (0–9)',
+    labelKey: 'passwordRules.digit',
     test: (v: string) => /\d/.test(v),
   },
 ] as const;
 
-const passwordField = z.string().superRefine((value, ctx) => {
-  if (value.length === 0) {
-    ctx.addIssue({ code: 'custom', message: 'Password is required' });
-    return;
-  }
-  for (const rule of passwordPolicy) {
-    if (!rule.test(value)) {
-      ctx.addIssue({ code: 'custom', message: rule.label });
+function makePasswordField(t: TFunction) {
+  return z.string().superRefine((value, ctx) => {
+    if (value.length === 0) {
+      ctx.addIssue({ code: 'custom', message: t('errors.passwordRequired') });
+      return;
     }
-  }
-});
-
-export const signUpSchema = z
-  .object({
-    email: z.string().trim().toLowerCase().email('Enter a valid email address'),
-    password: passwordField,
-    confirmPassword: z.string(),
-  })
-  .refine((values) => values.password === values.confirmPassword, {
-    message: 'Passwords do not match',
-    path: ['confirmPassword'],
+    for (const rule of passwordPolicy) {
+      if (!rule.test(value)) {
+        ctx.addIssue({ code: 'custom', message: t(rule.labelKey) });
+      }
+    }
   });
+}
 
-export type SignUpInput = z.infer<typeof signUpSchema>;
+export function makeSignUpSchema(t: TFunction) {
+  return z
+    .object({
+      email: z.string().trim().toLowerCase().email(t('errors.emailInvalid')),
+      password: makePasswordField(t),
+      confirmPassword: z.string(),
+    })
+    .refine((values) => values.password === values.confirmPassword, {
+      message: t('errors.passwordsMismatch'),
+      path: ['confirmPassword'],
+    });
+}
 
-export const changePasswordSchema = z
-  .object({
-    password: passwordField,
-    confirmPassword: z.string(),
-  })
-  .refine((values) => values.password === values.confirmPassword, {
-    message: 'Passwords do not match',
-    path: ['confirmPassword'],
+export type SignUpInput = z.infer<ReturnType<typeof makeSignUpSchema>>;
+
+export function makeChangePasswordSchema(t: TFunction) {
+  return z
+    .object({
+      password: makePasswordField(t),
+      confirmPassword: z.string(),
+    })
+    .refine((values) => values.password === values.confirmPassword, {
+      message: t('errors.passwordsMismatch'),
+      path: ['confirmPassword'],
+    });
+}
+
+export type ChangePasswordInput = z.infer<
+  ReturnType<typeof makeChangePasswordSchema>
+>;
+
+export function makeForgotPasswordSchema(t: TFunction) {
+  return z.object({
+    email: z.string().trim().toLowerCase().email(t('errors.emailInvalid')),
   });
+}
 
-export type ChangePasswordInput = z.infer<typeof changePasswordSchema>;
-
-export const forgotPasswordSchema = z.object({
-  email: z.string().trim().toLowerCase().email('Enter a valid email address'),
-});
-
-export type ForgotPasswordInput = z.infer<typeof forgotPasswordSchema>;
+export type ForgotPasswordInput = z.infer<
+  ReturnType<typeof makeForgotPasswordSchema>
+>;
 
 // Setting a new password via the recovery link is the same shape as changing
 // it from settings (new password + confirmation, same policy).
-export const resetPasswordSchema = changePasswordSchema;
+export const makeResetPasswordSchema = makeChangePasswordSchema;
 
 export type ResetPasswordInput = ChangePasswordInput;
 
-export const onboardingSchema = z.object({
-  display_name: z
-    .string()
-    .trim()
-    .min(1, 'Display name is required')
-    .max(80, 'Keep it under 80 characters'),
-  base_currency: z.enum(CURRENCY_CODES, {
-    message: 'Pick a currency',
-  }),
-  expected_monthly_income: z
-    .number({ message: 'Enter a number' })
-    .nonnegative('Must be 0 or greater'),
-  month_start_day: z
-    .number({ message: 'Enter a number' })
-    .int('Must be a whole number')
-    .min(1, 'Must be between 1 and 28')
-    .max(28, 'Must be between 1 and 28'),
-});
+export function makeOnboardingSchema(t: TFunction) {
+  return z.object({
+    display_name: z
+      .string()
+      .trim()
+      .min(1, t('errors.displayNameRequired'))
+      .max(80, t('errors.displayNameMax')),
+    base_currency: z.enum(CURRENCY_CODES, {
+      message: t('errors.currencyRequired'),
+    }),
+    expected_monthly_income: z
+      .number({ message: t('errors.incomeNumber') })
+      .nonnegative(t('errors.incomeNonnegative')),
+    month_start_day: z
+      .number({ message: t('errors.dayNumber') })
+      .int(t('errors.dayInteger'))
+      .min(1, t('errors.dayRange'))
+      .max(28, t('errors.dayRange')),
+  });
+}
 
-export type OnboardingInput = z.infer<typeof onboardingSchema>;
+export type OnboardingInput = z.infer<ReturnType<typeof makeOnboardingSchema>>;

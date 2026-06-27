@@ -1,0 +1,54 @@
+{
+  "page": {
+    "title": "Budgets",
+    "subtitle": "Set monthly spending targets per category and tier, and track them against actual spend this cycle.",
+    "cycle": "Cycle: {{label}}",
+    "copyLastMonth": "Copy last month",
+    "copying": "Copying…",
+    "untiered": "Untiered",
+    "noCategories": "No categories in this tier.",
+    "setCap": "Set cap",
+    "editCap": "Edit cap",
+    "setTarget": "Set target",
+    "edit": "Edit",
+    "loadError": "Failed to load budgets."
+  },
+  "status": {
+    "ok": "On track",
+    "approaching": "Near limit",
+    "over": "Over",
+    "none": "No target"
+  },
+  "meter": {
+    "noTarget": "no target",
+    "of": "of {{amount}}"
+  },
+  "dialog": {
+    "tierCap": "{{name}} cap",
+    "tierFallback": "Tier",
+    "categoryTarget": "{{name}} target",
+    "categoryFallback": "Category",
+    "tierDescription": "An independent cap for the whole tier — not a sum of its categories.",
+    "monthlyTarget": "Monthly target",
+    "removeTarget": "Remove target",
+    "removing": "Removing…",
+    "saveTarget": "Save target",
+    "saving": "Saving…"
+  },
+  "toast": {
+    "noTargetsToCopy": "No targets found in the previous period to copy.",
+    "copied_one": "Copied {{count}} target.",
+    "copied_other": "Copied {{count}} targets.",
+    "copyFailed": "Could not copy last month. Please try again.",
+    "signInRequired": "You need to be signed in to set a target.",
+    "saved": "Target saved",
+    "saveFailed": "Could not save target. Please try again.",
+    "removed": "Target removed",
+    "removeFailed": "Could not remove target. Please try again."
+  },
+  "errors": {
+    "amountRequired": "Enter an amount",
+    "amountNegative": "Amount cannot be negative",
+    "currencyRequired": "Pick a currency"
+  }
+}

@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from 'recharts';
 import {
   ChartContainer,
@@ -12,11 +13,6 @@ import type { CurrencyCode } from '@/lib/fx';
 import type { BudgetComparisonItem } from '../types';
 import { currencyTooltipRow } from './chart-utils';
 
-const config = {
-  target: { label: 'Budget', color: 'var(--chart-4)' },
-  actual: { label: 'Actual', color: 'var(--chart-1)' },
-} satisfies ChartConfig;
-
 export function BudgetVsActualChart({
   data,
   base,
@@ -24,6 +20,12 @@ export function BudgetVsActualChart({
   data: BudgetComparisonItem[];
   base: CurrencyCode;
 }) {
+  const { t } = useTranslation('dashboard');
+  const config = {
+    target: { label: t('charts.series.budget'), color: 'var(--chart-4)' },
+    actual: { label: t('charts.series.actual'), color: 'var(--chart-1)' },
+  } satisfies ChartConfig;
+
   // Horizontal bars: category names on the Y axis read better than rotated X
   // labels when there are many categories. Grow height with the row count.
   const height = Math.max(200, data.length * 48);

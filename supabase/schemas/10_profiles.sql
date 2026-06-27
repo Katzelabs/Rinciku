@@ -19,6 +19,8 @@ create table public.profiles (
     )),
   month_start_day                 smallint      not null default 1
     check (month_start_day between 1 and 28),
+  language                        text          not null default 'en'
+    check (language in ('en','id')),
   onboarded_at                    timestamptz,
   created_at                      timestamptz   not null default now(),
   updated_at                      timestamptz   not null default now()

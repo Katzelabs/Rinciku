@@ -1,6 +1,7 @@
+import { useMemo } from 'react';
 import { Controller, useForm } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import {
@@ -22,26 +23,24 @@ import { Input } from '@/components/ui/input';
 import { Spinner } from '@/components/ui/spinner';
 import { useAuth } from '../hooks/use-auth';
 import { updateProfile } from '../api';
+import { makeOnboardingSchema, type OnboardingInput } from '../schemas';
 
-const profileDetailsSchema = z.object({
-  display_name: z
-    .string()
-    .trim()
-    .min(1, 'Display name is required')
-    .max(80, 'Keep it under 80 characters'),
-});
-
-type ProfileDetailsInput = z.infer<typeof profileDetailsSchema>;
+type ProfileDetailsInput = Pick<OnboardingInput, 'display_name'>;
 
 export function ProfileDetailsSection() {
+  const { t } = useTranslation('auth');
   const { user, profile, refreshProfile } = useAuth();
+  const schema = useMemo(
+    () => makeOnboardingSchema(t).pick({ display_name: true }),
+    [t]
+  );
   const {
     control,
     handleSubmit,
     reset,
     formState: { isSubmitting, isDirty },
   } = useForm<ProfileDetailsInput>({
-    resolver: zodResolver(profileDetailsSchema),
+    resolver: zodResolver(schema),
     values: { display_name: profile?.display_name ?? '' },
   });
 
@@ -51,10 +50,10 @@ export function ProfileDetailsSection() {
       await updateProfile(user.id, values);
       await refreshProfile();
       reset(values);
-      toast.success('Profile updated');
+      toast.success(t('profileDetails.updated'));
     } catch (error) {
       console.error('Failed to update profile', error);
-      toast.error('Could not update your profile. Please try again.');
+      toast.error(t('profileDetails.updateError'));
     }
   }
 
@@ -62,10 +61,8 @@ export function ProfileDetailsSection() {
     <Card>
       <form onSubmit={handleSubmit(onSubmit)} noValidate>
         <CardHeader>
-          <CardTitle>Profile</CardTitle>
-          <CardDescription>
-            How you appear in Rinciku and the email tied to your account.
-          </CardDescription>
+          <CardTitle>{t('profileDetails.title')}</CardTitle>
+          <CardDescription>{t('profileDetails.description')}</CardDescription>
         </CardHeader>
         <CardContent>
           <FieldGroup>
@@ -75,7 +72,7 @@ export function ProfileDetailsSection() {
               render={({ field, fieldState }) => (
                 <Field data-invalid={fieldState.invalid || undefined}>
                   <FieldLabel htmlFor='settings-display-name'>
-                    Display name
+                    {t('profileFields.displayName')}
                   </FieldLabel>
                   <Input
                     {...field}
@@ -90,7 +87,9 @@ export function ProfileDetailsSection() {
               )}
             />
             <Field>
-              <FieldLabel htmlFor='settings-email'>Email</FieldLabel>
+              <FieldLabel htmlFor='settings-email'>
+                {t('profileDetails.email')}
+              </FieldLabel>
               <Input
                 id='settings-email'
                 value={user?.email ?? ''}
@@ -98,7 +97,7 @@ export function ProfileDetailsSection() {
                 disabled
               />
               <FieldDescription>
-                Your sign-in email can't be changed here.
+                {t('profileDetails.emailHint')}
               </FieldDescription>
             </Field>
           </FieldGroup>
@@ -106,7 +105,7 @@ export function ProfileDetailsSection() {
         <CardFooter className='justify-end border-t'>
           <Button type='submit' disabled={isSubmitting || !isDirty}>
             {isSubmitting && <Spinner data-icon='inline-start' />}
-            {isSubmitting ? 'Saving…' : 'Save changes'}
+            {isSubmitting ? t('common:actions.saving') : t('common:actions.save')}
           </Button>
         </CardFooter>
       </form>

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import type { ActiveProposal } from '../hooks/use-chat';
@@ -40,6 +41,7 @@ export function ChatThread({
   onChangeConfirm,
   onChangeCancel,
 }: Props) {
+  const { t } = useTranslation('aiChat');
   const scrollRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const [nearBottom, setNearBottom] = useState(true);
@@ -129,7 +131,7 @@ export function ChatThread({
           size='icon'
           variant='outline'
           onClick={() => scrollToBottom('smooth')}
-          aria-label='Scroll to latest message'
+          aria-label={t('message.scrollToLatest')}
           className='absolute bottom-4 right-4 rounded-full shadow-md duration-200 animate-in fade-in zoom-in-95'
         >
           <ChevronDown className='size-4' />

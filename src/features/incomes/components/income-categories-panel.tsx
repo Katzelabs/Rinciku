@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { MoreHorizontal, Pencil, Plus, Trash2 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
@@ -48,6 +49,7 @@ type FetchResponse = {
 };
 
 export function IncomeCategoriesPanel() {
+  const { t } = useTranslation('incomes');
   const [refetchToken, setRefetchToken] = useState(0);
   const [response, setResponse] = useState<FetchResponse | null>(null);
   const [dialog, setDialog] = useState<DialogState>(null);
@@ -82,10 +84,10 @@ export function IncomeCategoriesPanel() {
     const { error } = await deleteIncomeCategory(dialog.row.id);
     setDeleting(false);
     if (error) {
-      toast.error('Could not delete income category.');
+      toast.error(t('categories.deleteError'));
       return;
     }
-    toast.success('Income category deleted');
+    toast.success(t('categories.deleteSuccess'));
     setDialog(null);
     refetch();
   }
@@ -102,9 +104,9 @@ export function IncomeCategoriesPanel() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Income categories</CardTitle>
+          <CardTitle>{t('categories.title')}</CardTitle>
           <p className='text-sm text-muted-foreground'>
-            Label where your money comes from — salary, freelance, investments.
+            {t('categories.description')}
             {!loading && (
               <>
                 {' '}
@@ -112,7 +114,9 @@ export function IncomeCategoriesPanel() {
                   {categories.length} / {MAX_INCOME_CATEGORIES}
                 </span>
                 {categories.length >= MAX_INCOME_CATEGORIES &&
-                  ` — you've reached the ${MAX_INCOME_CATEGORIES}-category limit.`}
+                  t('categories.limitReached', {
+                    max: MAX_INCOME_CATEGORIES,
+                  })}
               </>
             )}
           </p>
@@ -123,7 +127,7 @@ export function IncomeCategoriesPanel() {
               disabled={loading || categories.length >= MAX_INCOME_CATEGORIES}
             >
               <Plus className='size-4' />
-              Add category
+              {t('categories.addCategory')}
             </Button>
           </CardAction>
         </CardHeader>
@@ -143,7 +147,7 @@ export function IncomeCategoriesPanel() {
             </ul>
           ) : (
             <p className='py-6 text-center text-sm text-muted-foreground'>
-              No income categories yet — add your first one.
+              {t('categories.empty')}
             </p>
           )}
         </CardContent>
@@ -160,13 +164,13 @@ export function IncomeCategoriesPanel() {
           <DialogHeader>
             <DialogTitle>
               {dialog?.kind === 'edit'
-                ? 'Edit income category'
-                : 'Add income category'}
+                ? t('categories.editTitle')
+                : t('categories.createTitle')}
             </DialogTitle>
             <DialogDescription>
               {dialog?.kind === 'edit'
-                ? 'Update the details of this income category.'
-                : 'Create a new income source label.'}
+                ? t('categories.editDescription')
+                : t('categories.createDescription')}
             </DialogDescription>
           </DialogHeader>
           {dialog?.kind === 'create' && (
@@ -206,13 +210,12 @@ export function IncomeCategoriesPanel() {
       >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Delete income category?</DialogTitle>
+            <DialogTitle>{t('categories.deleteTitle')}</DialogTitle>
             <DialogDescription>
               {dialog?.kind === 'delete' && (
                 <>
-                  <span className='font-medium'>{dialog.row.name}</span> will be
-                  removed. Incomes tagged with it stay, but become
-                  uncategorized.
+                  <span className='font-medium'>{dialog.row.name}</span>
+                  {t('categories.deleteDescriptionSuffix')}
                 </>
               )}
             </DialogDescription>
@@ -224,7 +227,7 @@ export function IncomeCategoriesPanel() {
               onClick={() => setDialog(null)}
               disabled={deleting}
             >
-              Cancel
+              {t('common:actions.cancel')}
             </Button>
             <Button
               type='button'
@@ -233,7 +236,7 @@ export function IncomeCategoriesPanel() {
               disabled={deleting}
             >
               {deleting && <Spinner data-icon='inline-start' />}
-              {deleting ? 'Deleting…' : 'Delete'}
+              {deleting ? t('actions.deleting') : t('common:actions.delete')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -253,6 +256,7 @@ function IncomeCategoryRow({
   onEdit,
   onDelete,
 }: IncomeCategoryRowProps) {
+  const { t } = useTranslation('incomes');
   const color = category.color ?? '#94a3b8';
   return (
     <li className='flex items-center justify-between gap-3 py-2'>
@@ -279,7 +283,7 @@ function IncomeCategoryRow({
           <Button
             variant='ghost'
             size='icon'
-            aria-label={`Actions for ${category.name}`}
+            aria-label={t('categories.rowActions', { name: category.name })}
           >
             <MoreHorizontal className='size-4' />
           </Button>
@@ -287,11 +291,11 @@ function IncomeCategoryRow({
         <DropdownMenuContent align='end'>
           <DropdownMenuItem onSelect={onEdit}>
             <Pencil className='size-4' />
-            Edit
+            {t('actions.edit')}
           </DropdownMenuItem>
           <DropdownMenuItem onSelect={onDelete} variant='destructive'>
             <Trash2 className='size-4' />
-            Delete
+            {t('common:actions.delete')}
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>

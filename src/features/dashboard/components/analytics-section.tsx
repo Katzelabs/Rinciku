@@ -1,4 +1,6 @@
 import { useState, type ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import {
   AlertCircle,
   CalendarDays,
@@ -28,6 +30,7 @@ const MS_PER_DAY = 86_400_000;
 // the analytics charts — all driven by the same filter. Defaults to the current
 // cycle so the first paint matches the user's spending month.
 export function AnalyticsSection() {
+  const { t } = useTranslation('dashboard');
   const { profile } = useAuth();
   const base = (profile?.base_currency ?? 'IDR') as CurrencyCode;
   const [filters, setFilters] = useState<AnalyticsFilters>(() => {
@@ -72,21 +75,21 @@ export function AnalyticsSection() {
 
       <div className='grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4'>
         <SummaryCard
-          label='Income'
+          label={t('summary.income')}
           value={formatCurrency(totalIncome, base)}
           icon={Wallet}
           accent='var(--chart-2)'
           loading={loading}
         />
         <SummaryCard
-          label='Spent'
+          label={t('summary.spent')}
           value={formatCurrency(totalSpent, base)}
           icon={CreditCard}
           accent='var(--chart-1)'
           loading={loading}
         />
         <SummaryCard
-          label='Net'
+          label={t('summary.net')}
           value={formatCurrency(net, base)}
           icon={Scale}
           accent={net < 0 ? 'var(--destructive)' : 'var(--chart-4)'}
@@ -94,11 +97,11 @@ export function AnalyticsSection() {
           loading={loading}
         />
         <SummaryCard
-          label='Avg / day'
+          label={t('summary.avgPerDay')}
           value={formatCurrency(avgPerDay, base)}
           icon={CalendarDays}
           accent='var(--chart-3)'
-          hint={`over ${days} ${days === 1 ? 'day' : 'days'}`}
+          hint={t('summary.over', { count: days })}
           loading={loading}
         />
       </div>
@@ -106,26 +109,28 @@ export function AnalyticsSection() {
       {error ? (
         <Alert variant='destructive'>
           <AlertCircle />
-          <AlertTitle>Couldn't load analytics</AlertTitle>
+          <AlertTitle>{t('charts.loadError')}</AlertTitle>
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       ) : (
         <>
           <ChartCard
-            title='Spending trend'
-            description='Spend and income over the selected range.'
+            title={t('charts.trend.title')}
+            description={t('charts.trend.description')}
             loading={loading}
             empty={!hasTrend}
+            t={t}
           >
             {data ? <SpendTrendChart data={data.trend} base={base} /> : null}
           </ChartCard>
 
           <div className='grid grid-cols-1 gap-4 lg:grid-cols-2'>
             <ChartCard
-              title='Where it goes'
-              description='Spend by category and tier.'
+              title={t('charts.breakdown.title')}
+              description={t('charts.breakdown.description')}
               loading={loading}
               empty={!hasBreakdown}
+              t={t}
             >
               {data ? (
                 <CategoryBreakdownChart data={data.breakdown} base={base} />
@@ -133,10 +138,11 @@ export function AnalyticsSection() {
             </ChartCard>
 
             <ChartCard
-              title='Income vs expenses'
-              description='Money in vs out per period.'
+              title={t('charts.incomeVsExpense.title')}
+              description={t('charts.incomeVsExpense.description')}
               loading={loading}
               empty={!hasTrend}
+              t={t}
             >
               {data ? (
                 <IncomeVsExpenseChart data={data.trend} base={base} />
@@ -145,11 +151,12 @@ export function AnalyticsSection() {
           </div>
 
           <ChartCard
-            title='Budget vs actual'
-            description='Per-category targets against spend (targets summed across the range).'
+            title={t('charts.budgetVsActual.title')}
+            description={t('charts.budgetVsActual.description')}
             loading={loading}
             empty={!hasBudget}
-            emptyText='No budgets set for this range.'
+            emptyText={t('charts.budgetVsActual.empty')}
+            t={t}
           >
             {data ? (
               <BudgetVsActualChart data={data.budget} base={base} />
@@ -166,7 +173,8 @@ function ChartCard({
   description,
   loading,
   empty,
-  emptyText = 'No spending in this range.',
+  emptyText,
+  t,
   children,
 }: {
   title: string;
@@ -174,8 +182,10 @@ function ChartCard({
   loading: boolean;
   empty: boolean;
   emptyText?: string;
+  t: TFunction<'dashboard'>;
   children: ReactNode;
 }) {
+  const resolvedEmptyText = emptyText ?? t('charts.emptyDefault');
   return (
     <Card>
       <CardContent className='space-y-4 py-2'>
@@ -187,7 +197,7 @@ function ChartCard({
           <Skeleton className='h-[240px] w-full' />
         ) : empty ? (
           <div className='flex h-[200px] items-center justify-center rounded-md border border-dashed bg-muted/30 text-center text-sm text-muted-foreground'>
-            {emptyText}
+            {resolvedEmptyText}
           </div>
         ) : (
           children

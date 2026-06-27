@@ -1,5 +1,6 @@
 import * as React from 'react';
 import { ChevronsUpDown, X } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -42,11 +43,12 @@ export function MultiSelect({
   options,
   value,
   onChange,
-  placeholder = 'All',
-  emptyText = 'No options.',
-  searchPlaceholder = 'Search…',
+  placeholder,
+  emptyText,
+  searchPlaceholder,
   className,
 }: Props) {
+  const { t } = useTranslation('common');
   const [open, setOpen] = React.useState(false);
   const selected = options.filter((option) => value.includes(option.value));
 
@@ -69,7 +71,9 @@ export function MultiSelect({
         >
           <span className='flex flex-1 flex-wrap items-center gap-1 overflow-hidden'>
             {selected.length === 0 ? (
-              <span className='text-muted-foreground'>{placeholder}</span>
+              <span className='text-muted-foreground'>
+                {placeholder ?? t('multiSelect.all')}
+              </span>
             ) : selected.length <= 2 ? (
               selected.map((option) => (
                 <Badge
@@ -81,7 +85,9 @@ export function MultiSelect({
                 </Badge>
               ))
             ) : (
-              <Badge variant='secondary'>{selected.length} selected</Badge>
+              <Badge variant='secondary'>
+                {t('multiSelect.selectedCount', { count: selected.length })}
+              </Badge>
             )}
           </span>
           <ChevronsUpDown className='size-4 shrink-0 opacity-50' />
@@ -89,9 +95,11 @@ export function MultiSelect({
       </PopoverTrigger>
       <PopoverContent className='w-[240px] p-0' align='start'>
         <Command>
-          <CommandInput placeholder={searchPlaceholder} />
+          <CommandInput
+            placeholder={searchPlaceholder ?? t('multiSelect.search')}
+          />
           <CommandList>
-            <CommandEmpty>{emptyText}</CommandEmpty>
+            <CommandEmpty>{emptyText ?? t('multiSelect.empty')}</CommandEmpty>
             <CommandGroup>
               {options.map((option) => (
                 <CommandItem
@@ -121,7 +129,7 @@ export function MultiSelect({
                 onClick={() => onChange([])}
               >
                 <X className='size-3.5' />
-                Clear
+                {t('multiSelect.clear')}
               </Button>
             </div>
           ) : null}

@@ -4,12 +4,12 @@
 // createIncome (linking attachment_id) → updateIncomeAttachment (set
 // income_id + confirmed = true).
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { format } from 'date-fns';
 import { CalendarIcon } from 'lucide-react';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 
 import { AttachmentField } from '@/components/shared/attachment-field';
 import { Button } from '@/components/ui/button';
@@ -35,6 +35,7 @@ import {
 import { Spinner } from '@/components/ui/spinner';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
+import { formatDate, activeDateFnsLocale } from '@/lib/locale';
 import { defineAttachmentConfig } from '@/lib/attachments';
 import type { CurrencyCode } from '@/lib/fx';
 import { CurrencyAmountInput } from '@/components/shared/currency-amount-input';
@@ -51,7 +52,7 @@ import {
   uploadIncomeAttachment,
 } from '../api';
 import { useIncomeCategories } from '../hooks/use-income-categories';
-import { incomeSchema, type IncomeInput } from '../schemas';
+import { makeIncomeSchema, type IncomeInput } from '../schemas';
 
 // Radix Select cannot hold an empty-string value, so "no source" is represented
 // by this sentinel in the Select and mapped back to '' / null around it.
@@ -86,8 +87,10 @@ export function IncomeForm({
   existingAttachment,
   onSuccess,
 }: IncomeFormProps) {
+  const { t } = useTranslation('incomes');
   const { user, profile } = useAuth();
   const baseCurrency = (profile?.base_currency ?? 'IDR') as CurrencyCode;
+  const incomeSchema = useMemo(() => makeIncomeSchema(t), [t]);
 
   const {
     data: incomeCategories,
@@ -116,11 +119,11 @@ export function IncomeForm({
 
   const submit = handleSubmit(async (values) => {
     if (!user) {
-      toast.error('You need to be signed in to log an income.');
+      toast.error(t('toast.needSignIn'));
       return;
     }
     if (mode === 'edit' && !defaultValues?.id) {
-      toast.error('Missing income id for edit.');
+      toast.error(t('toast.missingId'));
       return;
     }
     try {
@@ -187,7 +190,7 @@ export function IncomeForm({
           await deleteIncomeAttachmentObject(existingAttachment.storage_path);
         }
 
-        toast.success('Income updated');
+        toast.success(t('toast.updated'));
         onSuccess();
         return;
       }
@@ -195,7 +198,7 @@ export function IncomeForm({
       if (!attachment) {
         const { error } = await createIncome(basePayload);
         if (error) throw error;
-        toast.success('Income added');
+        toast.success(t('toast.added'));
         onSuccess();
         return;
       }
@@ -238,11 +241,11 @@ export function IncomeForm({
         console.warn('Attachment confirm step failed', confirm.error);
       }
 
-      toast.success('Income added');
+      toast.success(t('toast.added'));
       onSuccess();
     } catch (err) {
       console.error('Failed to save income', err);
-      toast.error('Could not save income. Please try again.');
+      toast.error(t('toast.saveError'));
     }
   });
 
@@ -254,7 +257,7 @@ export function IncomeForm({
           name='amount'
           render={({ field, fieldState }) => (
             <Field data-invalid={fieldState.invalid || undefined}>
-              <FieldLabel htmlFor='income-amount'>Amount</FieldLabel>
+              <FieldLabel htmlFor='income-amount'>{t('form.amount')}</FieldLabel>
               <CurrencyAmountInput
                 id='income-amount'
                 currency={baseCurrency}
@@ -278,7 +281,7 @@ export function IncomeForm({
           name='occurred_at'
           render={({ field, fieldState }) => (
             <Field data-invalid={fieldState.invalid || undefined}>
-              <FieldLabel htmlFor='income-date'>Date</FieldLabel>
+              <FieldLabel htmlFor='income-date'>{t('form.date')}</FieldLabel>
               <Popover open={datePickerOpen} onOpenChange={setDatePickerOpen}>
                 <PopoverTrigger asChild>
                   <Button
@@ -293,8 +296,8 @@ export function IncomeForm({
                   >
                     <CalendarIcon className='mr-2 size-4' />
                     {field.value
-                      ? format(field.value, 'd MMM yyyy')
-                      : 'Pick a date'}
+                      ? formatDate(field.value, 'd MMM yyyy')
+                      : t('form.pickDate')}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className='w-auto p-0' align='start'>
@@ -308,6 +311,7 @@ export function IncomeForm({
                       }
                     }}
                     disabled={(date) => date > new Date()}
+                    locale={activeDateFnsLocale()}
                     autoFocus
                   />
                 </PopoverContent>
@@ -324,7 +328,7 @@ export function IncomeForm({
           name='source_id'
           render={({ field, fieldState }) => (
             <Field data-invalid={fieldState.invalid || undefined}>
-              <FieldLabel htmlFor='income-source'>Source (optional)</FieldLabel>
+              <FieldLabel htmlFor='income-source'>{t('form.source')}</FieldLabel>
               <Select
                 value={field.value ? field.value : NO_SOURCE}
                 onValueChange={(v) => field.onChange(v === NO_SOURCE ? '' : v)}
@@ -338,15 +342,17 @@ export function IncomeForm({
                   <SelectValue
                     placeholder={
                       incomeCategoriesLoading
-                        ? 'Loading sources…'
+                        ? t('form.loadingSources')
                         : incomeCategoriesError
-                          ? 'Failed to load sources'
-                          : 'Pick a source'
+                          ? t('form.sourcesError')
+                          : t('form.pickSource')
                     }
                   />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value={NO_SOURCE}>Uncategorized</SelectItem>
+                  <SelectItem value={NO_SOURCE}>
+                    {t('form.uncategorized')}
+                  </SelectItem>
                   {incomeCategories?.map((category) => (
                     <SelectItem key={category.id} value={category.id}>
                       {category.name}
@@ -362,11 +368,11 @@ export function IncomeForm({
         />
 
         <Field data-invalid={errors.note ? true : undefined}>
-          <FieldLabel htmlFor='income-note'>Note (optional)</FieldLabel>
+          <FieldLabel htmlFor='income-note'>{t('form.note')}</FieldLabel>
           <Textarea
             id='income-note'
             rows={3}
-            placeholder='e.g. May salary, side gig invoice #42'
+            placeholder={t('form.notePlaceholder')}
             aria-invalid={errors.note ? true : undefined}
             {...register('note')}
           />
@@ -374,7 +380,7 @@ export function IncomeForm({
         </Field>
 
         <Field>
-          <FieldLabel>Proof of income (optional)</FieldLabel>
+          <FieldLabel>{t('form.proof')}</FieldLabel>
           <AttachmentField
             file={attachment}
             onFileChange={setAttachment}
@@ -386,10 +392,10 @@ export function IncomeForm({
             accept={INCOME_ATTACHMENT.accept}
             allowedMime={INCOME_ATTACHMENT.allowedMime}
             maxBytes={INCOME_ATTACHMENT.maxBytes}
-            hintLabel='Drop a transfer proof or click to browse'
-            hintFormats='JPG, PNG, WEBP, HEIC, or PDF · 10 MB max'
-            invalidTypeMessage='File must be an image (JPG, PNG, WEBP, HEIC) or PDF.'
-            oversizedMessage='File must be 10 MB or smaller.'
+            hintLabel={t('form.attachmentHint')}
+            hintFormats={t('form.attachmentFormats')}
+            invalidTypeMessage={t('form.attachmentInvalidType')}
+            oversizedMessage={t('form.attachmentOversized')}
           />
         </Field>
 
@@ -397,11 +403,11 @@ export function IncomeForm({
           {isSubmitting && <Spinner data-icon='inline-start' />}
           {isSubmitting
             ? mode === 'create'
-              ? 'Saving…'
-              : 'Updating…'
+              ? t('form.saving')
+              : t('form.updating')
             : mode === 'create'
-              ? 'Add income'
-              : 'Update income'}
+              ? t('form.submitCreate')
+              : t('form.submitEdit')}
         </Button>
       </FieldGroup>
     </form>

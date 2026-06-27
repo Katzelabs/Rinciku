@@ -1,6 +1,6 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Download } from 'lucide-react';
-import { format } from 'date-fns';
 import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
@@ -19,6 +19,7 @@ import {
   type DateRangeValue,
 } from '@/components/shared/date-range-picker';
 import { downloadCsv, toCsv } from '@/lib/csv';
+import { formatDate } from '@/lib/locale';
 import { listExpenses } from '../api';
 import { EXPENSE_CSV_COLUMNS, toExpenseCsvRows } from '../lib/csv-export';
 
@@ -41,6 +42,7 @@ function defaultRange(): DateRangeValue {
 }
 
 export function ExpenseExportDialog({ open, onOpenChange }: Props) {
+  const { t } = useTranslation('expenses');
   const [scope, setScope] = useState<Scope>('all');
   const [range, setRange] = useState<DateRangeValue>(defaultRange);
   const [exporting, setExporting] = useState(false);
@@ -63,29 +65,27 @@ export function ExpenseExportDialog({ open, onOpenChange }: Props) {
     setExporting(false);
 
     if (error) {
-      toast.error('Could not export expenses.');
+      toast.error(t('toast.exportError'));
       return;
     }
     const rows = data ?? [];
     if (rows.length === 0) {
-      toast.info('Nothing to export for the selected range.');
+      toast.info(t('toast.exportEmpty'));
       return;
     }
 
     const suffix =
       scope === 'range'
-        ? `${format(range.from, 'yyyy-MM-dd')}_${format(range.to, 'yyyy-MM-dd')}`
+        ? `${formatDate(range.from, 'yyyy-MM-dd')}_${formatDate(range.to, 'yyyy-MM-dd')}`
         : 'all';
     downloadCsv(
       `expenses-${suffix}.csv`,
       toCsv(toExpenseCsvRows(rows), EXPENSE_CSV_COLUMNS)
     );
     if (rows.length === EXPORT_ROW_CAP) {
-      toast.warning(
-        `Exported the first ${EXPORT_ROW_CAP} rows — narrow the date range to export the rest.`
-      );
+      toast.warning(t('toast.exportCapped', { count: EXPORT_ROW_CAP }));
     } else {
-      toast.success(`Exported ${rows.length} expenses`);
+      toast.success(t('toast.exported', { count: rows.length }));
     }
     onOpenChange(false);
   }
@@ -94,21 +94,18 @@ export function ExpenseExportDialog({ open, onOpenChange }: Props) {
     <Dialog open={open} onOpenChange={(o) => !exporting && onOpenChange(o)}>
       <DialogContent className='sm:max-w-md'>
         <DialogHeader>
-          <DialogTitle>Export expenses</DialogTitle>
-          <DialogDescription>
-            Download your expenses as a CSV file. Amounts are exported in their
-            original currency.
-          </DialogDescription>
+          <DialogTitle>{t('export.title')}</DialogTitle>
+          <DialogDescription>{t('export.description')}</DialogDescription>
         </DialogHeader>
 
         <div className='space-y-4'>
           <Tabs value={scope} onValueChange={(v) => setScope(v as Scope)}>
             <TabsList className='w-full'>
               <TabsTrigger value='all' className='flex-1'>
-                All data
+                {t('export.scopeAll')}
               </TabsTrigger>
               <TabsTrigger value='range' className='flex-1'>
-                Date range
+                {t('export.scopeRange')}
               </TabsTrigger>
             </TabsList>
           </Tabs>
@@ -116,7 +113,7 @@ export function ExpenseExportDialog({ open, onOpenChange }: Props) {
           {scope === 'range' && (
             <div className='space-y-1.5'>
               <p className='text-sm text-muted-foreground'>
-                Export expenses dated within:
+                {t('export.rangeLabel')}
               </p>
               <DateRangePicker value={range} onChange={setRange} />
             </div>
@@ -129,7 +126,7 @@ export function ExpenseExportDialog({ open, onOpenChange }: Props) {
             onClick={() => onOpenChange(false)}
             disabled={exporting}
           >
-            Cancel
+            {t('common:actions.cancel')}
           </Button>
           <Button onClick={handleExport} disabled={exporting}>
             {exporting ? (
@@ -137,7 +134,7 @@ export function ExpenseExportDialog({ open, onOpenChange }: Props) {
             ) : (
               <Download className='size-4' />
             )}
-            {exporting ? 'Exporting…' : 'Export CSV'}
+            {exporting ? t('export.exporting') : t('export.submit')}
           </Button>
         </DialogFooter>
       </DialogContent>

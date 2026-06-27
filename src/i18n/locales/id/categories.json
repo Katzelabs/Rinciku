@@ -1,0 +1,95 @@
+{
+  "page": {
+    "title": "Kategori",
+    "subtitle": "Atur uang yang Anda keluarkan dan uang yang Anda peroleh."
+  },
+  "tabs": {
+    "spending": "Pengeluaran",
+    "income": "Pemasukan"
+  },
+  "spending": {
+    "title": "Tingkat pengeluaran",
+    "subtitle": "Atur pengeluaran Anda ke dalam tingkat yang Anda kendalikan.",
+    "tierLimitReached": " — Anda telah mencapai batas {{max}} tingkat.",
+    "addTier": "Tambah tingkat"
+  },
+  "tier": {
+    "untiered": "Tanpa tingkat",
+    "essentialBadge": "Pokok",
+    "addCategory": "Tambah kategori",
+    "categoryLimitTooltip": "Setiap tingkat dapat memiliki paling banyak {{max}} kategori.",
+    "actionsLabel": "Tindakan untuk tingkat {{name}}",
+    "edit": "Ubah tingkat",
+    "delete": "Hapus tingkat",
+    "empty": "Belum ada kategori di tingkat ini — tambahkan yang pertama."
+  },
+  "category": {
+    "actionsLabel": "Tindakan untuk {{name}}",
+    "edit": "Ubah",
+    "delete": "Hapus"
+  },
+  "dialog": {
+    "category": {
+      "addTitle": "Tambah kategori",
+      "editTitle": "Ubah kategori",
+      "addDescription": "Buat kategori baru dan tetapkan ke sebuah tingkat.",
+      "editDescription": "Perbarui detail kategori ini."
+    },
+    "tier": {
+      "addTitle": "Tambah tingkat",
+      "editTitle": "Ubah tingkat",
+      "addDescription": "Buat tingkat baru untuk mengelompokkan kategori Anda.",
+      "editDescription": "Ubah nama, warna, atau apakah tingkat ini termasuk kebutuhan pokok."
+    },
+    "delete": {
+      "categoryTitle": "Hapus kategori?",
+      "tierTitle": "Hapus tingkat?",
+      "categoryDescription": "akan dihapus. Pengeluaran yang ditandai dengan kategori ini tetap ada, tetapi menjadi tidak berkategori.",
+      "tierDescription": "akan dihapus. Kategori dalam tingkat ini tetap ada, tetapi menjadi tanpa tingkat sampai Anda menetapkannya kembali.",
+      "deleting": "Menghapus…"
+    }
+  },
+  "form": {
+    "name": "Nama",
+    "tier": "Tingkat",
+    "icon": "Ikon",
+    "color": "Warna",
+    "pickTier": "Pilih tingkat",
+    "pickIcon": "Pilih ikon",
+    "categoryNamePlaceholder": "Belanja harian",
+    "tierNamePlaceholder": "Uang jajan",
+    "essential": "Kebutuhan pokok",
+    "essentialDescription": "Pengeluaran pada tingkat kebutuhan pokok dihitung ke dalam baseline bulanan Anda."
+  },
+  "buttons": {
+    "saving": "Menyimpan…",
+    "updating": "Memperbarui…",
+    "addCategory": "Tambah kategori",
+    "updateCategory": "Perbarui kategori",
+    "addTier": "Tambah tingkat",
+    "updateTier": "Perbarui tingkat"
+  },
+  "toast": {
+    "categoryDeleted": "Kategori dihapus",
+    "deleteCategoryError": "Tidak dapat menghapus kategori.",
+    "tierDeleted": "Tingkat dihapus",
+    "deleteTierError": "Tidak dapat menghapus tingkat.",
+    "signInRequiredCategory": "Anda harus masuk untuk mengelola kategori.",
+    "signInRequiredTier": "Anda harus masuk untuk mengelola tingkat.",
+    "missingCategoryId": "ID kategori tidak ada untuk pengubahan.",
+    "missingTierId": "ID tingkat tidak ada untuk pengubahan.",
+    "categoryAdded": "Kategori ditambahkan",
+    "categoryUpdated": "Kategori diperbarui",
+    "tierAdded": "Tingkat ditambahkan",
+    "tierUpdated": "Tingkat diperbarui",
+    "saveCategoryError": "Tidak dapat menyimpan kategori. Silakan coba lagi.",
+    "saveTierError": "Tidak dapat menyimpan tingkat. Silakan coba lagi."
+  },
+  "errors": {
+    "nameRequired": "Nama wajib diisi",
+    "nameMax": "Maksimal 40 karakter",
+    "tierRequired": "Pilih tingkat",
+    "iconRequired": "Pilih ikon",
+    "colorInvalid": "Gunakan format heksa #RRGGBB"
+  }
+}

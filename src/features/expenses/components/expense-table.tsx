@@ -1,4 +1,4 @@
-import { format } from 'date-fns';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import type {
   ColumnDef,
@@ -15,6 +15,7 @@ import { TableCell, TableRow } from '@/components/ui/table';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
 import { formatCurrency } from '@/lib/format';
+import { formatDate } from '@/lib/locale';
 import { convertToBase, type CurrencyCode } from '@/lib/fx';
 import { getAttachmentSignedUrl, type ExpenseWithRelations } from '../api';
 
@@ -45,6 +46,7 @@ export function ExpenseTable({
   onDelete,
   bordered,
 }: Props) {
+  const { t } = useTranslation('expenses');
   // On narrow screens drop the Category and Actions columns to fit Date · Note ·
   // Amount without horizontal scroll; row tap opens the detail view for edits.
   const isMobile = useIsMobile();
@@ -52,7 +54,7 @@ export function ExpenseTable({
   async function openAttachment(path: string) {
     const { data, error } = await getAttachmentSignedUrl(path);
     if (error || !data?.signedUrl) {
-      toast.error('Could not open the attachment.');
+      toast.error(t('toast.attachmentError'));
       return;
     }
     window.open(data.signedUrl, '_blank', 'noopener,noreferrer');
@@ -62,11 +64,11 @@ export function ExpenseTable({
     {
       accessorKey: 'occurred_at',
       header: ({ column }) => (
-        <DataTableColumnHeader column={column} title='Date' />
+        <DataTableColumnHeader column={column} title={t('table.date')} />
       ),
       cell: ({ row }) => (
         <span className='whitespace-nowrap text-muted-foreground'>
-          {format(new Date(row.original.occurred_at), 'd MMM yyyy')}
+          {formatDate(new Date(row.original.occurred_at), 'd MMM yyyy')}
         </span>
       ),
       meta: { headerClassName: 'w-[130px]' },
@@ -78,7 +80,7 @@ export function ExpenseTable({
             id: 'category',
             accessorFn: (row) => row.category?.name ?? '',
             header: ({ column }) => (
-              <DataTableColumnHeader column={column} title='Category' />
+              <DataTableColumnHeader column={column} title={t('table.category')} />
             ),
             cell: ({ row }) => <CategoryTag category={row.original.category} />,
             sortingFn: 'text',
@@ -87,7 +89,7 @@ export function ExpenseTable({
     {
       id: 'note',
       enableSorting: false,
-      header: 'Note',
+      header: t('table.note'),
       cell: ({ row }) => (
         <span
           className={cn(
@@ -112,7 +114,7 @@ export function ExpenseTable({
       header: ({ column }) => (
         <DataTableColumnHeader
           column={column}
-          title='Amount'
+          title={t('table.amount')}
           className='w-full justify-end'
         />
       ),
@@ -133,12 +135,12 @@ export function ExpenseTable({
           {
             id: 'actions',
             enableSorting: false,
-            header: 'Actions',
+            header: t('table.actions'),
             cell: ({ row }) => (
               <div onClick={(event) => event.stopPropagation()}>
                 <RowActions
-                  editLabel='Edit expense'
-                  deleteLabel='Delete expense'
+                  editLabel={t('table.editLabel')}
+                  deleteLabel={t('table.deleteLabel')}
                   onEdit={() => onEdit(row.original)}
                   onDelete={() => onDelete(row.original)}
                   onOpenAttachment={
@@ -161,7 +163,7 @@ export function ExpenseTable({
   const footer = (
     <TableRow>
       <TableCell colSpan={isMobile ? 2 : 3} className='text-right'>
-        Total ({baseCurrency})
+        {t('table.total', { currency: baseCurrency })}
       </TableCell>
       <TableCell className='text-right font-semibold whitespace-nowrap tabular-nums'>
         {formatCurrency(total, baseCurrency)}
@@ -176,7 +178,7 @@ export function ExpenseTable({
       data={rows}
       isLoading={isLoading}
       onRowClick={onView}
-      emptyMessage='No expenses for this range.'
+      emptyMessage={t('table.empty')}
       footer={footer}
       pagination={pagination}
       pageCount={pageCount}

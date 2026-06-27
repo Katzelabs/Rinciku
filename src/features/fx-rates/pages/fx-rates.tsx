@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
 import { RefreshCw } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -12,19 +14,20 @@ import { useAuth } from '@/features/auth';
 import { CurrencyConverter } from '../components/currency-converter';
 import { RateTable } from '../components/rate-table';
 
-function formatRelative(iso: string | null): string {
-  if (!iso) return 'never';
+function formatRelative(iso: string | null, t: TFunction<'fxRates'>): string {
+  if (!iso) return t('relative.never');
   const ts = Date.parse(iso);
-  if (Number.isNaN(ts)) return 'recently';
+  if (Number.isNaN(ts)) return t('relative.recently');
   const mins = Math.round((Date.now() - ts) / 60000);
-  if (mins < 1) return 'just now';
-  if (mins < 60) return `${mins}m ago`;
+  if (mins < 1) return t('relative.justNow');
+  if (mins < 60) return t('relative.minutes', { count: mins });
   const hours = Math.round(mins / 60);
-  if (hours < 48) return `${hours}h ago`;
-  return `${Math.round(hours / 24)}d ago`;
+  if (hours < 48) return t('relative.hours', { count: hours });
+  return t('relative.days', { count: Math.round(hours / 24) });
 }
 
 export function FxRatesPage() {
+  const { t } = useTranslation('fxRates');
   const { profile } = useAuth();
   const status = useFxStatus();
   const [refreshing, setRefreshing] = useState(false);
@@ -50,27 +53,26 @@ export function FxRatesPage() {
   const tone = status.source === 'stub' ? 'bad' : fresh ? 'good' : 'warn';
   const statusLabel =
     status.source === 'stub'
-      ? 'Fallback'
+      ? t('status.fallback')
       : fresh
-        ? 'Live'
+        ? t('status.live')
         : status.source === 'cache'
-          ? 'Cached'
-          : 'Stale';
+          ? t('status.cached')
+          : t('status.stale');
   const freshness =
     status.source === 'stub'
-      ? `snapshot from ${status.stubDate}`
-      : `updated ${formatRelative(status.lastFetchedAt)}`;
+      ? t('status.snapshot', { date: status.stubDate })
+      : t('status.updated', { time: formatRelative(status.lastFetchedAt, t) });
 
   return (
     <div className='flex flex-col gap-4 md:gap-6'>
       <div className='flex flex-wrap items-start justify-between gap-3'>
         <div className='space-y-1'>
           <h1 className='text-2xl font-semibold tracking-tight'>
-            Currency rates
+            {t('page.title')}
           </h1>
           <p className='max-w-prose text-sm text-muted-foreground'>
-            Live exchange rates used across the app to convert amounts into your
-            base currency ({base}).
+            {t('page.description', { currency: base })}
           </p>
         </div>
         <div className='flex items-center gap-3'>
@@ -95,14 +97,14 @@ export function FxRatesPage() {
             disabled={refreshing}
           >
             {refreshing ? <Spinner data-icon='inline-start' /> : <RefreshCw />}
-            {refreshing ? 'Refreshing…' : 'Refresh'}
+            {refreshing ? t('refresh.refreshing') : t('refresh.button')}
           </Button>
         </div>
       </div>
 
       {status.lastError && status.source !== 'live' && (
         <div className='rounded-md border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive'>
-          Couldn't reach the live FX source: {status.lastError}
+          {t('error.unreachable', { error: status.lastError })}
         </div>
       )}
 
@@ -110,7 +112,7 @@ export function FxRatesPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>All rates</CardTitle>
+          <CardTitle>{t('table.title')}</CardTitle>
         </CardHeader>
         <CardContent>
           <RateTable base={base} />

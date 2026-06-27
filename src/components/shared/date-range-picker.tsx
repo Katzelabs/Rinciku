@@ -1,7 +1,7 @@
 import * as React from 'react';
-import { format } from 'date-fns';
 import { Calendar as CalendarIcon } from 'lucide-react';
 import type { DateRange } from 'react-day-picker';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import {
@@ -9,6 +9,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
+import { activeDateFnsLocale, formatDate } from '@/lib/locale';
 import { cn } from '@/lib/utils';
 
 export type DateRangeValue = { from: Date; to: Date };
@@ -24,6 +25,9 @@ type Props = {
  * only once both ends are chosen, normalizing to the full inclusive days.
  */
 export function DateRangePicker({ value, onChange, className }: Props) {
+  // Subscribe to language changes so the formatted label + calendar locale
+  // refresh when the user switches language.
+  useTranslation('common');
   const [open, setOpen] = React.useState(false);
   const [draft, setDraft] = React.useState<DateRange | undefined>({
     from: value.from,
@@ -57,7 +61,7 @@ export function DateRangePicker({ value, onChange, className }: Props) {
     }
   }
 
-  const label = `${format(value.from, 'd MMM yyyy')} – ${format(value.to, 'd MMM yyyy')}`;
+  const label = `${formatDate(value.from, 'd MMM yyyy')} – ${formatDate(value.to, 'd MMM yyyy')}`;
 
   return (
     <Popover open={open} onOpenChange={handleOpenChange}>
@@ -77,6 +81,7 @@ export function DateRangePicker({ value, onChange, className }: Props) {
           selected={draft}
           onSelect={handleSelect}
           numberOfMonths={2}
+          locale={activeDateFnsLocale()}
         />
       </PopoverContent>
     </Popover>

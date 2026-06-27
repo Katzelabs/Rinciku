@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Cell, Pie, PieChart } from 'recharts';
 import {
   ChartContainer,
@@ -12,10 +13,6 @@ import type { CurrencyCode } from '@/lib/fx';
 import type { BreakdownItem, CategoryBreakdown } from '../types';
 import { currencyTooltipRow } from './chart-utils';
 
-const config = {
-  amount: { label: 'Spent' },
-} satisfies ChartConfig;
-
 export function CategoryBreakdownChart({
   data,
   base,
@@ -23,6 +20,11 @@ export function CategoryBreakdownChart({
   data: CategoryBreakdown;
   base: CurrencyCode;
 }) {
+  const { t } = useTranslation('dashboard');
+  const config = {
+    amount: { label: t('charts.series.spent') },
+  } satisfies ChartConfig;
+
   const [mode, setMode] = useState<'category' | 'tier'>('category');
   const items = mode === 'category' ? data.byCategory : data.byTier;
   const total = items.reduce((sum, item) => sum + item.amount, 0);
@@ -31,8 +33,12 @@ export function CategoryBreakdownChart({
     <div className='space-y-4'>
       <Tabs value={mode} onValueChange={(v) => setMode(v as typeof mode)}>
         <TabsList>
-          <TabsTrigger value='category'>By category</TabsTrigger>
-          <TabsTrigger value='tier'>By tier</TabsTrigger>
+          <TabsTrigger value='category'>
+            {t('charts.breakdownTabs.byCategory')}
+          </TabsTrigger>
+          <TabsTrigger value='tier'>
+            {t('charts.breakdownTabs.byTier')}
+          </TabsTrigger>
         </TabsList>
       </Tabs>
 
@@ -121,9 +127,10 @@ function BreakdownRow({
 }
 
 function EmptyBreakdown() {
+  const { t } = useTranslation('dashboard');
   return (
     <div className='rounded-md border border-dashed bg-muted/30 px-4 py-10 text-center text-sm text-muted-foreground'>
-      No spending in this range.
+      {t('charts.emptyDefault')}
     </div>
   );
 }

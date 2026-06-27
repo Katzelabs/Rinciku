@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ImagePlus, SendHorizontal, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -17,6 +18,7 @@ type Props = {
 };
 
 export function MessageComposer({ sending, onSend, onSendImage }: Props) {
+  const { t } = useTranslation('aiChat');
   const [text, setText] = useState('');
   const [pending, setPending] = useState<PendingImage | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -58,11 +60,11 @@ export function MessageComposer({ sending, onSend, onSendImage }: Props) {
     e.target.value = '';
     if (!file) return;
     if (!ACCEPTED_IMAGE.includes(file.type)) {
-      toast.error('Please pick an image (JPG, PNG, WEBP, or HEIC).');
+      toast.error(t('composer.invalidImage'));
       return;
     }
     if (file.size > MAX_BYTES) {
-      toast.error('Image must be 10 MB or smaller.');
+      toast.error(t('composer.imageTooLarge'));
       return;
     }
     setPending({ file, url: URL.createObjectURL(file) });
@@ -86,7 +88,7 @@ export function MessageComposer({ sending, onSend, onSendImage }: Props) {
             <div className='flex items-center gap-2 self-start rounded-lg border bg-muted/40 p-1.5 pr-2'>
               <img
                 src={pending.url}
-                alt='Selected attachment preview'
+                alt={t('composer.previewAlt')}
                 className='size-10 rounded-md object-cover'
               />
               <span className='max-w-40 truncate text-xs text-muted-foreground'>
@@ -96,7 +98,7 @@ export function MessageComposer({ sending, onSend, onSendImage }: Props) {
                 type='button'
                 onClick={clearPending}
                 disabled={sending}
-                aria-label='Remove image'
+                aria-label={t('composer.removeImage')}
                 className='flex size-5 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground'
               >
                 <X className='size-3.5' />
@@ -112,7 +114,7 @@ export function MessageComposer({ sending, onSend, onSendImage }: Props) {
               className='shrink-0'
               disabled={sending}
               onClick={() => fileInputRef.current?.click()}
-              aria-label='Attach a receipt or transfer image'
+              aria-label={t('composer.attachImage')}
             >
               <ImagePlus className='size-4' />
             </Button>
@@ -123,8 +125,8 @@ export function MessageComposer({ sending, onSend, onSendImage }: Props) {
               rows={1}
               placeholder={
                 pending
-                  ? 'Add a note about this image (optional)…'
-                  : 'Ask if you can afford something, or log a transaction…'
+                  ? t('composer.placeholderImage')
+                  : t('composer.placeholderDefault')
               }
               className='max-h-40 min-h-9 resize-none border-0 bg-transparent shadow-none focus-visible:ring-0 dark:bg-transparent'
               disabled={sending}
@@ -135,7 +137,7 @@ export function MessageComposer({ sending, onSend, onSendImage }: Props) {
               className='size-8 shrink-0 rounded-full'
               onClick={submit}
               disabled={!canSend}
-              aria-label='Send message'
+              aria-label={t('composer.send')}
             >
               {sending ? <Spinner /> : <SendHorizontal className='size-4' />}
             </Button>
@@ -143,14 +145,14 @@ export function MessageComposer({ sending, onSend, onSendImage }: Props) {
         </div>
 
         <div className='flex items-center justify-between gap-2 px-2 pt-1.5 text-[11px] text-muted-foreground'>
-          <span>Rinciku can make mistakes. Verify important numbers.</span>
+          <span>{t('composer.disclaimer')}</span>
           <span className='hidden sm:inline'>
             <kbd className='rounded bg-muted px-1 py-0.5 font-sans'>Enter</kbd>{' '}
-            to send ·{' '}
+            {t('composer.toSend')} ·{' '}
             <kbd className='rounded bg-muted px-1 py-0.5 font-sans'>
               Shift+Enter
             </kbd>{' '}
-            newline
+            {t('composer.newline')}
           </span>
         </div>
       </div>

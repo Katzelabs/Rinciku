@@ -1,0 +1,95 @@
+{
+  "page": {
+    "title": "Categories",
+    "subtitle": "Organize the money you spend and the money you earn."
+  },
+  "tabs": {
+    "spending": "Spending",
+    "income": "Income"
+  },
+  "spending": {
+    "title": "Spending tiers",
+    "subtitle": "Organize your spending into tiers you control.",
+    "tierLimitReached": " — you've reached the {{max}}-tier limit.",
+    "addTier": "Add tier"
+  },
+  "tier": {
+    "untiered": "Untiered",
+    "essentialBadge": "Essential",
+    "addCategory": "Add category",
+    "categoryLimitTooltip": "Each tier can have at most {{max}} categories.",
+    "actionsLabel": "Actions for {{name}} tier",
+    "edit": "Edit tier",
+    "delete": "Delete tier",
+    "empty": "No categories in this tier yet — add your first one."
+  },
+  "category": {
+    "actionsLabel": "Actions for {{name}}",
+    "edit": "Edit",
+    "delete": "Delete"
+  },
+  "dialog": {
+    "category": {
+      "addTitle": "Add category",
+      "editTitle": "Edit category",
+      "addDescription": "Create a new category and assign it to a tier.",
+      "editDescription": "Update the details of this category."
+    },
+    "tier": {
+      "addTitle": "Add tier",
+      "editTitle": "Edit tier",
+      "addDescription": "Create a new tier to group your categories.",
+      "editDescription": "Rename, recolor, or change whether this tier counts as essential."
+    },
+    "delete": {
+      "categoryTitle": "Delete category?",
+      "tierTitle": "Delete tier?",
+      "categoryDescription": "will be removed. Expenses tagged with it stay, but become uncategorized.",
+      "tierDescription": "will be removed. Categories in this tier stay, but become untiered until you reassign them.",
+      "deleting": "Deleting…"
+    }
+  },
+  "form": {
+    "name": "Name",
+    "tier": "Tier",
+    "icon": "Icon",
+    "color": "Color",
+    "pickTier": "Pick a tier",
+    "pickIcon": "Pick an icon",
+    "categoryNamePlaceholder": "Groceries",
+    "tierNamePlaceholder": "Fun money",
+    "essential": "Essential",
+    "essentialDescription": "Spending in essential tiers counts toward your monthly baseline."
+  },
+  "buttons": {
+    "saving": "Saving…",
+    "updating": "Updating…",
+    "addCategory": "Add category",
+    "updateCategory": "Update category",
+    "addTier": "Add tier",
+    "updateTier": "Update tier"
+  },
+  "toast": {
+    "categoryDeleted": "Category deleted",
+    "deleteCategoryError": "Could not delete category.",
+    "tierDeleted": "Tier deleted",
+    "deleteTierError": "Could not delete tier.",
+    "signInRequiredCategory": "You need to be signed in to manage categories.",
+    "signInRequiredTier": "You need to be signed in to manage tiers.",
+    "missingCategoryId": "Missing category id for edit.",
+    "missingTierId": "Missing tier id for edit.",
+    "categoryAdded": "Category added",
+    "categoryUpdated": "Category updated",
+    "tierAdded": "Tier added",
+    "tierUpdated": "Tier updated",
+    "saveCategoryError": "Could not save category. Please try again.",
+    "saveTierError": "Could not save tier. Please try again."
+  },
+  "errors": {
+    "nameRequired": "Name is required",
+    "nameMax": "Keep it under 40 characters",
+    "tierRequired": "Pick a tier",
+    "iconRequired": "Pick an icon",
+    "colorInvalid": "Use a #RRGGBB hex"
+  }
+}

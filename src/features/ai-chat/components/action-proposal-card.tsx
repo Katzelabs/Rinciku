@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { Sparkles, Pencil, Plus, Trash2 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -20,21 +21,11 @@ type Props = {
 
 const ACTION_META: Record<
   ChangeAction,
-  { label: string; icon: typeof Plus; destructive: boolean }
+  { icon: typeof Plus; destructive: boolean }
 > = {
-  create: { label: 'Create', icon: Plus, destructive: false },
-  update: { label: 'Update', icon: Pencil, destructive: false },
-  delete: { label: 'Delete', icon: Trash2, destructive: true },
-};
-
-const ENTITY_LABEL: Record<ProposedChange['entity'], string> = {
-  expense: 'expense',
-  income: 'income',
-  category: 'category',
-  income_category: 'income source',
-  essential: 'essential',
-  budget: 'budget',
-  tier: 'tier',
+  create: { icon: Plus, destructive: false },
+  update: { icon: Pencil, destructive: false },
+  delete: { icon: Trash2, destructive: true },
 };
 
 function humanizeKey(key: string): string {
@@ -57,8 +48,11 @@ export function ActionProposalCard({
   onConfirm,
   onCancel,
 }: Props) {
+  const { t } = useTranslation('aiChat');
   const meta = ACTION_META[change.action];
   const Icon = meta.icon;
+  const actionLabel = t(`actionCard.actions.${change.action}`);
+  const entityLabel = t(`actionCard.entities.${change.entity}`);
   const entries = Object.entries(change.data ?? {}).filter(
     ([, v]) => v !== null && v !== undefined && v !== ''
   );
@@ -79,7 +73,7 @@ export function ActionProposalCard({
           )}
         />
         <span className='text-sm font-medium'>
-          {meta.label} {ENTITY_LABEL[change.entity]}
+          {actionLabel} {entityLabel}
         </span>
         <span
           className={cn(
@@ -90,7 +84,7 @@ export function ActionProposalCard({
           )}
         >
           <Icon className='size-3' />
-          {meta.label}
+          {actionLabel}
         </span>
       </CardHeader>
       <CardContent className='space-y-3'>
@@ -115,7 +109,7 @@ export function ActionProposalCard({
           onClick={onCancel}
           disabled={confirming}
         >
-          Cancel
+          {t('common:actions.cancel')}
         </Button>
         <Button
           type='button'
@@ -124,7 +118,7 @@ export function ActionProposalCard({
           disabled={confirming}
         >
           {confirming && <Spinner data-icon='inline-start' />}
-          {confirming ? 'Applying…' : meta.label}
+          {confirming ? t('actionCard.applying') : actionLabel}
         </Button>
       </CardFooter>
     </Card>

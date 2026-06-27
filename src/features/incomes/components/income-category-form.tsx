@@ -1,5 +1,7 @@
+import { useMemo } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
@@ -17,7 +19,7 @@ import { IconPicker } from '@/features/categories/components/icon-picker';
 import { PRESET_COLORS } from '@/features/categories/lib/colors';
 
 import { createIncomeCategory, updateIncomeCategory } from '../api';
-import { incomeCategorySchema, type IncomeCategoryInput } from '../schemas';
+import { makeIncomeCategorySchema, type IncomeCategoryInput } from '../schemas';
 
 type IncomeCategoryFormProps = {
   mode: 'create' | 'edit';
@@ -33,6 +35,8 @@ export function IncomeCategoryForm({
   onSuccess,
 }: IncomeCategoryFormProps) {
   const { user } = useAuth();
+  const { t } = useTranslation('incomes');
+  const schema = useMemo(() => makeIncomeCategorySchema(t), [t]);
 
   const {
     register,
@@ -40,7 +44,7 @@ export function IncomeCategoryForm({
     handleSubmit,
     formState: { errors, isSubmitting },
   } = useForm<IncomeCategoryInput>({
-    resolver: zodResolver(incomeCategorySchema),
+    resolver: zodResolver(schema),
     defaultValues: {
       name: defaultValues?.name ?? '',
       icon: defaultValues?.icon ?? '',
@@ -50,11 +54,11 @@ export function IncomeCategoryForm({
 
   const submit = handleSubmit(async (values) => {
     if (!user) {
-      toast.error('You need to be signed in to manage income categories.');
+      toast.error(t('categoryForm.needSignIn'));
       return;
     }
     if (mode === 'edit' && !defaultValues?.id) {
-      toast.error('Missing income category id for edit.');
+      toast.error(t('categoryForm.missingId'));
       return;
     }
     try {
@@ -64,7 +68,7 @@ export function IncomeCategoryForm({
           values
         );
         if (error) throw error;
-        toast.success('Income category updated');
+        toast.success(t('categoryForm.updated'));
       } else {
         const { error } = await createIncomeCategory({
           ...values,
@@ -72,7 +76,7 @@ export function IncomeCategoryForm({
           sort_order: sortOrder,
         });
         if (error) throw error;
-        toast.success('Income category added');
+        toast.success(t('categoryForm.added'));
       }
       onSuccess();
     } catch (err) {
@@ -80,7 +84,7 @@ export function IncomeCategoryForm({
       const message =
         err && typeof err === 'object' && 'message' in err
           ? String((err as { message: unknown }).message)
-          : 'Could not save income category. Please try again.';
+          : t('categoryForm.saveError');
       toast.error(message);
     }
   });
@@ -89,12 +93,14 @@ export function IncomeCategoryForm({
     <form onSubmit={submit} noValidate>
       <FieldGroup>
         <Field data-invalid={errors.name ? true : undefined}>
-          <FieldLabel htmlFor='income-category-name'>Name</FieldLabel>
+          <FieldLabel htmlFor='income-category-name'>
+            {t('categoryForm.name')}
+          </FieldLabel>
           <Input
             id='income-category-name'
             type='text'
             autoFocus
-            placeholder='Salary'
+            placeholder={t('categoryForm.namePlaceholder')}
             aria-invalid={errors.name ? true : undefined}
             {...register('name')}
           />
@@ -106,7 +112,9 @@ export function IncomeCategoryForm({
           name='icon'
           render={({ field, fieldState }) => (
             <Field data-invalid={fieldState.invalid || undefined}>
-              <FieldLabel htmlFor='income-category-icon'>Icon</FieldLabel>
+              <FieldLabel htmlFor='income-category-icon'>
+                {t('categoryForm.icon')}
+              </FieldLabel>
               <IconPicker
                 id='income-category-icon'
                 value={field.value}
@@ -125,7 +133,9 @@ export function IncomeCategoryForm({
           name='color'
           render={({ field, fieldState }) => (
             <Field data-invalid={fieldState.invalid || undefined}>
-              <FieldLabel htmlFor='income-category-color'>Color</FieldLabel>
+              <FieldLabel htmlFor='income-category-color'>
+                {t('categoryForm.color')}
+              </FieldLabel>
               <ColorPicker
                 id='income-category-color'
                 value={field.value}
@@ -143,11 +153,11 @@ export function IncomeCategoryForm({
           {isSubmitting && <Spinner data-icon='inline-start' />}
           {isSubmitting
             ? mode === 'create'
-              ? 'Saving…'
-              : 'Updating…'
+              ? t('categoryForm.saving')
+              : t('categoryForm.updating')
             : mode === 'create'
-              ? 'Add income category'
-              : 'Update income category'}
+              ? t('categoryForm.submitCreate')
+              : t('categoryForm.submitEdit')}
         </Button>
       </FieldGroup>
     </form>

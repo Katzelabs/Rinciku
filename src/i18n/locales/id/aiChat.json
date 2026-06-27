@@ -1,0 +1,146 @@
+{
+  "welcome": {
+    "heading": "Tanyakan apa saja soal keuanganmu ke Rinciku",
+    "description": "Dapatkan jawaban yang berdasar sebelum belanja, atau catat pengeluaran dan pemasukan lewat obrolan atau dengan mengirim struk.",
+    "groups": {
+      "affordability": "Cek kemampuan beli",
+      "logTransaction": "Catat transaksi",
+      "monthlySummary": "Ringkasan bulanan"
+    },
+    "examples": {
+      "afford1": "Apakah aku sanggup beli keyboard Rp 800.000 sekarang?",
+      "afford2": "Boleh nggak habiskan 250rb buat makan malam ini?",
+      "log1": "Habis 45rb buat makan siang",
+      "log2": "Tadi terima gaji 5jt",
+      "summary1": "Berapa sisa uangku bulan ini?",
+      "summary2": "Ke mana sebagian besar uangku pergi?"
+    }
+  },
+  "composer": {
+    "placeholderDefault": "Tanyakan apakah kamu sanggup beli sesuatu, atau catat transaksi…",
+    "placeholderImage": "Tambahkan catatan tentang gambar ini (opsional)…",
+    "attachImage": "Lampirkan gambar struk atau bukti transfer",
+    "removeImage": "Hapus gambar",
+    "send": "Kirim pesan",
+    "previewAlt": "Pratinjau lampiran terpilih",
+    "disclaimer": "Rinciku bisa saja keliru. Periksa angka-angka penting.",
+    "toSend": "untuk mengirim",
+    "newline": "baris baru",
+    "invalidImage": "Pilih gambar (JPG, PNG, WEBP, atau HEIC).",
+    "imageTooLarge": "Gambar harus berukuran 10 MB atau lebih kecil."
+  },
+  "header": {
+    "newChat": "Obrolan baru",
+    "untitled": "Obrolan tanpa judul",
+    "openHistory": "Buka riwayat percakapan",
+    "options": "Opsi obrolan",
+    "rename": "Ganti nama",
+    "save": "Simpan"
+  },
+  "rename": {
+    "title": "Ganti nama obrolan",
+    "description": "Beri percakapan ini nama yang mudah kamu kenali nanti.",
+    "placeholder": "Nama obrolan"
+  },
+  "delete": {
+    "title": "Hapus obrolan?",
+    "description": "Ini akan menghapus permanen obrolan ini beserta semua pesannya."
+  },
+  "list": {
+    "newChat": "Obrolan baru",
+    "options": "Opsi percakapan",
+    "empty": "Belum ada percakapan.",
+    "title": "Percakapan",
+    "groups": {
+      "today": "Hari ini",
+      "yesterday": "Kemarin",
+      "previous7Days": "7 hari terakhir",
+      "previous30Days": "30 hari terakhir",
+      "older": "Lebih lama"
+    }
+  },
+  "message": {
+    "imageAlt": "Gambar terlampir",
+    "copyMessage": "Salin pesan",
+    "thinking": "Rinciku sedang berpikir…",
+    "scrollToLatest": "Gulir ke pesan terbaru"
+  },
+  "copy": {
+    "copy": "Salin",
+    "copied": "Tersalin",
+    "copyCode": "Salin kode",
+    "codeFallback": "kode"
+  },
+  "actionCard": {
+    "actions": {
+      "create": "Buat",
+      "update": "Perbarui",
+      "delete": "Hapus"
+    },
+    "applying": "Menerapkan…",
+    "entities": {
+      "expense": "pengeluaran",
+      "income": "pemasukan",
+      "category": "kategori",
+      "income_category": "sumber pemasukan",
+      "essential": "kebutuhan pokok",
+      "budget": "anggaran",
+      "tier": "tingkat"
+    }
+  },
+  "proposal": {
+    "reviewExpense": "Tinjau pengeluaran",
+    "reviewIncome": "Tinjau pemasukan",
+    "confident": "{{percent}}% yakin",
+    "amount": "Jumlah",
+    "currency": "Mata uang",
+    "category": "Kategori",
+    "source": "Sumber (opsional)",
+    "date": "Tanggal",
+    "note": "Catatan (opsional)",
+    "pickDate": "Pilih tanggal",
+    "pickCategory": "Pilih kategori",
+    "loadingCategories": "Memuat kategori…",
+    "untiered": "Tanpa tingkat",
+    "expenseNotePlaceholder": "Untuk apa ini?",
+    "incomeNotePlaceholder": "Dari mana ini?",
+    "loadingSources": "Memuat sumber…",
+    "noSource": "Tanpa sumber",
+    "confirmExpense": "Konfirmasi pengeluaran",
+    "confirmIncome": "Konfirmasi pemasukan",
+    "loggedExpense": "✓ Mencatat pengeluaran sebesar {{amount}}.",
+    "loggedExpenseNote": "✓ Mencatat pengeluaran sebesar {{amount}} — {{note}}.",
+    "loggedIncome": "✓ Mencatat pemasukan sebesar {{amount}}.",
+    "loggedIncomeNote": "✓ Mencatat pemasukan sebesar {{amount}} — {{note}}."
+  },
+  "toast": {
+    "signInRequired": "Kamu harus masuk terlebih dahulu.",
+    "expenseSaveError": "Tidak dapat menyimpan pengeluaran. Silakan coba lagi.",
+    "expenseLogged": "Pengeluaran tercatat",
+    "incomeSaveError": "Tidak dapat menyimpan pemasukan. Silakan coba lagi.",
+    "incomeLogged": "Pemasukan tercatat",
+    "renameError": "Tidak dapat mengganti nama obrolan.",
+    "deleteError": "Tidak dapat menghapus obrolan.",
+    "chatDeleted": "Obrolan dihapus."
+  },
+  "errors": {
+    "amountRequired": "Masukkan jumlah",
+    "amountPositive": "Jumlah harus lebih dari 0",
+    "currencyRequired": "Pilih mata uang",
+    "categoryRequired": "Pilih kategori",
+    "dateRequired": "Pilih tanggal",
+    "dateFuture": "Tanggal tidak boleh di masa depan",
+    "noteTooLong": "Catatan maksimal 280 karakter"
+  },
+  "chat": {
+    "signInRequired": "Anda harus masuk untuk mengobrol.",
+    "startError": "Tidak dapat memulai obrolan.",
+    "budgetError": "Tidak dapat memuat kondisi anggaran Anda.",
+    "noResponse": "Asisten tidak dapat merespons.",
+    "genericResponse": "Maaf, saya tidak dapat menghasilkan respons.",
+    "somethingWrong": "Terjadi kesalahan.",
+    "imageReadError": "Tidak dapat membaca gambar.",
+    "sharedImage": "Membagikan gambar",
+    "done": "Selesai — {{summary}}"
+  }
+}

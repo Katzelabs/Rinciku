@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { ChevronDown } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -20,6 +21,7 @@ type IconPickerProps = {
 
 export function IconPicker({ value, onChange, invalid, id }: IconPickerProps) {
   const [open, setOpen] = useState(false);
+  const { t } = useTranslation('categories');
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -34,7 +36,7 @@ export function IconPicker({ value, onChange, invalid, id }: IconPickerProps) {
           <span className='flex items-center gap-2'>
             <CategoryIcon name={value} className='size-4' />
             <span className={cn(!value && 'text-muted-foreground')}>
-              {value || 'Pick an icon'}
+              {value || t('form.pickIcon')}
             </span>
           </span>
           <ChevronDown className='size-4 opacity-50' />

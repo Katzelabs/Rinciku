@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router';
 import { toast } from 'sonner';
 import {
@@ -14,6 +15,7 @@ import { useAuth } from '../hooks/use-auth';
 import type { OnboardingInput } from '../schemas';
 
 export function OnboardingPage() {
+  const { t } = useTranslation('auth');
   const { user, profile, refreshProfile } = useAuth();
   const navigate = useNavigate();
 
@@ -25,7 +27,7 @@ export function OnboardingPage() {
       navigate('/', { replace: true });
     } catch (error) {
       console.error('Failed to save profile', error);
-      toast.error('Could not save your profile. Please try again.');
+      toast.error(t('onboarding.saveError'));
     }
   }
 
@@ -34,17 +36,14 @@ export function OnboardingPage() {
       <div className='flex min-h-svh items-center justify-center p-6'>
         <Card className='w-full max-w-md'>
           <CardHeader>
-            <CardTitle>Finish setting up your profile</CardTitle>
-            <CardDescription>
-              Tell Rinciku about your income and budget cycle so we can tailor
-              the dashboard to you.
-            </CardDescription>
+            <CardTitle>{t('onboarding.title')}</CardTitle>
+            <CardDescription>{t('onboarding.description')}</CardDescription>
           </CardHeader>
           <CardContent>
             <ProfileForm
               initialValues={profile}
               onSubmit={handleOnboarding}
-              submitLabel='Continue'
+              submitLabel={t('onboarding.continue')}
             />
           </CardContent>
         </Card>

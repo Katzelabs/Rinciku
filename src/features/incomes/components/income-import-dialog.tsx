@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Upload } from 'lucide-react';
-import { format } from 'date-fns';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
@@ -23,10 +24,11 @@ import {
 } from '@/components/ui/table';
 import { AttachmentDropzone } from '@/components/shared/attachment-dropzone';
 import { parseCsv, parseCsvDate } from '@/lib/csv';
+import { formatDate } from '@/lib/locale';
 import { useAuth } from '@/features/auth';
 import { useIncomeCategories } from '../hooks/use-income-categories';
 import { bulkCreateIncomes, type CreateIncomeInput } from '../api';
-import { incomeCsvRowSchema } from '../schemas';
+import { makeIncomeCsvRowSchema } from '../schemas';
 
 // Browsers report CSV MIME inconsistently; accept the common variants plus an
 // empty type, and let the schema reject anything that isn't real CSV content.
@@ -63,6 +65,7 @@ type Props = {
 };
 
 export function IncomeImportDialog({ open, onOpenChange, onImported }: Props) {
+  const { t } = useTranslation('incomes');
   const { user } = useAuth();
   const {
     data: categories,
@@ -90,11 +93,11 @@ export function IncomeImportDialog({ open, onOpenChange, onImported }: Props) {
     setFile(next);
     if (!next) return;
     if (!user) {
-      toast.error('You need to be signed in to import.');
+      toast.error(t('import.needSignIn'));
       return;
     }
     const text = await next.text();
-    setResult(parseIncomeCsv(text, user.id, categories ?? []));
+    setResult(parseIncomeCsv(text, user.id, categories ?? [], t));
     setPhase('preview');
   }
 
@@ -104,11 +107,11 @@ export function IncomeImportDialog({ open, onOpenChange, onImported }: Props) {
     setPhase('importing');
     const { error } = await bulkCreateIncomes(inputs);
     if (error) {
-      toast.error(error.message || 'Could not import incomes.');
+      toast.error(error.message || t('import.error'));
       setPhase('preview');
       return;
     }
-    toast.success(`Imported ${inputs.length} incomes`);
+    toast.success(t('import.success', { count: inputs.length }));
     onImported();
     reset();
   }
@@ -117,14 +120,13 @@ export function IncomeImportDialog({ open, onOpenChange, onImported }: Props) {
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className='sm:max-w-2xl'>
         <DialogHeader>
-          <DialogTitle>Import incomes</DialogTitle>
+          <DialogTitle>{t('import.title')}</DialogTitle>
           <DialogDescription>
-            Upload a CSV with columns{' '}
+            {t('import.descriptionBefore')}{' '}
             <code className='text-xs'>
               date, amount, currency, category, note
             </code>
-            . The category column matches an income source by name; unmatched
-            ones import as uncategorized. Duplicate rows are not detected.
+            {t('import.descriptionAfter')}
           </DialogDescription>
         </DialogHeader>
 
@@ -132,8 +134,7 @@ export function IncomeImportDialog({ open, onOpenChange, onImported }: Props) {
           <div className='space-y-2'>
             {categoriesError && (
               <p className='text-sm text-muted-foreground'>
-                Couldn’t load income sources — rows will import as
-                uncategorized.
+                {t('import.sourcesError')}
               </p>
             )}
             <AttachmentDropzone
@@ -144,11 +145,11 @@ export function IncomeImportDialog({ open, onOpenChange, onImported }: Props) {
               allowedMime={CSV_MIME}
               hintLabel={
                 categoriesLoading
-                  ? 'Loading sources…'
-                  : 'Drop a CSV or click to browse'
+                  ? t('import.loadingSources')
+                  : t('import.dropHint')
               }
-              hintFormats='CSV exported from Rinciku, or matching the columns above'
-              invalidTypeMessage='File must be a .csv file.'
+              hintFormats={t('import.dropFormats')}
+              invalidTypeMessage={t('import.invalidType')}
             />
           </div>
         )}
@@ -157,14 +158,14 @@ export function IncomeImportDialog({ open, onOpenChange, onImported }: Props) {
 
         {phase === 'importing' && (
           <div className='flex items-center justify-center gap-2 py-10 text-sm text-muted-foreground'>
-            <Spinner /> Importing {result.valid.length} incomes…
+            <Spinner /> {t('import.importing', { count: result.valid.length })}
           </div>
         )}
 
         <DialogFooter>
           {phase === 'preview' && (
             <Button variant='outline' onClick={reset}>
-              Choose another file
+              {t('import.chooseAnother')}
             </Button>
           )}
           {phase !== 'preview' && (
@@ -173,14 +174,13 @@ export function IncomeImportDialog({ open, onOpenChange, onImported }: Props) {
               onClick={() => handleOpenChange(false)}
               disabled={phase === 'importing'}
             >
-              Cancel
+              {t('common:actions.cancel')}
             </Button>
           )}
           {phase === 'preview' && (
             <Button onClick={handleImport} disabled={result.valid.length === 0}>
               <Upload className='size-4' />
-              Import {result.valid.length} row
-              {result.valid.length === 1 ? '' : 's'}
+              {t('import.submit', { count: result.valid.length })}
             </Button>
           )}
         </DialogFooter>
@@ -190,23 +190,34 @@ export function IncomeImportDialog({ open, onOpenChange, onImported }: Props) {
 }
 
 function ImportPreview({ result }: { result: ParseResult }) {
+  const { t } = useTranslation('incomes');
   const { valid, errors, warnings } = result;
   const shown = valid.slice(0, PREVIEW_LIMIT);
   return (
     <div className='space-y-3'>
       <p className='text-sm'>
-        <span className='font-medium'>{valid.length}</span> valid,{' '}
-        <span className='font-medium'>{errors.length}</span> skipped
+        <span className='font-medium'>{valid.length}</span>{' '}
+        {t('import.preview.valid')},{' '}
+        <span className='font-medium'>{errors.length}</span>{' '}
+        {t('import.preview.skipped')}
         {warnings.length > 0 &&
-          `, ${warnings.length} warning${warnings.length === 1 ? '' : 's'}`}
+          `, ${t('import.preview.warnings', { count: warnings.length })}`}
         .
       </p>
 
       {errors.length > 0 && (
-        <IssueList tone='error' title='Skipped rows' issues={errors} />
+        <IssueList
+          tone='error'
+          title={t('import.preview.skippedRows')}
+          issues={errors}
+        />
       )}
       {warnings.length > 0 && (
-        <IssueList tone='warning' title='Warnings' issues={warnings} />
+        <IssueList
+          tone='warning'
+          title={t('import.preview.warningsTitle')}
+          issues={warnings}
+        />
       )}
 
       {valid.length > 0 && (
@@ -214,18 +225,20 @@ function ImportPreview({ result }: { result: ParseResult }) {
           <Table>
             <TableHeader className='sticky top-0 bg-background'>
               <TableRow>
-                <TableHead>Date</TableHead>
-                <TableHead className='text-right'>Amount</TableHead>
-                <TableHead>Currency</TableHead>
-                <TableHead>Source</TableHead>
-                <TableHead>Note</TableHead>
+                <TableHead>{t('import.preview.date')}</TableHead>
+                <TableHead className='text-right'>
+                  {t('import.preview.amount')}
+                </TableHead>
+                <TableHead>{t('import.preview.currency')}</TableHead>
+                <TableHead>{t('import.preview.source')}</TableHead>
+                <TableHead>{t('import.preview.note')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {shown.map((row) => (
                 <TableRow key={row.line}>
                   <TableCell>
-                    {format(new Date(row.input.occurred_at), 'yyyy-MM-dd')}
+                    {formatDate(new Date(row.input.occurred_at), 'yyyy-MM-dd')}
                   </TableCell>
                   <TableCell className='text-right tabular-nums'>
                     {row.input.amount.toLocaleString()}
@@ -245,8 +258,10 @@ function ImportPreview({ result }: { result: ParseResult }) {
       )}
       {valid.length > PREVIEW_LIMIT && (
         <p className='text-xs text-muted-foreground'>
-          Showing first {PREVIEW_LIMIT} of {valid.length} rows. All valid rows
-          will be imported.
+          {t('import.preview.showing', {
+            limit: PREVIEW_LIMIT,
+            total: valid.length,
+          })}
         </p>
       )}
     </div>
@@ -262,6 +277,7 @@ function IssueList({
   title: string;
   issues: RowIssue[];
 }) {
+  const { t } = useTranslation('incomes');
   const cls =
     tone === 'error'
       ? 'border-destructive/50 bg-destructive/5 text-destructive'
@@ -274,7 +290,9 @@ function IssueList({
       <ul className='space-y-0.5'>
         {issues.map((issue, i) => (
           <li key={i}>
-            {issue.line > 0 ? `Row ${issue.line}: ` : ''}
+            {issue.line > 0
+              ? t('import.preview.rowPrefix', { line: issue.line })
+              : ''}
             {issue.message}
           </li>
         ))}
@@ -288,7 +306,8 @@ function IssueList({
 function parseIncomeCsv(
   text: string,
   userId: string,
-  categories: { id: string; name: string }[]
+  categories: { id: string; name: string }[],
+  t: TFunction
 ): ParseResult {
   const { rows, headerError } = parseCsv(text, REQUIRED_HEADERS);
   if (headerError) {
@@ -299,6 +318,7 @@ function parseIncomeCsv(
     };
   }
 
+  const schema = makeIncomeCsvRowSchema(t);
   const byName = new Map(
     categories.map((c) => [c.name.trim().toLowerCase(), c.id])
   );
@@ -308,11 +328,11 @@ function parseIncomeCsv(
 
   rows.forEach((raw, index) => {
     const line = index + 2;
-    const parsed = incomeCsvRowSchema.safeParse(raw);
+    const parsed = schema.safeParse(raw);
     if (!parsed.success) {
       errors.push({
         line,
-        message: parsed.error.issues[0]?.message ?? 'Invalid row',
+        message: parsed.error.issues[0]?.message ?? t('import.invalidRow'),
       });
       return;
     }
@@ -325,10 +345,10 @@ function parseIncomeCsv(
         sourceId = hit;
         categoryLabel = row.category;
       } else {
-        categoryLabel = `${row.category} (uncategorized)`;
+        categoryLabel = t('import.uncategorizedSuffix', { name: row.category });
         warnings.push({
           line,
-          message: `source “${row.category}” not found — imported as uncategorized`,
+          message: t('import.sourceNotFound', { name: row.category }),
         });
       }
     }

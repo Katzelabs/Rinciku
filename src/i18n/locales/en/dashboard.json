@@ -1,0 +1,81 @@
+{
+  "page": {
+    "title": "Dashboard",
+    "subtitle": "Explore spending across any range. Income isn't category-filtered."
+  },
+  "filters": {
+    "allCategories": "All categories",
+    "searchCategories": "Search categories…",
+    "noCategories": "No categories."
+  },
+  "summary": {
+    "income": "Income",
+    "spent": "Spent",
+    "net": "Net",
+    "avgPerDay": "Avg / day",
+    "over_one": "over {{count}} day",
+    "over_other": "over {{count}} days"
+  },
+  "charts": {
+    "loadError": "Couldn't load analytics",
+    "emptyDefault": "No spending in this range.",
+    "trend": {
+      "title": "Spending trend",
+      "description": "Spend and income over the selected range."
+    },
+    "breakdown": {
+      "title": "Where it goes",
+      "description": "Spend by category and tier."
+    },
+    "incomeVsExpense": {
+      "title": "Income vs expenses",
+      "description": "Money in vs out per period."
+    },
+    "budgetVsActual": {
+      "title": "Budget vs actual",
+      "description": "Per-category targets against spend (targets summed across the range).",
+      "empty": "No budgets set for this range."
+    },
+    "series": {
+      "income": "Income",
+      "spent": "Spent",
+      "budget": "Budget",
+      "actual": "Actual"
+    },
+    "breakdownTabs": {
+      "byCategory": "By category",
+      "byTier": "By tier"
+    }
+  },
+  "health": {
+    "status": {
+      "onTrack": "On track",
+      "watch": "Watch",
+      "over": "Over"
+    },
+    "pastIncome": "You're {{amount}} past this cycle's income.",
+    "wontCover": "Remaining {{remaining}} won't cover your {{uncovered}} of unpaid essentials.",
+    "pace": "At your current pace you'd spend about {{projected}} more — more than the {{remaining}} left.",
+    "onTrackMessage_one": "{{remaining}} left with {{count}} day to go. Keep it up.",
+    "onTrackMessage_other": "{{remaining}} left with {{count}} days to go. Keep it up."
+  },
+  "targets": {
+    "title": "Budget targets",
+    "subtitle": "How your spending tracks against this cycle's caps.",
+    "empty": "No targets set for this cycle yet.",
+    "overBudget": "over budget",
+    "nearLimit": "near limit",
+    "tracked": "tracked",
+    "setBudgets": "Set budgets",
+    "viewBudgets": "View budgets",
+    "loadError": "Failed to load budgets."
+  },
+  "tier": {
+    "untiered": "Untiered",
+    "ariaLabel": "Spending by tier",
+    "empty": "No spending yet this cycle."
+  },
+  "toast": {
+    "analyticsLoadError": "Failed to load analytics."
+  }
+}

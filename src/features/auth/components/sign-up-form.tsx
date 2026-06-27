@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm, useWatch } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
 import {
   CheckIcon,
   CircleIcon,
@@ -24,7 +25,7 @@ import {
 } from '@/components/ui/input-group';
 import { Spinner } from '@/components/ui/spinner';
 import { cn } from '@/lib/utils';
-import { passwordPolicy, signUpSchema, type SignUpInput } from '../schemas';
+import { makeSignUpSchema, passwordPolicy, type SignUpInput } from '../schemas';
 
 interface SignUpFormProps {
   onSubmit: (
@@ -34,6 +35,7 @@ interface SignUpFormProps {
 }
 
 function PasswordRules({ value }: { value: string }) {
+  const { t } = useTranslation('auth');
   return (
     <ul className='mt-1 grid gap-1 text-xs' aria-live='polite'>
       {passwordPolicy.map((rule) => {
@@ -51,8 +53,10 @@ function PasswordRules({ value }: { value: string }) {
             ) : (
               <CircleIcon className='size-3.5' aria-hidden />
             )}
-            <span>{rule.label}</span>
-            <span className='sr-only'>{ok ? ' — met' : ' — not yet met'}</span>
+            <span>{t(rule.labelKey)}</span>
+            <span className='sr-only'>
+              {ok ? t('passwordRules.met') : t('passwordRules.notMet')}
+            </span>
           </li>
         );
       })}
@@ -61,8 +65,10 @@ function PasswordRules({ value }: { value: string }) {
 }
 
 export function SignUpForm({ onSubmit }: SignUpFormProps) {
+  const { t } = useTranslation('auth');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const schema = useMemo(() => makeSignUpSchema(t), [t]);
 
   const {
     control,
@@ -72,7 +78,7 @@ export function SignUpForm({ onSubmit }: SignUpFormProps) {
     clearErrors,
     formState: { errors, isSubmitting },
   } = useForm<SignUpInput>({
-    resolver: zodResolver(signUpSchema),
+    resolver: zodResolver(schema),
     defaultValues: { email: '', password: '', confirmPassword: '' },
   });
 
@@ -89,7 +95,7 @@ export function SignUpForm({ onSubmit }: SignUpFormProps) {
     <form onSubmit={submit} noValidate>
       <FieldGroup>
         <Field data-invalid={errors.email ? true : undefined}>
-          <FieldLabel htmlFor='sign-up-email'>Email</FieldLabel>
+          <FieldLabel htmlFor='sign-up-email'>{t('fields.email')}</FieldLabel>
           <InputGroup>
             <InputGroupAddon>
               <MailIcon />
@@ -99,7 +105,7 @@ export function SignUpForm({ onSubmit }: SignUpFormProps) {
               type='email'
               autoComplete='email'
               autoFocus
-              placeholder='you@example.com'
+              placeholder={t('fields.emailPlaceholder')}
               aria-invalid={errors.email ? true : undefined}
               {...register('email')}
             />
@@ -108,7 +114,9 @@ export function SignUpForm({ onSubmit }: SignUpFormProps) {
         </Field>
 
         <Field data-invalid={errors.password ? true : undefined}>
-          <FieldLabel htmlFor='sign-up-password'>Password</FieldLabel>
+          <FieldLabel htmlFor='sign-up-password'>
+            {t('fields.password')}
+          </FieldLabel>
           <InputGroup>
             <InputGroupAddon>
               <LockIcon />
@@ -117,7 +125,7 @@ export function SignUpForm({ onSubmit }: SignUpFormProps) {
               id='sign-up-password'
               type={showPassword ? 'text' : 'password'}
               autoComplete='new-password'
-              placeholder='At least 8 characters'
+              placeholder={t('fields.passwordMinPlaceholder')}
               aria-invalid={errors.password ? true : undefined}
               aria-describedby='sign-up-password-rules'
               {...register('password')}
@@ -125,7 +133,11 @@ export function SignUpForm({ onSubmit }: SignUpFormProps) {
             <InputGroupAddon align='inline-end'>
               <InputGroupButton
                 size='icon-xs'
-                aria-label={showPassword ? 'Hide password' : 'Show password'}
+                aria-label={
+                  showPassword
+                    ? t('fields.hidePassword')
+                    : t('fields.showPassword')
+                }
                 aria-pressed={showPassword}
                 onClick={() => setShowPassword((value) => !value)}
               >
@@ -143,7 +155,7 @@ export function SignUpForm({ onSubmit }: SignUpFormProps) {
 
         <Field data-invalid={errors.confirmPassword ? true : undefined}>
           <FieldLabel htmlFor='sign-up-confirm-password'>
-            Confirm password
+            {t('fields.confirmPassword')}
           </FieldLabel>
           <InputGroup>
             <InputGroupAddon>
@@ -153,7 +165,7 @@ export function SignUpForm({ onSubmit }: SignUpFormProps) {
               id='sign-up-confirm-password'
               type={showConfirmPassword ? 'text' : 'password'}
               autoComplete='new-password'
-              placeholder='Repeat your password'
+              placeholder={t('fields.passwordRepeatPlaceholder')}
               aria-invalid={errors.confirmPassword ? true : undefined}
               {...register('confirmPassword')}
             />
@@ -161,7 +173,9 @@ export function SignUpForm({ onSubmit }: SignUpFormProps) {
               <InputGroupButton
                 size='icon-xs'
                 aria-label={
-                  showConfirmPassword ? 'Hide password' : 'Show password'
+                  showConfirmPassword
+                    ? t('fields.hidePassword')
+                    : t('fields.showPassword')
                 }
                 aria-pressed={showConfirmPassword}
                 onClick={() => setShowConfirmPassword((value) => !value)}
@@ -181,7 +195,7 @@ export function SignUpForm({ onSubmit }: SignUpFormProps) {
 
         <Button type='submit' disabled={isSubmitting}>
           {isSubmitting && <Spinner data-icon='inline-start' />}
-          {isSubmitting ? 'Creating account…' : 'Create account'}
+          {isSubmitting ? t('signUpForm.submitting') : t('signUpForm.submit')}
         </Button>
       </FieldGroup>
     </form>

@@ -1,5 +1,6 @@
 import * as React from 'react';
 import { ChevronsUpDownIcon } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 import { cn } from '@/lib/utils';
 import { CURRENCY_CODES, type CurrencyCode } from '@/lib/fx';
@@ -34,6 +35,7 @@ export function CurrencySelect({
   className,
   id,
 }: Props) {
+  const { t } = useTranslation('common');
   const [open, setOpen] = React.useState(false);
 
   return (
@@ -56,9 +58,9 @@ export function CurrencySelect({
       </PopoverTrigger>
       <PopoverContent className='w-(--radix-popover-trigger-width) p-0'>
         <Command>
-          <CommandInput placeholder='Search currency…' />
+          <CommandInput placeholder={t('currency.search')} />
           <CommandList>
-            <CommandEmpty>No currency found.</CommandEmpty>
+            <CommandEmpty>{t('currency.empty')}</CommandEmpty>
             <CommandGroup>
               {CURRENCY_CODES.map((code) => (
                 <CommandItem

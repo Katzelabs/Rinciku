@@ -1,4 +1,5 @@
 import type { Database } from '@/lib/database.types';
+import { activeLocale } from '@/lib/locale';
 
 type ProfileRow = Database['public']['Tables']['profiles']['Row'];
 
@@ -46,13 +47,12 @@ export function getDaysLeft(cycle: Cycle, now: Date = new Date()): number {
   return Math.max(0, Math.ceil(diff / msPerDay));
 }
 
-const MONTH_FMT = new Intl.DateTimeFormat('en-GB', { month: 'short' });
-
 export function getCycleLabel(cycle: Cycle): string {
+  const monthFmt = new Intl.DateTimeFormat(activeLocale(), { month: 'short' });
   const startDay = cycle.start.getDate();
   const endDay = cycle.end.getDate();
-  const startMonth = MONTH_FMT.format(cycle.start);
-  const endMonth = MONTH_FMT.format(cycle.end);
+  const startMonth = monthFmt.format(cycle.start);
+  const endMonth = monthFmt.format(cycle.end);
   if (startMonth === endMonth) {
     return `${startDay}–${endDay} ${startMonth}`;
   }

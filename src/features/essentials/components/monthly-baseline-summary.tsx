@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
@@ -26,6 +27,7 @@ export function MonthlyBaselineSummary({
   refreshKey = 0,
   className,
 }: Props) {
+  const { t } = useTranslation('essentials');
   const { profile } = useAuth();
   const { data: tiers } = useTiers();
   const base = (profile?.base_currency ?? 'IDR') as CurrencyCode;
@@ -75,13 +77,13 @@ export function MonthlyBaselineSummary({
     if (error || !baseline) {
       return (
         <p className={cn('text-right text-sm text-destructive', className)}>
-          Could not load baseline.
+          {t('summary.error')}
         </p>
       );
     }
     return (
       <p className={cn('text-right text-sm', className)}>
-        <span className='text-muted-foreground'>Monthly baseline: </span>
+        <span className='text-muted-foreground'>{t('summary.labelInline')}</span>
         <span className='font-semibold'>
           {formatCurrency(baseline.total_base, base)}
         </span>
@@ -105,7 +107,7 @@ export function MonthlyBaselineSummary({
     return (
       <Card className={className}>
         <CardContent className='pt-6 text-sm text-destructive'>
-          Could not load baseline.
+          {t('summary.error')}
         </CardContent>
       </Card>
     );
@@ -114,7 +116,7 @@ export function MonthlyBaselineSummary({
     <Card className={className}>
       <CardContent className='space-y-3 pt-6'>
         <div>
-          <p className='text-sm text-muted-foreground'>Monthly baseline</p>
+          <p className='text-sm text-muted-foreground'>{t('summary.label')}</p>
           <p className='text-2xl font-semibold'>
             {formatCurrency(baseline.total_base, base)}
           </p>

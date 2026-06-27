@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Search } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 import { Input } from '@/components/ui/input';
 import {
@@ -20,6 +21,7 @@ type Props = {
 };
 
 export function RateTable({ base }: Props) {
+  const { t } = useTranslation('fxRates');
   const [query, setQuery] = useState('');
 
   const q = query.trim().toLowerCase();
@@ -39,9 +41,9 @@ export function RateTable({ base }: Props) {
         <Input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder='Search currency…'
+          placeholder={t('table.searchPlaceholder')}
           className='pl-9'
-          aria-label='Search currency'
+          aria-label={t('table.searchLabel')}
         />
       </div>
 
@@ -49,10 +51,12 @@ export function RateTable({ base }: Props) {
         <Table>
           <TableHeader>
             <TableRow className='hover:bg-transparent'>
-              <TableHead>Currency</TableHead>
-              <TableHead className='text-right'>1 unit in {base}</TableHead>
+              <TableHead>{t('table.currency')}</TableHead>
+              <TableHead className='text-right'>
+                {t('table.perUnit', { base })}
+              </TableHead>
               <TableHead className='hidden text-right sm:table-cell'>
-                1 {base} in currency
+                {t('table.inverse', { base })}
               </TableHead>
             </TableRow>
           </TableHeader>
@@ -63,7 +67,7 @@ export function RateTable({ base }: Props) {
                   colSpan={3}
                   className='py-8 text-center text-sm text-muted-foreground'
                 >
-                  No currency matches “{query}”.
+                  {t('table.noMatch', { query })}
                 </TableCell>
               </TableRow>
             ) : (

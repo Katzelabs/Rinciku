@@ -2,6 +2,7 @@ import { useEffect, useMemo } from 'react';
 import { Controller, useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -32,7 +33,7 @@ import {
 } from '@/features/categories/hooks/use-categories';
 
 import { createEssential, updateEssential } from '../api';
-import { essentialSchema, type EssentialInput } from '../schemas';
+import { makeEssentialSchema, type EssentialInput } from '../schemas';
 
 type EssentialFormProps = {
   mode: 'create' | 'edit';
@@ -45,6 +46,7 @@ export function EssentialForm({
   defaultValues,
   onSuccess,
 }: EssentialFormProps) {
+  const { t } = useTranslation('essentials');
   const { user, profile } = useAuth();
   const {
     data: categories,
@@ -52,6 +54,8 @@ export function EssentialForm({
     error: categoriesError,
   } = useCategories();
   const { data: tiers } = useTiers();
+
+  const schema = useMemo(() => makeEssentialSchema(t), [t]);
 
   const grouped = useMemo(
     () => (categories ? groupByTier(categories, tiers ?? []) : null),
@@ -70,7 +74,7 @@ export function EssentialForm({
     setValue,
     formState: { errors, isSubmitting },
   } = useForm<EssentialInput>({
-    resolver: zodResolver(essentialSchema),
+    resolver: zodResolver(schema),
     defaultValues: {
       name: defaultValues?.name ?? '',
       estimated_amount:
@@ -94,11 +98,11 @@ export function EssentialForm({
 
   const submit = handleSubmit(async (values) => {
     if (!user) {
-      toast.error('You need to be signed in to save an essential.');
+      toast.error(t('toast.signInRequired'));
       return;
     }
     if (mode === 'edit' && !defaultValues?.id) {
-      toast.error('Missing essential id for edit.');
+      toast.error(t('toast.missingId'));
       return;
     }
     try {
@@ -115,7 +119,7 @@ export function EssentialForm({
           basePayload
         );
         if (error) throw error;
-        toast.success('Essential updated');
+        toast.success(t('toast.updated'));
         onSuccess();
         return;
       }
@@ -125,11 +129,11 @@ export function EssentialForm({
         ...basePayload,
       });
       if (error) throw error;
-      toast.success('Essential added');
+      toast.success(t('toast.added'));
       onSuccess();
     } catch (err) {
       console.error('Failed to save essential', err);
-      toast.error('Could not save essential. Please try again.');
+      toast.error(t('toast.saveError'));
     }
   });
 
@@ -137,10 +141,12 @@ export function EssentialForm({
     <form onSubmit={submit} noValidate>
       <FieldGroup>
         <Field data-invalid={errors.name ? true : undefined}>
-          <FieldLabel htmlFor='essential-name'>Name</FieldLabel>
+          <FieldLabel htmlFor='essential-name'>
+            {t('form.name.label')}
+          </FieldLabel>
           <Input
             id='essential-name'
-            placeholder='Rent, internet, …'
+            placeholder={t('form.name.placeholder')}
             autoFocus
             aria-invalid={errors.name ? true : undefined}
             {...register('name')}
@@ -154,7 +160,7 @@ export function EssentialForm({
           render={({ field, fieldState }) => (
             <Field data-invalid={fieldState.invalid || undefined}>
               <FieldLabel htmlFor='essential-amount'>
-                Estimated amount
+                {t('form.amount.label')}
               </FieldLabel>
               <CurrencyAmountInput
                 id='essential-amount'
@@ -178,7 +184,9 @@ export function EssentialForm({
           name='category_id'
           render={({ field, fieldState }) => (
             <Field data-invalid={fieldState.invalid || undefined}>
-              <FieldLabel htmlFor='essential-category'>Category</FieldLabel>
+              <FieldLabel htmlFor='essential-category'>
+                {t('form.category.label')}
+              </FieldLabel>
               <Select
                 value={field.value || undefined}
                 onValueChange={field.onChange}
@@ -192,10 +200,10 @@ export function EssentialForm({
                   <SelectValue
                     placeholder={
                       categoriesLoading
-                        ? 'Loading categories…'
+                        ? t('form.category.loading')
                         : categoriesError
-                          ? 'Failed to load categories'
-                          : 'Pick a category'
+                          ? t('form.category.error')
+                          : t('form.category.placeholder')
                     }
                   />
                 </SelectTrigger>
@@ -206,7 +214,7 @@ export function EssentialForm({
                     return (
                       <SelectGroup key={key}>
                         <SelectLabel>
-                          {group.tier?.name ?? 'Untiered'}
+                          {group.tier?.name ?? t('form.category.untiered')}
                         </SelectLabel>
                         {group.categories.map((category) => (
                           <SelectItem key={category.id} value={category.id}>
@@ -226,11 +234,13 @@ export function EssentialForm({
         />
 
         <Field data-invalid={errors.notes ? true : undefined}>
-          <FieldLabel htmlFor='essential-notes'>Notes (optional)</FieldLabel>
+          <FieldLabel htmlFor='essential-notes'>
+            {t('form.notes.label')}
+          </FieldLabel>
           <Textarea
             id='essential-notes'
             rows={3}
-            placeholder='Anything to remember about this line item?'
+            placeholder={t('form.notes.placeholder')}
             aria-invalid={errors.notes ? true : undefined}
             {...register('notes')}
           />
@@ -241,11 +251,11 @@ export function EssentialForm({
           {isSubmitting && <Spinner data-icon='inline-start' />}
           {isSubmitting
             ? mode === 'create'
-              ? 'Saving…'
-              : 'Updating…'
+              ? t('form.submit.adding')
+              : t('form.submit.updating')
             : mode === 'create'
-              ? 'Add essential'
-              : 'Update essential'}
+              ? t('form.submit.add')
+              : t('form.submit.update')}
         </Button>
       </FieldGroup>
     </form>

@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react';
+import i18n from '@/i18n';
 import { useAuth } from '@/features/auth';
 import {
   appendMessage,
@@ -160,7 +161,7 @@ export function useChat(options: UseChatOptions = {}): UseChatResult {
     image?: { attachmentId: string; previewUrl: string };
   }) {
     if (!profile) {
-      setError('You need to be signed in to chat.');
+      setError(i18n.t('aiChat:chat.signInRequired'));
       return;
     }
     setError(null);
@@ -177,10 +178,12 @@ export function useChat(options: UseChatOptions = {}): UseChatResult {
       let convId = currentIdRef.current;
       if (convId == null) {
         const title = conversationTitleFrom(
-          params.displayText || (params.image ? 'Shared an image' : '')
+          params.displayText ||
+            (params.image ? i18n.t('aiChat:chat.sharedImage') : '')
         );
         const { data, error } = await createConversation(profile.id, title);
-        if (error || !data) throw error ?? new Error('Could not start a chat.');
+        if (error || !data)
+          throw error ?? new Error(i18n.t('aiChat:chat.startError'));
         convId = data.id;
         currentIdRef.current = convId;
         setActiveId(convId);
@@ -208,7 +211,7 @@ export function useChat(options: UseChatOptions = {}): UseChatResult {
       // 3. Ground in the current budget state.
       const ctx = await buildBudgetContext(profile);
       if (ctx.error || !ctx.data) {
-        throw ctx.error ?? new Error('Could not load your budget state.');
+        throw ctx.error ?? new Error(i18n.t('aiChat:chat.budgetError'));
       }
 
       // 4. Agentic loop: the model may call read tools (auto-executed here,
@@ -258,7 +261,7 @@ export function useChat(options: UseChatOptions = {}): UseChatResult {
         toolChoice = { type: 'auto' };
       }
 
-      if (!res) throw new Error('The assistant could not respond.');
+      if (!res) throw new Error(i18n.t('aiChat:chat.noResponse'));
 
       // 5. Resolve the terminal response: a transaction proposal, a generic
       //    change proposal, or a plain answer. Persist the assistant text.
@@ -270,7 +273,7 @@ export function useChat(options: UseChatOptions = {}): UseChatResult {
           ? summarizeProposal(txProposal)
           : change
             ? change.summary
-            : 'Sorry, I could not generate a response.');
+            : i18n.t('aiChat:chat.genericResponse'));
 
       setMessages((m) => [
         ...m,
@@ -309,7 +312,9 @@ export function useChat(options: UseChatOptions = {}): UseChatResult {
       });
       options.onConversationsChanged?.();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Something went wrong.');
+      setError(
+        err instanceof Error ? err.message : i18n.t('aiChat:chat.somethingWrong')
+      );
     } finally {
       setSending(false);
     }
@@ -328,7 +333,7 @@ export function useChat(options: UseChatOptions = {}): UseChatResult {
   function sendImage(file: File, caption?: string) {
     if (sending) return;
     if (!profile) {
-      setError('You need to be signed in to chat.');
+      setError(i18n.t('aiChat:chat.signInRequired'));
       return;
     }
     const text = (caption ?? '').trim();
@@ -360,7 +365,9 @@ export function useChat(options: UseChatOptions = {}): UseChatResult {
         });
       } catch (err) {
         setError(
-          err instanceof Error ? err.message : 'Could not read the image.'
+          err instanceof Error
+            ? err.message
+            : i18n.t('aiChat:chat.imageReadError')
         );
       }
     })();
@@ -390,7 +397,7 @@ export function useChat(options: UseChatOptions = {}): UseChatResult {
           return;
         }
         setPendingChange(null);
-        noteConfirmation(`Done — ${change.summary}`);
+        noteConfirmation(i18n.t('aiChat:chat.done', { summary: change.summary }));
       })
       .finally(() => setConfirmingChange(false));
   }

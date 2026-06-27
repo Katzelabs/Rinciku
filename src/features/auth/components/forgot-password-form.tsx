@@ -1,5 +1,7 @@
+import { useMemo } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
 import { MailIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -14,7 +16,7 @@ import {
   InputGroupInput,
 } from '@/components/ui/input-group';
 import { Spinner } from '@/components/ui/spinner';
-import { forgotPasswordSchema, type ForgotPasswordInput } from '../schemas';
+import { makeForgotPasswordSchema, type ForgotPasswordInput } from '../schemas';
 
 interface ForgotPasswordFormProps {
   onSubmit: (
@@ -24,6 +26,8 @@ interface ForgotPasswordFormProps {
 }
 
 export function ForgotPasswordForm({ onSubmit }: ForgotPasswordFormProps) {
+  const { t } = useTranslation('auth');
+  const schema = useMemo(() => makeForgotPasswordSchema(t), [t]);
   const {
     register,
     handleSubmit,
@@ -31,7 +35,7 @@ export function ForgotPasswordForm({ onSubmit }: ForgotPasswordFormProps) {
     clearErrors,
     formState: { errors, isSubmitting },
   } = useForm<ForgotPasswordInput>({
-    resolver: zodResolver(forgotPasswordSchema),
+    resolver: zodResolver(schema),
     defaultValues: { email: '' },
   });
 
@@ -46,7 +50,9 @@ export function ForgotPasswordForm({ onSubmit }: ForgotPasswordFormProps) {
     <form onSubmit={submit} noValidate>
       <FieldGroup>
         <Field data-invalid={errors.email ? true : undefined}>
-          <FieldLabel htmlFor='forgot-password-email'>Email</FieldLabel>
+          <FieldLabel htmlFor='forgot-password-email'>
+            {t('fields.email')}
+          </FieldLabel>
           <InputGroup>
             <InputGroupAddon>
               <MailIcon />
@@ -56,7 +62,7 @@ export function ForgotPasswordForm({ onSubmit }: ForgotPasswordFormProps) {
               type='email'
               autoComplete='email'
               autoFocus
-              placeholder='you@example.com'
+              placeholder={t('fields.emailPlaceholder')}
               aria-invalid={errors.email ? true : undefined}
               {...register('email')}
             />
@@ -68,7 +74,9 @@ export function ForgotPasswordForm({ onSubmit }: ForgotPasswordFormProps) {
 
         <Button type='submit' disabled={isSubmitting}>
           {isSubmitting && <Spinner data-icon='inline-start' />}
-          {isSubmitting ? 'Sending…' : 'Send reset link'}
+          {isSubmitting
+            ? t('forgotPasswordForm.submitting')
+            : t('forgotPasswordForm.submit')}
         </Button>
       </FieldGroup>
     </form>

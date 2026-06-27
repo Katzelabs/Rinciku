@@ -176,6 +176,7 @@ alter table "public"."messages" enable row level security;
     "expected_monthly_income" numeric(15,2) not null default 0,
     "expected_monthly_income_currency" text not null default 'IDR'::text,
     "month_start_day" smallint not null default 1,
+    "language" text not null default 'en'::text,
     "onboarded_at" timestamp with time zone,
     "created_at" timestamp with time zone not null default now(),
     "updated_at" timestamp with time zone not null default now()
@@ -517,6 +518,10 @@ alter table "public"."profiles" validate constraint "profiles_expected_monthly_i
 alter table "public"."profiles" add constraint "profiles_id_fkey" FOREIGN KEY (id) REFERENCES auth.users(id) ON DELETE CASCADE not valid;
 
 alter table "public"."profiles" validate constraint "profiles_id_fkey";
+
+alter table "public"."profiles" add constraint "profiles_language_check" CHECK ((language = ANY (ARRAY['en'::text, 'id'::text]))) not valid;
+
+alter table "public"."profiles" validate constraint "profiles_language_check";
 
 alter table "public"."profiles" add constraint "profiles_month_start_day_check" CHECK (((month_start_day >= 1) AND (month_start_day <= 28))) not valid;
 

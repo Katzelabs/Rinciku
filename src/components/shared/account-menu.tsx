@@ -1,4 +1,5 @@
 import { ChevronsUpDown, LogOut, Settings } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router';
 import { toast } from 'sonner';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -36,6 +37,7 @@ interface AccountData {
 }
 
 function useAccountData(): AccountData | null {
+  const { t } = useTranslation('common');
   const { user, profile } = useAuth();
   const navigate = useNavigate();
 
@@ -43,7 +45,7 @@ function useAccountData(): AccountData | null {
     const { error } = await supabase.auth.signOut();
     if (error) {
       console.error('Failed to sign out', error);
-      toast.error('Could not sign you out. Please try again.');
+      toast.error(t('account.signOutError'));
       return;
     }
     navigate('/sign-in', { replace: true });
@@ -67,6 +69,7 @@ function AccountMenuItems({
 }: {
   account: Pick<AccountData, 'displayName' | 'email' | 'handleSignOut'>;
 }) {
+  const { t } = useTranslation('common');
   return (
     <>
       <DropdownMenuLabel className='flex flex-col gap-0.5 py-2'>
@@ -83,18 +86,19 @@ function AccountMenuItems({
       <DropdownMenuItem asChild>
         <Link to='/settings'>
           <Settings />
-          <span>Settings</span>
+          <span>{t('account.settings')}</span>
         </Link>
       </DropdownMenuItem>
       <DropdownMenuItem variant='destructive' onSelect={account.handleSignOut}>
         <LogOut />
-        <span>Sign out</span>
+        <span>{t('account.signOut')}</span>
       </DropdownMenuItem>
     </>
   );
 }
 
 export function AccountMenu() {
+  const { t } = useTranslation('common');
   const account = useAccountData();
   if (!account) return null;
 
@@ -105,7 +109,7 @@ export function AccountMenu() {
           variant='ghost'
           size='icon'
           className='rounded-full'
-          aria-label='Open account menu'
+          aria-label={t('account.openMenu')}
         >
           <Avatar size='sm'>
             <AvatarFallback>{account.initial}</AvatarFallback>

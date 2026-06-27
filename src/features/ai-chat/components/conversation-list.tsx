@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { differenceInCalendarDays, isToday, isYesterday } from 'date-fns';
 import { MoreHorizontal, Pencil, Plus, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -30,26 +31,27 @@ type Props = {
   onDelete: (id: string) => void;
 };
 
+// Stable group keys (ordered); display labels resolve via t('list.groups.<key>').
 const GROUP_ORDER = [
-  'Today',
-  'Yesterday',
-  'Previous 7 days',
-  'Previous 30 days',
-  'Older',
+  'today',
+  'yesterday',
+  'previous7Days',
+  'previous30Days',
+  'older',
 ] as const;
 
 type GroupLabel = (typeof GROUP_ORDER)[number];
 
 function bucketFor(value: string | null): GroupLabel {
-  if (!value) return 'Older';
+  if (!value) return 'older';
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return 'Older';
-  if (isToday(date)) return 'Today';
-  if (isYesterday(date)) return 'Yesterday';
+  if (Number.isNaN(date.getTime())) return 'older';
+  if (isToday(date)) return 'today';
+  if (isYesterday(date)) return 'yesterday';
   const days = differenceInCalendarDays(new Date(), date);
-  if (days <= 7) return 'Previous 7 days';
-  if (days <= 30) return 'Previous 30 days';
-  return 'Older';
+  if (days <= 7) return 'previous7Days';
+  if (days <= 30) return 'previous30Days';
+  return 'older';
 }
 
 function groupConversations(items: Conversation[]) {
@@ -75,13 +77,14 @@ export function ConversationList({
   onRename,
   onDelete,
 }: Props) {
+  const { t } = useTranslation('aiChat');
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [draft, setDraft] = useState('');
   const [pendingDelete, setPendingDelete] = useState<Conversation | null>(null);
 
   function startRename(c: Conversation) {
     setRenamingId(c.id);
-    setDraft(c.title?.trim() || 'Untitled chat');
+    setDraft(c.title?.trim() || t('header.untitled'));
   }
 
   function commitRename(original: Conversation) {
@@ -108,7 +111,7 @@ export function ConversationList({
       <div className='p-3'>
         <Button className='w-full justify-start' onClick={onNew}>
           <Plus className='size-4' />
-          New chat
+          {t('list.newChat')}
         </Button>
       </div>
       <div className='flex-1 overflow-y-auto px-2 pb-2'>
@@ -125,7 +128,7 @@ export function ConversationList({
             {groups.map((group) => (
               <div key={group.label} className='space-y-1'>
                 <p className='px-3 pt-1 text-xs font-medium text-muted-foreground'>
-                  {group.label}
+                  {t(`list.groups.${group.label}`)}
                 </p>
                 <ul className='space-y-0.5'>
                   {group.items.map((c) => {
@@ -162,13 +165,13 @@ export function ConversationList({
                                   : 'hover:bg-muted'
                               )}
                             >
-                              {c.title?.trim() || 'Untitled chat'}
+                              {c.title?.trim() || t('header.untitled')}
                             </button>
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
                                 <button
                                   type='button'
-                                  aria-label='Conversation options'
+                                  aria-label={t('list.options')}
                                   className={cn(
                                     'absolute top-1.5 right-1 flex size-7 items-center justify-center rounded-md text-muted-foreground opacity-0 transition-opacity hover:bg-background hover:text-foreground focus-visible:opacity-100 group-hover/item:opacity-100 data-[state=open]:opacity-100',
                                     isActive && 'opacity-100'
@@ -182,14 +185,14 @@ export function ConversationList({
                                   onSelect={() => startRename(c)}
                                 >
                                   <Pencil className='size-4' />
-                                  Rename
+                                  {t('header.rename')}
                                 </DropdownMenuItem>
                                 <DropdownMenuItem
                                   variant='destructive'
                                   onSelect={() => setPendingDelete(c)}
                                 >
                                   <Trash2 className='size-4' />
-                                  Delete
+                                  {t('common:actions.delete')}
                                 </DropdownMenuItem>
                               </DropdownMenuContent>
                             </DropdownMenu>
@@ -204,7 +207,7 @@ export function ConversationList({
           </div>
         ) : (
           <p className='px-3 py-4 text-sm text-muted-foreground'>
-            No conversations yet.
+            {t('list.empty')}
           </p>
         )}
       </div>
@@ -217,17 +220,15 @@ export function ConversationList({
       >
         <DialogContent className='sm:max-w-md'>
           <DialogHeader>
-            <DialogTitle>Delete chat?</DialogTitle>
-            <DialogDescription>
-              This permanently removes this chat and all of its messages.
-            </DialogDescription>
+            <DialogTitle>{t('delete.title')}</DialogTitle>
+            <DialogDescription>{t('delete.description')}</DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button variant='outline' onClick={() => setPendingDelete(null)}>
-              Cancel
+              {t('common:actions.cancel')}
             </Button>
             <Button variant='destructive' onClick={confirmDelete}>
-              Delete
+              {t('common:actions.delete')}
             </Button>
           </DialogFooter>
         </DialogContent>

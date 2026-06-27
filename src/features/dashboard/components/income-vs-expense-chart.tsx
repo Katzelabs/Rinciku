@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from 'recharts';
 import {
   ChartContainer,
@@ -12,11 +13,6 @@ import type { CurrencyCode } from '@/lib/fx';
 import type { TrendPoint } from '../types';
 import { currencyTooltipRow } from './chart-utils';
 
-const config = {
-  income: { label: 'Income', color: 'var(--chart-2)' },
-  spent: { label: 'Spent', color: 'var(--chart-1)' },
-} satisfies ChartConfig;
-
 export function IncomeVsExpenseChart({
   data,
   base,
@@ -24,6 +20,12 @@ export function IncomeVsExpenseChart({
   data: TrendPoint[];
   base: CurrencyCode;
 }) {
+  const { t } = useTranslation('dashboard');
+  const config = {
+    income: { label: t('charts.series.income'), color: 'var(--chart-2)' },
+    spent: { label: t('charts.series.spent'), color: 'var(--chart-1)' },
+  } satisfies ChartConfig;
+
   return (
     <ChartContainer config={config} className='h-[240px] w-full'>
       <BarChart data={data} margin={{ left: 4, right: 8, top: 8 }}>

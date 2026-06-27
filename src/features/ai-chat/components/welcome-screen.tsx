@@ -1,38 +1,35 @@
+import { useTranslation } from 'react-i18next';
 import { ChartPie, ReceiptText, Sparkles, Wallet } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 type Group = {
-  label: string;
+  labelKey: string;
   icon: LucideIcon;
-  items: string[];
+  itemKeys: string[];
 };
 
 const GROUPS: Group[] = [
   {
-    label: 'Check affordability',
+    labelKey: 'welcome.groups.affordability',
     icon: Wallet,
-    items: [
-      'Can I afford a Rp 800.000 keyboard right now?',
-      'Is it okay to spend 250k on dinner tonight?',
-    ],
+    itemKeys: ['welcome.examples.afford1', 'welcome.examples.afford2'],
   },
   {
-    label: 'Log a transaction',
+    labelKey: 'welcome.groups.logTransaction',
     icon: ReceiptText,
-    items: ['Spent 45k on lunch', 'Got my 5jt salary today'],
+    itemKeys: ['welcome.examples.log1', 'welcome.examples.log2'],
   },
   {
-    label: 'Monthly summary',
+    labelKey: 'welcome.groups.monthlySummary',
     icon: ChartPie,
-    items: [
-      'How much do I have left this month?',
-      'Where did most of my money go?',
-    ],
+    itemKeys: ['welcome.examples.summary1', 'welcome.examples.summary2'],
   },
 ];
 
 export function WelcomeScreen({ onSend }: { onSend: (text: string) => void }) {
+  const { t } = useTranslation('aiChat');
+
   return (
     <div className='flex flex-1 flex-col items-center justify-center gap-8 px-6 py-10'>
       <div className='flex flex-col items-center gap-4 text-center'>
@@ -40,36 +37,36 @@ export function WelcomeScreen({ onSend }: { onSend: (text: string) => void }) {
           <Sparkles className='size-7' />
         </div>
         <div className='space-y-1'>
-          <p className='text-xl font-semibold'>
-            Ask Rinciku anything about your money
-          </p>
+          <p className='text-xl font-semibold'>{t('welcome.heading')}</p>
           <p className='max-w-md text-sm text-muted-foreground'>
-            Get a grounded answer before you spend, or log expenses and income
-            by chatting or sending a receipt.
+            {t('welcome.description')}
           </p>
         </div>
       </div>
 
       <div className='grid w-full max-w-2xl gap-5 sm:grid-cols-3'>
         {GROUPS.map((group) => (
-          <div key={group.label} className='space-y-2'>
+          <div key={group.labelKey} className='space-y-2'>
             <div className='flex items-center gap-1.5 text-xs font-medium text-muted-foreground'>
               <group.icon className='size-3.5' />
-              {group.label}
+              {t(group.labelKey)}
             </div>
             <div className='flex flex-col gap-1.5'>
-              {group.items.map((item) => (
-                <Button
-                  key={item}
-                  type='button'
-                  variant='outline'
-                  size='sm'
-                  className='h-auto justify-start whitespace-normal rounded-xl py-2 text-left text-sm font-normal text-muted-foreground hover:text-foreground'
-                  onClick={() => onSend(item)}
-                >
-                  {item}
-                </Button>
-              ))}
+              {group.itemKeys.map((itemKey) => {
+                const item = t(itemKey);
+                return (
+                  <Button
+                    key={itemKey}
+                    type='button'
+                    variant='outline'
+                    size='sm'
+                    className='h-auto justify-start whitespace-normal rounded-xl py-2 text-left text-sm font-normal text-muted-foreground hover:text-foreground'
+                    onClick={() => onSend(item)}
+                  >
+                    {item}
+                  </Button>
+                );
+              })}
             </div>
           </div>
         ))}

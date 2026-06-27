@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { MoreHorizontal, PanelLeft, Pencil, Plus, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -33,17 +34,18 @@ export function ChatHeader({
   onNew,
   onOpenHistory,
 }: Props) {
+  const { t } = useTranslation('aiChat');
   const [renameOpen, setRenameOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [draft, setDraft] = useState('');
 
   const title = conversation
-    ? conversation.title?.trim() || 'Untitled chat'
-    : 'New chat';
+    ? conversation.title?.trim() || t('header.untitled')
+    : t('header.newChat');
 
   function startRename() {
     if (!conversation) return;
-    setDraft(conversation.title?.trim() || 'Untitled chat');
+    setDraft(conversation.title?.trim() || t('header.untitled'));
     setRenameOpen(true);
   }
 
@@ -69,7 +71,7 @@ export function ChatHeader({
           size='icon'
           className='md:hidden'
           onClick={onOpenHistory}
-          aria-label='Open conversation history'
+          aria-label={t('header.openHistory')}
         >
           <PanelLeft className='size-4' />
         </Button>
@@ -84,7 +86,7 @@ export function ChatHeader({
           size='icon'
           className='md:hidden'
           onClick={onNew}
-          aria-label='New chat'
+          aria-label={t('header.newChat')}
         >
           <Plus className='size-4' />
         </Button>
@@ -92,21 +94,25 @@ export function ChatHeader({
         {conversation ? (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant='ghost' size='icon' aria-label='Chat options'>
+              <Button
+                variant='ghost'
+                size='icon'
+                aria-label={t('header.options')}
+              >
                 <MoreHorizontal className='size-4' />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align='end' className='w-40'>
               <DropdownMenuItem onSelect={startRename}>
                 <Pencil className='size-4' />
-                Rename
+                {t('header.rename')}
               </DropdownMenuItem>
               <DropdownMenuItem
                 variant='destructive'
                 onSelect={() => setDeleteOpen(true)}
               >
                 <Trash2 className='size-4' />
-                Delete
+                {t('common:actions.delete')}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -116,10 +122,8 @@ export function ChatHeader({
       <Dialog open={renameOpen} onOpenChange={setRenameOpen}>
         <DialogContent className='sm:max-w-md'>
           <DialogHeader>
-            <DialogTitle>Rename chat</DialogTitle>
-            <DialogDescription>
-              Give this conversation a name you'll recognize later.
-            </DialogDescription>
+            <DialogTitle>{t('rename.title')}</DialogTitle>
+            <DialogDescription>{t('rename.description')}</DialogDescription>
           </DialogHeader>
           <Input
             autoFocus
@@ -131,13 +135,13 @@ export function ChatHeader({
                 commitRename();
               }
             }}
-            placeholder='Chat name'
+            placeholder={t('rename.placeholder')}
           />
           <DialogFooter>
             <Button variant='outline' onClick={() => setRenameOpen(false)}>
-              Cancel
+              {t('common:actions.cancel')}
             </Button>
-            <Button onClick={commitRename}>Save</Button>
+            <Button onClick={commitRename}>{t('header.save')}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -145,17 +149,15 @@ export function ChatHeader({
       <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
         <DialogContent className='sm:max-w-md'>
           <DialogHeader>
-            <DialogTitle>Delete chat?</DialogTitle>
-            <DialogDescription>
-              This permanently removes this chat and all of its messages.
-            </DialogDescription>
+            <DialogTitle>{t('delete.title')}</DialogTitle>
+            <DialogDescription>{t('delete.description')}</DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button variant='outline' onClick={() => setDeleteOpen(false)}>
-              Cancel
+              {t('common:actions.cancel')}
             </Button>
             <Button variant='destructive' onClick={confirmDelete}>
-              Delete
+              {t('common:actions.delete')}
             </Button>
           </DialogFooter>
         </DialogContent>

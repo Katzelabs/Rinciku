@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams } from 'react-router';
 import { toast } from 'sonner';
 import {
@@ -16,6 +17,7 @@ import { useChat } from '../hooks/use-chat';
 import { useConversations } from '../hooks/use-conversations';
 
 export function ChatPage() {
+  const { t } = useTranslation('aiChat');
   const { conversationId } = useParams();
   const navigate = useNavigate();
 
@@ -62,7 +64,7 @@ export function ChatPage() {
   async function handleRename(id: string, title: string) {
     const { error } = await touchConversation(id, { title });
     if (error) {
-      toast.error('Could not rename the chat.');
+      toast.error(t('toast.renameError'));
       return;
     }
     refetch();
@@ -71,12 +73,12 @@ export function ChatPage() {
   async function handleDelete(id: string) {
     const { error } = await deleteConversation(id);
     if (error) {
-      toast.error('Could not delete the chat.');
+      toast.error(t('toast.deleteError'));
       return;
     }
     if (chat.activeId === id) navigate('/ai-chat');
     refetch();
-    toast.success('Chat deleted.');
+    toast.success(t('toast.chatDeleted'));
   }
 
   return (
@@ -132,7 +134,7 @@ export function ChatPage() {
       <Sheet open={historyOpen} onOpenChange={setHistoryOpen}>
         <SheetContent side='left' className='w-80 p-0'>
           <SheetHeader className='sr-only'>
-            <SheetTitle>Conversations</SheetTitle>
+            <SheetTitle>{t('list.title')}</SheetTitle>
           </SheetHeader>
           <ConversationList
             conversations={conversations}

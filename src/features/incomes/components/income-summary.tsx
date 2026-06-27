@@ -1,4 +1,5 @@
 import { CalendarDays, Hash, Scale, Wallet } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { SummaryCard } from '@/components/shared/summary-card';
 import { formatCurrency } from '@/lib/format';
 import type { CurrencyCode } from '@/lib/fx';
@@ -20,38 +21,39 @@ export function IncomeSummary({
   baseCurrency,
   loading,
 }: Props) {
+  const { t } = useTranslation('incomes');
   const avgPerTransaction = count ? total / count : 0;
   const avgPerDay = days ? total / days : 0;
 
   return (
     <div className='grid grid-cols-2 gap-4 lg:grid-cols-4'>
       <SummaryCard
-        label='Total income'
+        label={t('summary.totalIncome')}
         value={formatCurrency(total, baseCurrency)}
         icon={Wallet}
         accent='var(--chart-2)'
         loading={loading}
       />
       <SummaryCard
-        label='Transactions'
+        label={t('summary.transactions')}
         value={String(count)}
         icon={Hash}
         accent='var(--chart-3)'
         loading={loading}
       />
       <SummaryCard
-        label='Avg / transaction'
+        label={t('summary.avgPerTransaction')}
         value={formatCurrency(avgPerTransaction, baseCurrency)}
         icon={Scale}
         accent='var(--chart-4)'
         loading={loading}
       />
       <SummaryCard
-        label='Avg / day'
+        label={t('summary.avgPerDay')}
         value={formatCurrency(avgPerDay, baseCurrency)}
         icon={CalendarDays}
         accent='var(--chart-5)'
-        hint={`over ${days} ${days === 1 ? 'day' : 'days'}`}
+        hint={t('summary.overDays', { count: days })}
         loading={loading}
       />
     </div>

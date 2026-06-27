@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 
+import i18n from '@/i18n';
 import type { Tables } from '@/lib/database.types';
 import {
   convertToBase,
@@ -223,7 +224,7 @@ export function useBudgets(): UseBudgetsResult {
       .catch((err) => {
         if (cancelled) return;
         setError(
-          err instanceof Error ? err.message : 'Failed to load budgets.'
+          err instanceof Error ? err.message : i18n.t('budgets:page.loadError')
         );
         setData(undefined);
       })

@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Controller, useForm, useWatch } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { format } from 'date-fns';
 import { CalendarIcon, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -38,6 +38,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { CurrencyAmountInput } from '@/components/shared/currency-amount-input';
 import { CurrencySelect } from '@/components/shared/currency-select';
 import { formatCurrency } from '@/lib/format';
+import { formatDate } from '@/lib/locale';
 import type { CurrencyCode } from '@/lib/fx';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/features/auth';
@@ -47,7 +48,7 @@ import {
   useTiers,
 } from '@/features/categories/hooks/use-categories';
 import { confirmExpenseProposal } from '../api';
-import { expenseConfirmSchema, type ExpenseConfirmInput } from '../schemas';
+import { makeExpenseConfirmSchema, type ExpenseConfirmInput } from '../schemas';
 import type { PendingAttachment, ProposedTransaction } from '../types';
 import { matchCategoryId, toIsoDate } from './proposal-utils';
 
@@ -64,10 +65,13 @@ export function ExpenseProposalCard({
   onConfirmed,
   onCancel,
 }: Props) {
+  const { t } = useTranslation('aiChat');
   const { user } = useAuth();
   const { data: categories, isLoading: categoriesLoading } = useCategories();
   const { data: tiers } = useTiers();
   const [datePickerOpen, setDatePickerOpen] = useState(false);
+
+  const schema = useMemo(() => makeExpenseConfirmSchema(t), [t]);
 
   const grouped = useMemo(
     () => (categories ? groupByTier(categories, tiers ?? []) : null),
@@ -79,7 +83,7 @@ export function ExpenseProposalCard({
     handleSubmit,
     formState: { isSubmitting },
   } = useForm<ExpenseConfirmInput>({
-    resolver: zodResolver(expenseConfirmSchema),
+    resolver: zodResolver(schema),
     defaultValues: {
       amount: proposal.amount,
       currency: proposal.currency,
@@ -93,7 +97,7 @@ export function ExpenseProposalCard({
 
   const submit = handleSubmit(async (values) => {
     if (!user) {
-      toast.error('You need to be signed in.');
+      toast.error(t('toast.signInRequired'));
       return;
     }
     const note = values.note?.trim() ? values.note.trim() : null;
@@ -115,12 +119,15 @@ export function ExpenseProposalCard({
         : null,
     });
     if (error) {
-      toast.error('Could not save the expense. Please try again.');
+      toast.error(t('toast.expenseSaveError'));
       return;
     }
-    toast.success('Expense logged');
+    toast.success(t('toast.expenseLogged'));
+    const amount = formatCurrency(values.amount, values.currency);
     onConfirmed(
-      `✓ Logged an expense of ${formatCurrency(values.amount, values.currency)}${note ? ` — ${note}` : ''}.`
+      note
+        ? t('proposal.loggedExpenseNote', { amount, note })
+        : t('proposal.loggedExpense', { amount })
     );
   });
 
@@ -128,10 +135,12 @@ export function ExpenseProposalCard({
     <Card className='border-primary/30 bg-primary/[0.03]'>
       <CardHeader className='flex-row items-center gap-2 space-y-0 pb-2'>
         <Sparkles className='size-4 text-primary' />
-        <span className='text-sm font-medium'>Review expense</span>
+        <span className='text-sm font-medium'>{t('proposal.reviewExpense')}</span>
         {proposal.confidence != null ? (
           <span className='ml-auto text-xs text-muted-foreground'>
-            {Math.round(proposal.confidence * 100)}% confident
+            {t('proposal.confident', {
+              percent: Math.round(proposal.confidence * 100),
+            })}
           </span>
         ) : null}
       </CardHeader>
@@ -144,7 +153,9 @@ export function ExpenseProposalCard({
                 name='amount'
                 render={({ field, fieldState }) => (
                   <Field data-invalid={fieldState.invalid || undefined}>
-                    <FieldLabel htmlFor='ep-amount'>Amount</FieldLabel>
+                    <FieldLabel htmlFor='ep-amount'>
+                      {t('proposal.amount')}
+                    </FieldLabel>
                     <CurrencyAmountInput
                       id='ep-amount'
                       currency={currency as CurrencyCode}
@@ -166,7 +177,9 @@ export function ExpenseProposalCard({
                 name='currency'
                 render={({ field }) => (
                   <Field>
-                    <FieldLabel htmlFor='ep-currency'>Currency</FieldLabel>
+                    <FieldLabel htmlFor='ep-currency'>
+                      {t('proposal.currency')}
+                    </FieldLabel>
                     <CurrencySelect
                       id='ep-currency'
                       value={field.value as CurrencyCode}
@@ -182,7 +195,9 @@ export function ExpenseProposalCard({
               name='category_id'
               render={({ field, fieldState }) => (
                 <Field data-invalid={fieldState.invalid || undefined}>
-                  <FieldLabel htmlFor='ep-category'>Category</FieldLabel>
+                  <FieldLabel htmlFor='ep-category'>
+                    {t('proposal.category')}
+                  </FieldLabel>
                   <Select
                     value={field.value || undefined}
                     onValueChange={field.onChange}
@@ -196,8 +211,8 @@ export function ExpenseProposalCard({
                       <SelectValue
                         placeholder={
                           categoriesLoading
-                            ? 'Loading categories…'
-                            : 'Pick a category'
+                            ? t('proposal.loadingCategories')
+                            : t('proposal.pickCategory')
                         }
                       />
                     </SelectTrigger>
@@ -207,7 +222,7 @@ export function ExpenseProposalCard({
                         return (
                           <SelectGroup key={group.tier?.id ?? '__untiered__'}>
                             <SelectLabel>
-                              {group.tier?.name ?? 'Untiered'}
+                              {group.tier?.name ?? t('proposal.untiered')}
                             </SelectLabel>
                             {group.categories.map((category) => (
                               <SelectItem key={category.id} value={category.id}>
@@ -231,7 +246,7 @@ export function ExpenseProposalCard({
               name='occurred_at'
               render={({ field, fieldState }) => (
                 <Field data-invalid={fieldState.invalid || undefined}>
-                  <FieldLabel htmlFor='ep-date'>Date</FieldLabel>
+                  <FieldLabel htmlFor='ep-date'>{t('proposal.date')}</FieldLabel>
                   <Popover
                     open={datePickerOpen}
                     onOpenChange={setDatePickerOpen}
@@ -248,8 +263,8 @@ export function ExpenseProposalCard({
                       >
                         <CalendarIcon className='mr-2 size-4' />
                         {field.value
-                          ? format(field.value, 'd MMM yyyy')
-                          : 'Pick a date'}
+                          ? formatDate(field.value, 'd MMM yyyy')
+                          : t('proposal.pickDate')}
                       </Button>
                     </PopoverTrigger>
                     <PopoverContent className='w-auto p-0' align='start'>
@@ -279,11 +294,11 @@ export function ExpenseProposalCard({
               name='note'
               render={({ field }) => (
                 <Field>
-                  <FieldLabel htmlFor='ep-note'>Note (optional)</FieldLabel>
+                  <FieldLabel htmlFor='ep-note'>{t('proposal.note')}</FieldLabel>
                   <Textarea
                     id='ep-note'
                     rows={2}
-                    placeholder='What was this for?'
+                    placeholder={t('proposal.expenseNotePlaceholder')}
                     value={field.value ?? ''}
                     onChange={field.onChange}
                     onBlur={field.onBlur}
@@ -301,11 +316,13 @@ export function ExpenseProposalCard({
           onClick={onCancel}
           disabled={isSubmitting}
         >
-          Cancel
+          {t('common:actions.cancel')}
         </Button>
         <Button type='submit' form='expense-proposal' disabled={isSubmitting}>
           {isSubmitting && <Spinner data-icon='inline-start' />}
-          {isSubmitting ? 'Saving…' : 'Confirm expense'}
+          {isSubmitting
+            ? t('common:actions.saving')
+            : t('proposal.confirmExpense')}
         </Button>
       </CardFooter>
     </Card>

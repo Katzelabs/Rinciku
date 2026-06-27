@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Plus } from 'lucide-react';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import {
@@ -30,6 +31,7 @@ type DialogState =
   | null;
 
 export function EssentialsPage() {
+  const { t } = useTranslation('essentials');
   const { profile } = useAuth();
   const baseCurrency = (profile?.base_currency ?? 'IDR') as CurrencyCode;
   const [dialog, setDialog] = useState<DialogState>(null);
@@ -72,10 +74,10 @@ export function EssentialsPage() {
     const { error } = await deleteEssential(dialog.row.id);
     setDeleting(false);
     if (error) {
-      toast.error('Could not delete essential.');
+      toast.error(t('toast.deleteError'));
       return;
     }
-    toast.success('Essential deleted');
+    toast.success(t('toast.deleted'));
     setDialog(null);
     refetch();
   }
@@ -84,15 +86,12 @@ export function EssentialsPage() {
     <div className='space-y-6'>
       <div className='flex items-center justify-between gap-4'>
         <div>
-          <h1 className='text-2xl font-semibold'>Essentials</h1>
-          <p className='text-sm text-muted-foreground'>
-            Your monthly non-negotiables. The total powers the baseline the AI
-            consults against.
-          </p>
+          <h1 className='text-2xl font-semibold'>{t('page.title')}</h1>
+          <p className='text-sm text-muted-foreground'>{t('page.subtitle')}</p>
         </div>
         <Button onClick={() => setDialog({ kind: 'create' })}>
           <Plus className='size-4' />
-          Add essential
+          {t('page.addButton')}
         </Button>
       </div>
 
@@ -100,7 +99,7 @@ export function EssentialsPage() {
         <div className='p-4 sm:p-5'>
           {error ? (
             <div className='rounded-md border border-destructive/50 bg-destructive/5 p-4 text-sm text-destructive'>
-              Failed to load essentials: {error}
+              {t('page.loadError', { error })}
             </div>
           ) : (
             <EssentialTable
@@ -125,9 +124,9 @@ export function EssentialsPage() {
       >
         <DialogContent className='sm:max-w-lg'>
           <DialogHeader>
-            <DialogTitle>Add essential</DialogTitle>
+            <DialogTitle>{t('dialog.create.title')}</DialogTitle>
             <DialogDescription>
-              Add a new monthly line item to your baseline.
+              {t('dialog.create.description')}
             </DialogDescription>
           </DialogHeader>
           <EssentialForm
@@ -146,8 +145,8 @@ export function EssentialsPage() {
       >
         <DialogContent className='sm:max-w-lg'>
           <DialogHeader>
-            <DialogTitle>Edit essential</DialogTitle>
-            <DialogDescription>Update the details below.</DialogDescription>
+            <DialogTitle>{t('dialog.edit.title')}</DialogTitle>
+            <DialogDescription>{t('dialog.edit.description')}</DialogDescription>
           </DialogHeader>
           {dialog?.kind === 'edit' && (
             <EssentialForm
@@ -175,9 +174,9 @@ export function EssentialsPage() {
       >
         <DialogContent className='sm:max-w-md'>
           <DialogHeader>
-            <DialogTitle>Delete essential?</DialogTitle>
+            <DialogTitle>{t('dialog.delete.title')}</DialogTitle>
             <DialogDescription>
-              This permanently removes the essential from your baseline.
+              {t('dialog.delete.description')}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -186,7 +185,7 @@ export function EssentialsPage() {
               onClick={() => setDialog(null)}
               disabled={deleting}
             >
-              Cancel
+              {t('common:actions.cancel')}
             </Button>
             <Button
               variant='destructive'
@@ -194,7 +193,7 @@ export function EssentialsPage() {
               disabled={deleting}
             >
               {deleting && <Spinner data-icon='inline-start' />}
-              {deleting ? 'Deleting…' : 'Delete'}
+              {deleting ? t('dialog.delete.deleting') : t('common:actions.delete')}
             </Button>
           </DialogFooter>
         </DialogContent>

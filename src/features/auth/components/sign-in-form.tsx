@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 import { EyeIcon, EyeOffIcon, LockIcon, MailIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -17,7 +18,7 @@ import {
   InputGroupInput,
 } from '@/components/ui/input-group';
 import { Spinner } from '@/components/ui/spinner';
-import { signInSchema, type SignInInput } from '../schemas';
+import { makeSignInSchema, type SignInInput } from '../schemas';
 
 interface SignInFormProps {
   onSubmit: (
@@ -27,7 +28,9 @@ interface SignInFormProps {
 }
 
 export function SignInForm({ onSubmit }: SignInFormProps) {
+  const { t } = useTranslation('auth');
   const [showPassword, setShowPassword] = useState(false);
+  const schema = useMemo(() => makeSignInSchema(t), [t]);
 
   const {
     register,
@@ -36,7 +39,7 @@ export function SignInForm({ onSubmit }: SignInFormProps) {
     clearErrors,
     formState: { errors, isSubmitting },
   } = useForm<SignInInput>({
-    resolver: zodResolver(signInSchema),
+    resolver: zodResolver(schema),
     defaultValues: { email: '', password: '' },
   });
 
@@ -51,7 +54,7 @@ export function SignInForm({ onSubmit }: SignInFormProps) {
     <form onSubmit={submit} noValidate>
       <FieldGroup>
         <Field data-invalid={errors.email ? true : undefined}>
-          <FieldLabel htmlFor='sign-in-email'>Email</FieldLabel>
+          <FieldLabel htmlFor='sign-in-email'>{t('fields.email')}</FieldLabel>
           <InputGroup>
             <InputGroupAddon>
               <MailIcon />
@@ -61,7 +64,7 @@ export function SignInForm({ onSubmit }: SignInFormProps) {
               type='email'
               autoComplete='email'
               autoFocus
-              placeholder='you@example.com'
+              placeholder={t('fields.emailPlaceholder')}
               aria-invalid={errors.email ? true : undefined}
               {...register('email')}
             />
@@ -71,12 +74,14 @@ export function SignInForm({ onSubmit }: SignInFormProps) {
 
         <Field data-invalid={errors.password ? true : undefined}>
           <div className='flex items-center justify-between'>
-            <FieldLabel htmlFor='sign-in-password'>Password</FieldLabel>
+            <FieldLabel htmlFor='sign-in-password'>
+              {t('fields.password')}
+            </FieldLabel>
             <Link
               to='/forgot-password'
               className='text-xs font-medium text-muted-foreground underline-offset-4 hover:text-foreground hover:underline'
             >
-              Forgot password?
+              {t('signInForm.forgotPassword')}
             </Link>
           </div>
           <InputGroup>
@@ -87,14 +92,18 @@ export function SignInForm({ onSubmit }: SignInFormProps) {
               id='sign-in-password'
               type={showPassword ? 'text' : 'password'}
               autoComplete='current-password'
-              placeholder='Your password'
+              placeholder={t('signInForm.passwordPlaceholder')}
               aria-invalid={errors.password ? true : undefined}
               {...register('password')}
             />
             <InputGroupAddon align='inline-end'>
               <InputGroupButton
                 size='icon-xs'
-                aria-label={showPassword ? 'Hide password' : 'Show password'}
+                aria-label={
+                  showPassword
+                    ? t('fields.hidePassword')
+                    : t('fields.showPassword')
+                }
                 aria-pressed={showPassword}
                 onClick={() => setShowPassword((value) => !value)}
               >
@@ -111,7 +120,7 @@ export function SignInForm({ onSubmit }: SignInFormProps) {
 
         <Button type='submit' disabled={isSubmitting}>
           {isSubmitting && <Spinner data-icon='inline-start' />}
-          {isSubmitting ? 'Signing in…' : 'Sign in'}
+          {isSubmitting ? t('signInForm.submitting') : t('signInForm.submit')}
         </Button>
       </FieldGroup>
     </form>

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 import { MailCheckIcon, WalletIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -18,6 +19,7 @@ import { RESEND_COOLDOWN_SECONDS, useCooldown } from '../hooks/use-cooldown';
 import type { ForgotPasswordInput } from '../schemas';
 
 export function ForgotPasswordPage() {
+  const { t } = useTranslation('auth');
   const [sentTo, setSentTo] = useState<string | null>(null);
   const [resending, setResending] = useState(false);
   const [resentMessage, setResentMessage] = useState<string | null>(null);
@@ -37,7 +39,7 @@ export function ForgotPasswordPage() {
     setResentMessage(null);
     await requestPasswordReset(sentTo);
     setResending(false);
-    setResentMessage('Sent! Check your inbox again.');
+    setResentMessage(t('resend.sentInbox'));
     cooldown.start(RESEND_COOLDOWN_SECONDS);
   }
 
@@ -64,11 +66,11 @@ export function ForgotPasswordPage() {
                 <span className='flex size-10 items-center justify-center rounded-full bg-primary/10 text-primary'>
                   <MailCheckIcon className='size-5' />
                 </span>
-                <CardTitle>Check your email</CardTitle>
+                <CardTitle>{t('forgotPassword.checkEmail.title')}</CardTitle>
                 <CardDescription>
-                  If an account exists for{' '}
-                  <span className='font-medium text-foreground'>{sentTo}</span>,
-                  we sent a link to reset your password.
+                  {t('forgotPassword.checkEmail.descriptionBefore')}{' '}
+                  <span className='font-medium text-foreground'>{sentTo}</span>
+                  {t('forgotPassword.checkEmail.descriptionAfter')}
                 </CardDescription>
               </CardHeader>
               <CardContent className='flex flex-col items-center gap-2 text-center'>
@@ -80,10 +82,10 @@ export function ForgotPasswordPage() {
                 >
                   {resending && <Spinner data-icon='inline-start' />}
                   {resending
-                    ? 'Resending…'
+                    ? t('resend.resending')
                     : cooldown.active
-                      ? `Resend in ${cooldown.remaining}s`
-                      : 'Resend reset link'}
+                      ? t('resend.countdown', { seconds: cooldown.remaining })
+                      : t('resend.resetLink')}
                 </Button>
                 {resentMessage && (
                   <p role='status' className='text-xs text-muted-foreground'>
@@ -96,16 +98,16 @@ export function ForgotPasswordPage() {
                   to='/sign-in'
                   className='font-medium text-foreground underline-offset-4 hover:underline'
                 >
-                  Back to sign in
+                  {t('forgotPassword.backToSignIn')}
                 </Link>
               </CardFooter>
             </>
           ) : (
             <>
               <CardHeader>
-                <CardTitle>Forgot your password?</CardTitle>
+                <CardTitle>{t('forgotPassword.title')}</CardTitle>
                 <CardDescription>
-                  Enter your email and we&apos;ll send you a link to reset it.
+                  {t('forgotPassword.description')}
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -113,12 +115,12 @@ export function ForgotPasswordPage() {
               </CardContent>
               <CardFooter className='justify-center text-sm text-muted-foreground'>
                 <span>
-                  Remembered it?{' '}
+                  {t('forgotPassword.remembered')}{' '}
                   <Link
                     to='/sign-in'
                     className='font-medium text-foreground underline-offset-4 hover:underline'
                   >
-                    Sign in
+                    {t('forgotPassword.signInLink')}
                   </Link>
                 </span>
               </CardFooter>

@@ -1,0 +1,81 @@
+{
+  "page": {
+    "title": "Dasbor",
+    "subtitle": "Jelajahi pengeluaran di rentang waktu mana pun. Pemasukan tidak difilter per kategori."
+  },
+  "filters": {
+    "allCategories": "Semua kategori",
+    "searchCategories": "Cari kategori…",
+    "noCategories": "Tidak ada kategori."
+  },
+  "summary": {
+    "income": "Pemasukan",
+    "spent": "Pengeluaran",
+    "net": "Selisih",
+    "avgPerDay": "Rata-rata/hari",
+    "over_one": "selama {{count}} hari",
+    "over_other": "selama {{count}} hari"
+  },
+  "charts": {
+    "loadError": "Tidak dapat memuat analitik",
+    "emptyDefault": "Tidak ada pengeluaran di rentang ini.",
+    "trend": {
+      "title": "Tren pengeluaran",
+      "description": "Pengeluaran dan pemasukan selama rentang yang dipilih."
+    },
+    "breakdown": {
+      "title": "Ke mana perginya",
+      "description": "Pengeluaran per kategori dan tingkat."
+    },
+    "incomeVsExpense": {
+      "title": "Pemasukan vs pengeluaran",
+      "description": "Uang masuk vs keluar per periode."
+    },
+    "budgetVsActual": {
+      "title": "Anggaran vs aktual",
+      "description": "Target per kategori terhadap pengeluaran (target dijumlahkan sepanjang rentang).",
+      "empty": "Belum ada anggaran untuk rentang ini."
+    },
+    "series": {
+      "income": "Pemasukan",
+      "spent": "Pengeluaran",
+      "budget": "Anggaran",
+      "actual": "Aktual"
+    },
+    "breakdownTabs": {
+      "byCategory": "Per kategori",
+      "byTier": "Per tingkat"
+    }
+  },
+  "health": {
+    "status": {
+      "onTrack": "Sesuai rencana",
+      "watch": "Waspada",
+      "over": "Berlebih"
+    },
+    "pastIncome": "Anda {{amount}} melebihi pemasukan siklus ini.",
+    "wontCover": "Sisa {{remaining}} tidak akan menutupi {{uncovered}} kebutuhan pokok yang belum terbayar.",
+    "pace": "Dengan laju saat ini, Anda akan menghabiskan sekitar {{projected}} lagi — lebih dari {{remaining}} yang tersisa.",
+    "onTrackMessage_one": "Sisa {{remaining}} dengan {{count}} hari lagi. Pertahankan.",
+    "onTrackMessage_other": "Sisa {{remaining}} dengan {{count}} hari lagi. Pertahankan."
+  },
+  "targets": {
+    "title": "Target anggaran",
+    "subtitle": "Bagaimana pengeluaran Anda terhadap batas siklus ini.",
+    "empty": "Belum ada target untuk siklus ini.",
+    "overBudget": "lewat anggaran",
+    "nearLimit": "mendekati batas",
+    "tracked": "dipantau",
+    "setBudgets": "Atur anggaran",
+    "viewBudgets": "Lihat anggaran",
+    "loadError": "Gagal memuat anggaran."
+  },
+  "tier": {
+    "untiered": "Tanpa tingkat",
+    "ariaLabel": "Pengeluaran per tingkat",
+    "empty": "Belum ada pengeluaran di siklus ini."
+  },
+  "toast": {
+    "analyticsLoadError": "Gagal memuat analitik."
+  }
+}

@@ -1,0 +1,103 @@
+{
+  "brand": {
+    "name": "Rinciku",
+    "tagline": "Personal finance"
+  },
+  "nav": {
+    "groups": {
+      "overview": "Overview",
+      "money": "Money",
+      "manage": "Manage",
+      "assistant": "Assistant"
+    },
+    "items": {
+      "dashboard": "Dashboard",
+      "expenses": "Expenses",
+      "incomes": "Incomes",
+      "essentials": "Essentials",
+      "budgets": "Budgets",
+      "categories": "Categories",
+      "rates": "Currency rates",
+      "aiChat": "AI Chat"
+    }
+  },
+  "settings": {
+    "title": "Settings",
+    "subtitle": "Manage your profile, preferences, and account."
+  },
+  "appearance": {
+    "title": "Appearance",
+    "description": "Choose how Rinciku looks. Applies instantly.",
+    "theme": {
+      "label": "Theme",
+      "placeholder": "Select a theme",
+      "light": "Light",
+      "dark": "Dark",
+      "system": "System",
+      "toggle": "Toggle theme"
+    },
+    "language": {
+      "label": "Language",
+      "placeholder": "Select a language",
+      "saveError": "Could not change the language. Please try again."
+    }
+  },
+  "actions": {
+    "save": "Save changes",
+    "saving": "Saving…",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "delete": "Delete",
+    "close": "Close"
+  },
+  "fx": {
+    "refreshFailed": "Couldn't refresh FX rates",
+    "fallbackSnapshot": "Showing fallback snapshot from {{date}}."
+  },
+  "account": {
+    "openMenu": "Open account menu",
+    "settings": "Settings",
+    "signOut": "Sign out",
+    "signOutError": "Could not sign you out. Please try again."
+  },
+  "currency": {
+    "search": "Search currency…",
+    "empty": "No currency found."
+  },
+  "multiSelect": {
+    "all": "All",
+    "empty": "No options.",
+    "search": "Search…",
+    "selectedCount": "{{count}} selected",
+    "clear": "Clear"
+  },
+  "attachment": {
+    "dropzoneHint": "Drop a file or click to browse",
+    "invalidType": "File type is not allowed.",
+    "oversized": "File must be {{size}} MB or smaller.",
+    "remove": "Remove attachment",
+    "replaceOrRemove": "Replace or remove",
+    "previewAlt": "Attachment preview",
+    "previewUnavailable": "Preview unavailable",
+    "openFullSize": "Open full size",
+    "openDocument": "Open document",
+    "open": "Open",
+    "openError": "Could not open the attachment.",
+    "unknownType": "Unknown type"
+  },
+  "rowActions": {
+    "openAttachment": "Open attachment"
+  },
+  "table": {
+    "noResults": "No results.",
+    "rowsPerPage": "Rows per page",
+    "pageOf": "Page {{page}} of {{count}}",
+    "firstPage": "First page",
+    "previousPage": "Previous page",
+    "nextPage": "Next page",
+    "lastPage": "Last page"
+  },
+  "categoryTag": {
+    "uncategorized": "Uncategorized"
+  }
+}

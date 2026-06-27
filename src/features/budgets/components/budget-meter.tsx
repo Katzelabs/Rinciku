@@ -1,3 +1,5 @@
+import { useTranslation } from 'react-i18next';
+
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
@@ -23,17 +25,11 @@ const BADGE_CLASS: Record<BudgetStatus, string> = {
   none: '',
 };
 
-const BADGE_LABEL: Record<BudgetStatus, string> = {
-  ok: 'On track',
-  approaching: 'Near limit',
-  over: 'Over',
-  none: 'No target',
-};
-
 export function StatusBadge({ status }: { status: BudgetStatus }) {
+  const { t } = useTranslation('budgets');
   return (
     <Badge variant='outline' className={cn('text-xs', BADGE_CLASS[status])}>
-      {BADGE_LABEL[status]}
+      {t(`status.${status}`)}
     </Badge>
   );
 }
@@ -55,13 +51,16 @@ export function BudgetMeter({
   status,
   base,
 }: BudgetMeterProps) {
+  const { t } = useTranslation('budgets');
   const value = pct == null ? 0 : Math.min(100, Math.round(pct * 100));
   return (
     <div className='flex flex-col gap-1.5'>
       <div className='flex items-baseline justify-between text-sm'>
         <span className='font-medium'>{formatCurrency(spent, base)}</span>
         <span className='text-muted-foreground'>
-          {target == null ? 'no target' : `of ${formatCurrency(target, base)}`}
+          {target == null
+            ? t('meter.noTarget')
+            : t('meter.of', { amount: formatCurrency(target, base) })}
           {pct != null && (
             <span className='ml-1 tabular-nums'>
               ({Math.round(pct * 100)}%)

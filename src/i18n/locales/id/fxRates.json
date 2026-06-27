@@ -1,0 +1,48 @@
+{
+  "page": {
+    "title": "Kurs mata uang",
+    "description": "Kurs valuta asing langsung yang dipakai di seluruh aplikasi untuk mengonversi nominal ke mata uang dasar Anda ({{currency}})."
+  },
+  "status": {
+    "live": "Langsung",
+    "cached": "Tersimpan",
+    "stale": "Usang",
+    "fallback": "Cadangan",
+    "updated": "diperbarui {{time}}",
+    "snapshot": "cuplikan dari {{date}}"
+  },
+  "relative": {
+    "never": "belum pernah",
+    "recently": "baru-baru ini",
+    "justNow": "baru saja",
+    "minutes_one": "{{count}} mnt lalu",
+    "minutes_other": "{{count}} mnt lalu",
+    "hours_one": "{{count}} jam lalu",
+    "hours_other": "{{count}} jam lalu",
+    "days_one": "{{count}} hr lalu",
+    "days_other": "{{count}} hr lalu"
+  },
+  "refresh": {
+    "button": "Segarkan",
+    "refreshing": "Menyegarkan…"
+  },
+  "error": {
+    "unreachable": "Tidak dapat menjangkau sumber kurs langsung: {{error}}"
+  },
+  "converter": {
+    "title": "Konversi",
+    "from": "Dari",
+    "to": "Ke",
+    "swap": "Tukar mata uang",
+    "rateLine": "1 {{from}} = {{fromRate}} · 1 {{to}} = {{toRate}}"
+  },
+  "table": {
+    "title": "Semua kurs",
+    "currency": "Mata uang",
+    "perUnit": "1 unit dalam {{base}}",
+    "inverse": "1 {{base}} dalam mata uang",
+    "searchPlaceholder": "Cari mata uang…",
+    "searchLabel": "Cari mata uang",
+    "noMatch": "Tidak ada mata uang yang cocok dengan “{{query}}”."
+  }
+}

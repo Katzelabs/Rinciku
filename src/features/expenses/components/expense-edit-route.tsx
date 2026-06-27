@@ -4,6 +4,7 @@ import {
   useNavigate,
   useOutletContext,
 } from 'react-router';
+import { useTranslation } from 'react-i18next';
 
 import {
   Dialog,
@@ -20,6 +21,7 @@ import { ExpenseForm } from './expense-form';
 type OutletContext = { refetch: () => void };
 
 export function ExpenseEditRoute() {
+  const { t } = useTranslation('expenses');
   const navigate = useNavigate();
   const location = useLocation();
   const loaderRow = useLoaderData() as ExpenseWithRelations;
@@ -39,8 +41,8 @@ export function ExpenseEditRoute() {
     >
       <DialogContent className='sm:max-w-lg'>
         <DialogHeader>
-          <DialogTitle>Edit expense</DialogTitle>
-          <DialogDescription>Update the details below.</DialogDescription>
+          <DialogTitle>{t('edit.title')}</DialogTitle>
+          <DialogDescription>{t('edit.description')}</DialogDescription>
         </DialogHeader>
         <ExpenseForm
           mode='edit'

@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { format } from 'date-fns';
+import { useTranslation } from 'react-i18next';
 import { Pencil, Trash2 } from 'lucide-react';
 
 import { AttachmentPreview } from '@/components/shared/attachment-preview';
@@ -14,6 +14,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { formatCurrency } from '@/lib/format';
+import { formatDate } from '@/lib/locale';
 import type { CurrencyCode } from '@/lib/fx';
 
 import { getAttachmentSignedUrl, type ExpenseWithRelations } from '../api';
@@ -33,14 +34,13 @@ export function ExpenseDetailDialog({
   onEdit,
   onDelete,
 }: Props) {
+  const { t } = useTranslation('expenses');
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className='sm:max-w-md'>
         <DialogHeader>
-          <DialogTitle>Expense details</DialogTitle>
-          <DialogDescription>
-            Review this expense, then edit or delete it.
-          </DialogDescription>
+          <DialogTitle>{t('detail.title')}</DialogTitle>
+          <DialogDescription>{t('detail.description')}</DialogDescription>
         </DialogHeader>
 
         {row && (
@@ -48,7 +48,7 @@ export function ExpenseDetailDialog({
             <div className='flex items-end justify-between gap-3 rounded-lg border bg-muted/40 px-4 py-3'>
               <div className='space-y-0.5'>
                 <p className='text-xs font-medium uppercase tracking-wide text-muted-foreground'>
-                  Amount
+                  {t('detail.amount')}
                 </p>
                 <p className='text-2xl font-semibold tabular-nums'>
                   {formatCurrency(
@@ -58,28 +58,30 @@ export function ExpenseDetailDialog({
                 </p>
               </div>
               <p className='pb-1 text-sm text-muted-foreground'>
-                {format(new Date(row.occurred_at), 'd MMM yyyy')}
+                {formatDate(new Date(row.occurred_at), 'd MMM yyyy')}
               </p>
             </div>
 
             <dl className='space-y-3'>
-              <Row label='Category'>
+              <Row label={t('detail.category')}>
                 <CategoryTag category={row.category} />
               </Row>
-              <Row label='Note' align='start'>
+              <Row label={t('detail.note')} align='start'>
                 {row.note ? (
                   <span className='whitespace-pre-wrap break-words'>
                     {row.note}
                   </span>
                 ) : (
-                  <span className='text-muted-foreground italic'>No note</span>
+                  <span className='text-muted-foreground italic'>
+                    {t('detail.noNote')}
+                  </span>
                 )}
               </Row>
             </dl>
 
             <div className='space-y-2'>
               <p className='text-xs font-medium uppercase tracking-wide text-muted-foreground'>
-                Receipt
+                {t('detail.receipt')}
               </p>
               {row.attachment ? (
                 <AttachmentPreview
@@ -91,7 +93,7 @@ export function ExpenseDetailDialog({
                 />
               ) : (
                 <p className='text-sm text-muted-foreground italic'>
-                  No attachment
+                  {t('detail.noAttachment')}
                 </p>
               )}
             </div>
@@ -105,11 +107,11 @@ export function ExpenseDetailDialog({
             className='text-destructive hover:bg-destructive/10 hover:text-destructive'
           >
             <Trash2 className='size-4' />
-            Delete
+            {t('common:actions.delete')}
           </Button>
           <Button onClick={onEdit}>
             <Pencil className='size-4' />
-            Edit
+            {t('detail.edit')}
           </Button>
         </DialogFooter>
       </DialogContent>

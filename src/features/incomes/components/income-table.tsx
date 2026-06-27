@@ -1,4 +1,4 @@
-import { format } from 'date-fns';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import type {
   ColumnDef,
@@ -16,6 +16,7 @@ import { TableCell, TableRow } from '@/components/ui/table';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
 import { formatCurrency } from '@/lib/format';
+import { formatDate } from '@/lib/locale';
 import { convertToBase, type CurrencyCode } from '@/lib/fx';
 import { getIncomeAttachmentSignedUrl, type IncomeWithRelations } from '../api';
 
@@ -48,13 +49,14 @@ export function IncomeTable({
 }: Props) {
   // On narrow screens drop Category, Source, and Actions to fit Date · Note ·
   // Amount without horizontal scroll; row tap opens the detail view for edits.
+  const { t } = useTranslation('incomes');
   const isMobile = useIsMobile();
   const showSource = !isMobile && rows.some((row) => row.source !== 'manual');
 
   async function openAttachment(path: string) {
     const { data, error } = await getIncomeAttachmentSignedUrl(path);
     if (error || !data?.signedUrl) {
-      toast.error('Could not open the attachment.');
+      toast.error(t('table.openAttachmentError'));
       return;
     }
     window.open(data.signedUrl, '_blank', 'noopener,noreferrer');
@@ -63,7 +65,7 @@ export function IncomeTable({
   const sourceColumn: ColumnDef<IncomeWithRelations> = {
     id: 'source',
     enableSorting: false,
-    header: 'Source',
+    header: t('table.source'),
     cell: ({ row }) => (
       <Badge variant='secondary' className='capitalize'>
         {row.original.source}
@@ -76,11 +78,11 @@ export function IncomeTable({
     {
       accessorKey: 'occurred_at',
       header: ({ column }) => (
-        <DataTableColumnHeader column={column} title='Date' />
+        <DataTableColumnHeader column={column} title={t('table.date')} />
       ),
       cell: ({ row }) => (
         <span className='whitespace-nowrap text-muted-foreground'>
-          {format(new Date(row.original.occurred_at), 'd MMM yyyy')}
+          {formatDate(new Date(row.original.occurred_at), 'd MMM yyyy')}
         </span>
       ),
       meta: { headerClassName: 'w-[130px]' },
@@ -92,7 +94,7 @@ export function IncomeTable({
             id: 'category',
             accessorFn: (row) => row.category?.name ?? '',
             header: ({ column }) => (
-              <DataTableColumnHeader column={column} title='Category' />
+              <DataTableColumnHeader column={column} title={t('table.category')} />
             ),
             cell: ({ row }) => <CategoryTag category={row.original.category} />,
             sortingFn: 'text',
@@ -102,7 +104,7 @@ export function IncomeTable({
     {
       id: 'note',
       enableSorting: false,
-      header: 'Note',
+      header: t('table.note'),
       cell: ({ row }) => (
         <span
           className={cn(
@@ -127,7 +129,7 @@ export function IncomeTable({
       header: ({ column }) => (
         <DataTableColumnHeader
           column={column}
-          title='Amount'
+          title={t('table.amount')}
           className='w-full justify-end'
         />
       ),
@@ -148,12 +150,12 @@ export function IncomeTable({
           {
             id: 'actions',
             enableSorting: false,
-            header: 'Actions',
+            header: t('table.actions'),
             cell: ({ row }) => (
               <div onClick={(event) => event.stopPropagation()}>
                 <RowActions
-                  editLabel='Edit income'
-                  deleteLabel='Delete income'
+                  editLabel={t('table.editIncome')}
+                  deleteLabel={t('table.deleteIncome')}
                   onEdit={() => onEdit(row.original)}
                   onDelete={() => onDelete(row.original)}
                   onOpenAttachment={
@@ -179,7 +181,7 @@ export function IncomeTable({
         colSpan={isMobile ? 2 : showSource ? 4 : 3}
         className='text-right'
       >
-        Total ({baseCurrency})
+        {t('table.total', { currency: baseCurrency })}
       </TableCell>
       <TableCell className='text-right font-semibold whitespace-nowrap tabular-nums'>
         {formatCurrency(total, baseCurrency)}
@@ -194,7 +196,7 @@ export function IncomeTable({
       data={rows}
       isLoading={isLoading}
       onRowClick={onView}
-      emptyMessage='No incomes for this range.'
+      emptyMessage={t('table.empty')}
       footer={footer}
       pagination={pagination}
       pageCount={pageCount}

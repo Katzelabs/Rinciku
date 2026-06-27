@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { MoreHorizontal, Pencil, Plus, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -61,6 +62,7 @@ type FetchResponse = {
 };
 
 export function CategoriesPage() {
+  const { t } = useTranslation('categories');
   const [refetchToken, setRefetchToken] = useState(0);
   const [response, setResponse] = useState<FetchResponse | null>(null);
   const [dialog, setDialog] = useState<DialogState>(null);
@@ -100,10 +102,10 @@ export function CategoriesPage() {
       const { error } = await deleteCategory(dialog.row.id);
       setDeleting(false);
       if (error) {
-        toast.error('Could not delete category.');
+        toast.error(t('toast.deleteCategoryError'));
         return;
       }
-      toast.success('Category deleted');
+      toast.success(t('toast.categoryDeleted'));
       setDialog(null);
       refetch();
     } else if (dialog?.kind === 'delete-tier') {
@@ -111,10 +113,10 @@ export function CategoriesPage() {
       const { error } = await deleteTier(dialog.row.id);
       setDeleting(false);
       if (error) {
-        toast.error('Could not delete tier.');
+        toast.error(t('toast.deleteTierError'));
         return;
       }
-      toast.success('Tier deleted');
+      toast.success(t('toast.tierDeleted'));
       setDialog(null);
       refetch();
     }
@@ -130,24 +132,22 @@ export function CategoriesPage() {
   return (
     <div className='space-y-6'>
       <div>
-        <h1 className='text-2xl font-semibold'>Categories</h1>
-        <p className='text-sm text-muted-foreground'>
-          Organize the money you spend and the money you earn.
-        </p>
+        <h1 className='text-2xl font-semibold'>{t('page.title')}</h1>
+        <p className='text-sm text-muted-foreground'>{t('page.subtitle')}</p>
       </div>
 
       <Tabs defaultValue='spending' className='space-y-6'>
         <TabsList>
-          <TabsTrigger value='spending'>Spending</TabsTrigger>
-          <TabsTrigger value='income'>Income</TabsTrigger>
+          <TabsTrigger value='spending'>{t('tabs.spending')}</TabsTrigger>
+          <TabsTrigger value='income'>{t('tabs.income')}</TabsTrigger>
         </TabsList>
 
         <TabsContent value='spending' className='space-y-6'>
           <div className='flex items-start justify-between gap-4'>
             <div>
-              <h2 className='text-lg font-semibold'>Spending tiers</h2>
+              <h2 className='text-lg font-semibold'>{t('spending.title')}</h2>
               <p className='text-sm text-muted-foreground'>
-                Organize your spending into tiers you control.
+                {t('spending.subtitle')}
                 {!loading && (
                   <>
                     {' '}
@@ -155,7 +155,7 @@ export function CategoriesPage() {
                       {tiers.length} / {MAX_TIERS}
                     </span>
                     {tiers.length >= MAX_TIERS &&
-                      ` — you've reached the ${MAX_TIERS}-tier limit.`}
+                      t('spending.tierLimitReached', { max: MAX_TIERS })}
                   </>
                 )}
               </p>
@@ -166,7 +166,7 @@ export function CategoriesPage() {
               disabled={loading || tiers.length >= MAX_TIERS}
             >
               <Plus className='size-4' />
-              Add tier
+              {t('spending.addTier')}
             </Button>
           </div>
 
@@ -228,13 +228,13 @@ export function CategoriesPage() {
           <DialogHeader>
             <DialogTitle>
               {dialog?.kind === 'edit-category'
-                ? 'Edit category'
-                : 'Add category'}
+                ? t('dialog.category.editTitle')
+                : t('dialog.category.addTitle')}
             </DialogTitle>
             <DialogDescription>
               {dialog?.kind === 'edit-category'
-                ? 'Update the details of this category.'
-                : 'Create a new category and assign it to a tier.'}
+                ? t('dialog.category.editDescription')
+                : t('dialog.category.addDescription')}
             </DialogDescription>
           </DialogHeader>
           {dialog?.kind === 'create-category' && (
@@ -278,12 +278,14 @@ export function CategoriesPage() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
-              {dialog?.kind === 'edit-tier' ? 'Edit tier' : 'Add tier'}
+              {dialog?.kind === 'edit-tier'
+                ? t('dialog.tier.editTitle')
+                : t('dialog.tier.addTitle')}
             </DialogTitle>
             <DialogDescription>
               {dialog?.kind === 'edit-tier'
-                ? 'Rename, recolor, or change whether this tier counts as essential.'
-                : 'Create a new tier to group your categories.'}
+                ? t('dialog.tier.editDescription')
+                : t('dialog.tier.addDescription')}
             </DialogDescription>
           </DialogHeader>
           {dialog?.kind === 'create-tier' && (
@@ -325,22 +327,20 @@ export function CategoriesPage() {
           <DialogHeader>
             <DialogTitle>
               {dialog?.kind === 'delete-tier'
-                ? 'Delete tier?'
-                : 'Delete category?'}
+                ? t('dialog.delete.tierTitle')
+                : t('dialog.delete.categoryTitle')}
             </DialogTitle>
             <DialogDescription>
               {dialog?.kind === 'delete-category' && (
                 <>
-                  <span className='font-medium'>{dialog.row.name}</span> will be
-                  removed. Expenses tagged with it stay, but become
-                  uncategorized.
+                  <span className='font-medium'>{dialog.row.name}</span>{' '}
+                  {t('dialog.delete.categoryDescription')}
                 </>
               )}
               {dialog?.kind === 'delete-tier' && (
                 <>
-                  <span className='font-medium'>{dialog.row.name}</span> will be
-                  removed. Categories in this tier stay, but become untiered
-                  until you reassign them.
+                  <span className='font-medium'>{dialog.row.name}</span>{' '}
+                  {t('dialog.delete.tierDescription')}
                 </>
               )}
             </DialogDescription>
@@ -352,7 +352,7 @@ export function CategoriesPage() {
               onClick={() => setDialog(null)}
               disabled={deleting}
             >
-              Cancel
+              {t('common:actions.cancel')}
             </Button>
             <Button
               type='button'
@@ -361,7 +361,9 @@ export function CategoriesPage() {
               disabled={deleting}
             >
               {deleting && <Spinner data-icon='inline-start' />}
-              {deleting ? 'Deleting…' : 'Delete'}
+              {deleting
+                ? t('dialog.delete.deleting')
+                : t('common:actions.delete')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -387,6 +389,7 @@ function TierCard({
   onEditCategory,
   onDeleteCategory,
 }: TierCardProps) {
+  const { t } = useTranslation('categories');
   const { tier, categories } = group;
   const color = tier?.color ?? '#94a3b8';
   const atCategoryLimit = categories.length >= MAX_CATEGORIES_PER_TIER;
@@ -400,10 +403,10 @@ function TierCard({
             style={{ background: color }}
             aria-hidden
           />
-          {tier ? tier.name : 'Untiered'}
+          {tier ? tier.name : t('tier.untiered')}
           {tier?.is_essential && (
             <Badge variant='secondary' className='font-normal'>
-              Essential
+              {t('tier.essentialBadge')}
             </Badge>
           )}
           {tier && (
@@ -421,19 +424,21 @@ function TierCard({
               disabled={atCategoryLimit}
               title={
                 atCategoryLimit
-                  ? `Each tier can have at most ${MAX_CATEGORIES_PER_TIER} categories.`
+                  ? t('tier.categoryLimitTooltip', {
+                      max: MAX_CATEGORIES_PER_TIER,
+                    })
                   : undefined
               }
             >
               <Plus className='size-4' />
-              Add category
+              {t('tier.addCategory')}
             </Button>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
                   variant='ghost'
                   size='icon'
-                  aria-label={`Actions for ${tier.name} tier`}
+                  aria-label={t('tier.actionsLabel', { name: tier.name })}
                 >
                   <MoreHorizontal className='size-4' />
                 </Button>
@@ -441,14 +446,14 @@ function TierCard({
               <DropdownMenuContent align='end'>
                 <DropdownMenuItem onSelect={() => onEditTier(tier)}>
                   <Pencil className='size-4' />
-                  Edit tier
+                  {t('tier.edit')}
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onSelect={() => onDeleteTier(tier)}
                   variant='destructive'
                 >
                   <Trash2 className='size-4' />
-                  Delete tier
+                  {t('tier.delete')}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -469,7 +474,7 @@ function TierCard({
           </ul>
         ) : (
           <p className='py-6 text-center text-sm text-muted-foreground'>
-            No categories in this tier yet — add your first one.
+            {t('tier.empty')}
           </p>
         )}
       </CardContent>
@@ -484,6 +489,7 @@ type CategoryRowProps = {
 };
 
 function CategoryRow({ category, onEdit, onDelete }: CategoryRowProps) {
+  const { t } = useTranslation('categories');
   const color = category.color ?? '#94a3b8';
   return (
     <li className='flex items-center justify-between gap-3 py-2'>
@@ -510,7 +516,7 @@ function CategoryRow({ category, onEdit, onDelete }: CategoryRowProps) {
           <Button
             variant='ghost'
             size='icon'
-            aria-label={`Actions for ${category.name}`}
+            aria-label={t('category.actionsLabel', { name: category.name })}
           >
             <MoreHorizontal className='size-4' />
           </Button>
@@ -518,11 +524,11 @@ function CategoryRow({ category, onEdit, onDelete }: CategoryRowProps) {
         <DropdownMenuContent align='end'>
           <DropdownMenuItem onSelect={onEdit}>
             <Pencil className='size-4' />
-            Edit
+            {t('category.edit')}
           </DropdownMenuItem>
           <DropdownMenuItem onSelect={onDelete} variant='destructive'>
             <Trash2 className='size-4' />
-            Delete
+            {t('category.delete')}
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>

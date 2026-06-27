@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { CopyPlus, Pencil } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -31,6 +32,7 @@ type EditState =
   | null;
 
 export function BudgetsPage() {
+  const { t } = useTranslation('budgets');
   const { user, profile } = useAuth();
   const { data, isLoading, error, refetch } = useBudgets();
   const [edit, setEdit] = useState<EditState>(null);
@@ -49,14 +51,14 @@ export function BudgetsPage() {
       if (error) throw error;
       const total = (result?.budgets ?? 0) + (result?.tierBudgets ?? 0);
       if (total === 0) {
-        toast.info('No targets found in the previous period to copy.');
+        toast.info(t('toast.noTargetsToCopy'));
       } else {
-        toast.success(`Copied ${total} target${total === 1 ? '' : 's'}.`);
+        toast.success(t('toast.copied', { count: total }));
         refetch();
       }
     } catch (err) {
       console.error('Failed to copy from previous period', err);
-      toast.error('Could not copy last month. Please try again.');
+      toast.error(t('toast.copyFailed'));
     } finally {
       setCopying(false);
     }
@@ -64,7 +66,7 @@ export function BudgetsPage() {
 
   async function handleSaveTarget(amount: number, currency: CurrencyCode) {
     if (!user || !data) {
-      toast.error('You need to be signed in to set a target.');
+      toast.error(t('toast.signInRequired'));
       return;
     }
     try {
@@ -89,12 +91,12 @@ export function BudgetsPage() {
         });
         if (error) throw error;
       }
-      toast.success('Target saved');
+      toast.success(t('toast.saved'));
       setEdit(null);
       refetch();
     } catch (err) {
       console.error('Failed to save target', err);
-      toast.error('Could not save target. Please try again.');
+      toast.error(t('toast.saveFailed'));
     }
   }
 
@@ -114,12 +116,12 @@ export function BudgetsPage() {
           ? await deleteTierBudget(editingTargetId)
           : await deleteBudget(editingTargetId);
       if (error) throw error;
-      toast.success('Target removed');
+      toast.success(t('toast.removed'));
       setEdit(null);
       refetch();
     } catch (err) {
       console.error('Failed to remove target', err);
-      toast.error('Could not remove target. Please try again.');
+      toast.error(t('toast.removeFailed'));
     }
   }
 
@@ -127,14 +129,13 @@ export function BudgetsPage() {
     <div className='flex flex-col gap-4 md:gap-6'>
       <div className='flex flex-wrap items-center justify-between gap-3'>
         <div className='space-y-1'>
-          <h1 className='text-2xl font-semibold tracking-tight'>Budgets</h1>
-          <p className='text-sm text-muted-foreground'>
-            Set monthly spending targets per category and tier, and track them
-            against actual spend this cycle.
-          </p>
+          <h1 className='text-2xl font-semibold tracking-tight'>
+            {t('page.title')}
+          </h1>
+          <p className='text-sm text-muted-foreground'>{t('page.subtitle')}</p>
           {data && (
             <p className='text-xs text-muted-foreground'>
-              Cycle: {getCycleLabel(data.cycle)}
+              {t('page.cycle', { label: getCycleLabel(data.cycle) })}
             </p>
           )}
         </div>
@@ -144,7 +145,7 @@ export function BudgetsPage() {
           disabled={copying || isLoading || !data}
         >
           <CopyPlus />
-          {copying ? 'Copying…' : 'Copy last month'}
+          {copying ? t('page.copying') : t('page.copyLastMonth')}
         </Button>
       </div>
 
@@ -178,13 +179,18 @@ export function BudgetsPage() {
         onOpenChange={(open) => !open && setEdit(null)}
         title={
           edit?.kind === 'tier'
-            ? `${edit.section.tier?.name ?? 'Tier'} cap`
-            : `${edit?.kind === 'category' ? edit.row.category.name : 'Category'} target`
+            ? t('dialog.tierCap', {
+                name: edit.section.tier?.name ?? t('dialog.tierFallback'),
+              })
+            : t('dialog.categoryTarget', {
+                name:
+                  edit?.kind === 'category'
+                    ? edit.row.category.name
+                    : t('dialog.categoryFallback'),
+              })
         }
         description={
-          edit?.kind === 'tier'
-            ? 'An independent cap for the whole tier — not a sum of its categories.'
-            : undefined
+          edit?.kind === 'tier' ? t('dialog.tierDescription') : undefined
         }
         defaultAmount={
           edit?.kind === 'category'
@@ -220,6 +226,7 @@ function TierSection({
   onEditTier,
   onEditCategory,
 }: TierSectionProps) {
+  const { t } = useTranslation('budgets');
   const { tier } = section;
   return (
     <Card>
@@ -233,13 +240,13 @@ function TierSection({
                 aria-hidden
               />
             )}
-            {tier?.name ?? 'Untiered'}
+            {tier?.name ?? t('page.untiered')}
             <StatusBadge status={section.status} />
           </CardTitle>
           {tier && (
             <Button variant='outline' size='sm' onClick={onEditTier}>
               <Pencil />
-              {section.target == null ? 'Set cap' : 'Edit cap'}
+              {section.target == null ? t('page.setCap') : t('page.editCap')}
             </Button>
           )}
         </div>
@@ -258,7 +265,7 @@ function TierSection({
       <CardContent className='flex flex-col gap-4'>
         {section.categories.length === 0 ? (
           <p className='text-sm text-muted-foreground'>
-            No categories in this tier.
+            {t('page.noCategories')}
           </p>
         ) : (
           section.categories.map((row) => (
@@ -289,7 +296,7 @@ function TierSection({
                   onClick={() => onEditCategory(row)}
                 >
                   <Pencil />
-                  {row.target == null ? 'Set target' : 'Edit'}
+                  {row.target == null ? t('page.setTarget') : t('page.edit')}
                 </Button>
               </div>
               <BudgetMeter

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router';
 import { toast } from 'sonner';
 import {
@@ -26,6 +27,7 @@ import { deleteAccount } from '../api';
 const CONFIRM_PHRASE = 'DELETE';
 
 export function DangerZoneSection() {
+  const { t } = useTranslation('auth');
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [confirmText, setConfirmText] = useState('');
@@ -42,8 +44,8 @@ export function DangerZoneSection() {
     } catch (error) {
       console.error('Failed to delete account', error);
       const detail =
-        error instanceof Error ? error.message : 'Please try again.';
-      toast.error(`Could not delete your account. ${detail}`);
+        error instanceof Error ? error.message : t('dangerZone.tryAgain');
+      toast.error(t('dangerZone.deleteError', { detail }));
       setDeleting(false);
     }
   }
@@ -51,11 +53,10 @@ export function DangerZoneSection() {
   return (
     <Card className='border-destructive/40'>
       <CardHeader>
-        <CardTitle className='text-destructive'>Delete account</CardTitle>
-        <CardDescription>
-          Permanently delete your account and all of your data — expenses,
-          incomes, categories, budgets, and chats. This can't be undone.
-        </CardDescription>
+        <CardTitle className='text-destructive'>
+          {t('dangerZone.title')}
+        </CardTitle>
+        <CardDescription>{t('dangerZone.description')}</CardDescription>
       </CardHeader>
       <CardContent>
         <Dialog
@@ -67,23 +68,22 @@ export function DangerZoneSection() {
           }}
         >
           <DialogTrigger asChild>
-            <Button variant='destructive'>Delete account</Button>
+            <Button variant='destructive'>{t('dangerZone.button')}</Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Delete your account?</DialogTitle>
+              <DialogTitle>{t('dangerZone.dialogTitle')}</DialogTitle>
               <DialogDescription>
-                This permanently removes your account and every record tied to
-                it. To confirm, type{' '}
+                {t('dangerZone.dialogDescriptionBefore')}{' '}
                 <span className='font-medium text-foreground'>
                   {CONFIRM_PHRASE}
                 </span>{' '}
-                below.
+                {t('dangerZone.dialogDescriptionAfter')}
               </DialogDescription>
             </DialogHeader>
             <Field>
               <FieldLabel htmlFor='settings-delete-confirm'>
-                Confirmation
+                {t('dangerZone.confirmLabel')}
               </FieldLabel>
               <Input
                 id='settings-delete-confirm'
@@ -100,7 +100,7 @@ export function DangerZoneSection() {
                 onClick={() => setOpen(false)}
                 disabled={deleting}
               >
-                Cancel
+                {t('common:actions.cancel')}
               </Button>
               <Button
                 type='button'
@@ -109,7 +109,7 @@ export function DangerZoneSection() {
                 disabled={!canDelete || deleting}
               >
                 {deleting && <Spinner data-icon='inline-start' />}
-                {deleting ? 'Deleting…' : 'Delete account'}
+                {deleting ? t('dangerZone.deleting') : t('dangerZone.button')}
               </Button>
             </DialogFooter>
           </DialogContent>

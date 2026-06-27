@@ -1,6 +1,8 @@
+import { useMemo } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -16,7 +18,7 @@ import { Spinner } from '@/components/ui/spinner';
 import { useAuth } from '@/features/auth';
 
 import { createTier, updateTier } from '../api';
-import { tierSchema, type TierInput } from '../schemas';
+import { makeTierSchema, type TierInput } from '../schemas';
 import { PRESET_COLORS } from '../lib/colors';
 import { ColorPicker } from './color-picker';
 
@@ -35,6 +37,8 @@ export function TierForm({
   onSuccess,
 }: TierFormProps) {
   const { user } = useAuth();
+  const { t } = useTranslation('categories');
+  const schema = useMemo(() => makeTierSchema(t), [t]);
 
   const {
     register,
@@ -42,7 +46,7 @@ export function TierForm({
     handleSubmit,
     formState: { errors, isSubmitting },
   } = useForm<TierInput>({
-    resolver: zodResolver(tierSchema),
+    resolver: zodResolver(schema),
     defaultValues: {
       name: defaultValues?.name ?? '',
       color: defaultValues?.color ?? PRESET_COLORS[0],
@@ -52,18 +56,18 @@ export function TierForm({
 
   const submit = handleSubmit(async (values) => {
     if (!user) {
-      toast.error('You need to be signed in to manage tiers.');
+      toast.error(t('toast.signInRequiredTier'));
       return;
     }
     if (mode === 'edit' && !defaultValues?.id) {
-      toast.error('Missing tier id for edit.');
+      toast.error(t('toast.missingTierId'));
       return;
     }
     try {
       if (mode === 'edit') {
         const { error } = await updateTier(defaultValues!.id!, values);
         if (error) throw error;
-        toast.success('Tier updated');
+        toast.success(t('toast.tierUpdated'));
       } else {
         const { error } = await createTier({
           ...values,
@@ -71,7 +75,7 @@ export function TierForm({
           sort_order: nextSortOrder,
         });
         if (error) throw error;
-        toast.success('Tier added');
+        toast.success(t('toast.tierAdded'));
       }
       onSuccess();
     } catch (err) {
@@ -79,7 +83,7 @@ export function TierForm({
       const message =
         err && typeof err === 'object' && 'message' in err
           ? String((err as { message: unknown }).message)
-          : 'Could not save tier. Please try again.';
+          : t('toast.saveTierError');
       toast.error(message);
     }
   });
@@ -88,12 +92,12 @@ export function TierForm({
     <form onSubmit={submit} noValidate>
       <FieldGroup>
         <Field data-invalid={errors.name ? true : undefined}>
-          <FieldLabel htmlFor='tier-name'>Name</FieldLabel>
+          <FieldLabel htmlFor='tier-name'>{t('form.name')}</FieldLabel>
           <Input
             id='tier-name'
             type='text'
             autoFocus
-            placeholder='Fun money'
+            placeholder={t('form.tierNamePlaceholder')}
             aria-invalid={errors.name ? true : undefined}
             {...register('name')}
           />
@@ -105,7 +109,7 @@ export function TierForm({
           name='color'
           render={({ field, fieldState }) => (
             <Field data-invalid={fieldState.invalid || undefined}>
-              <FieldLabel htmlFor='tier-color'>Color</FieldLabel>
+              <FieldLabel htmlFor='tier-color'>{t('form.color')}</FieldLabel>
               <ColorPicker
                 id='tier-color'
                 value={field.value}
@@ -125,10 +129,11 @@ export function TierForm({
           render={({ field }) => (
             <Field orientation='horizontal'>
               <div className='flex flex-1 flex-col'>
-                <FieldLabel htmlFor='tier-essential'>Essential</FieldLabel>
+                <FieldLabel htmlFor='tier-essential'>
+                  {t('form.essential')}
+                </FieldLabel>
                 <FieldDescription>
-                  Spending in essential tiers counts toward your monthly
-                  baseline.
+                  {t('form.essentialDescription')}
                 </FieldDescription>
               </div>
               <Switch
@@ -144,11 +149,11 @@ export function TierForm({
           {isSubmitting && <Spinner data-icon='inline-start' />}
           {isSubmitting
             ? mode === 'create'
-              ? 'Saving…'
-              : 'Updating…'
+              ? t('buttons.saving')
+              : t('buttons.updating')
             : mode === 'create'
-              ? 'Add tier'
-              : 'Update tier'}
+              ? t('buttons.addTier')
+              : t('buttons.updateTier')}
         </Button>
       </FieldGroup>
     </form>

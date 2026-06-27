@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { format } from 'date-fns';
+import { useTranslation } from 'react-i18next';
 import { Pencil, Trash2 } from 'lucide-react';
 
 import { AttachmentPreview } from '@/components/shared/attachment-preview';
@@ -15,6 +15,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { formatCurrency } from '@/lib/format';
+import { formatDate } from '@/lib/locale';
 import type { CurrencyCode } from '@/lib/fx';
 
 import { getIncomeAttachmentSignedUrl, type IncomeWithRelations } from '../api';
@@ -34,14 +35,13 @@ export function IncomeDetailDialog({
   onEdit,
   onDelete,
 }: Props) {
+  const { t } = useTranslation('incomes');
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className='sm:max-w-md'>
         <DialogHeader>
-          <DialogTitle>Income details</DialogTitle>
-          <DialogDescription>
-            Review this income, then edit or delete it.
-          </DialogDescription>
+          <DialogTitle>{t('detail.title')}</DialogTitle>
+          <DialogDescription>{t('detail.description')}</DialogDescription>
         </DialogHeader>
 
         {row && (
@@ -49,7 +49,7 @@ export function IncomeDetailDialog({
             <div className='flex items-end justify-between gap-3 rounded-lg border bg-muted/40 px-4 py-3'>
               <div className='space-y-0.5'>
                 <p className='text-xs font-medium uppercase tracking-wide text-muted-foreground'>
-                  Amount
+                  {t('detail.amount')}
                 </p>
                 <p className='text-2xl font-semibold tabular-nums'>
                   {formatCurrency(
@@ -59,35 +59,37 @@ export function IncomeDetailDialog({
                 </p>
               </div>
               <p className='pb-1 text-sm text-muted-foreground'>
-                {format(new Date(row.occurred_at), 'd MMM yyyy')}
+                {formatDate(new Date(row.occurred_at), 'd MMM yyyy')}
               </p>
             </div>
 
             <dl className='space-y-3'>
-              <Row label='Source'>
+              <Row label={t('detail.source')}>
                 <CategoryTag category={row.category} />
               </Row>
               {row.source !== 'manual' && (
-                <Row label='Logged via'>
+                <Row label={t('detail.loggedVia')}>
                   <Badge variant='secondary' className='capitalize'>
                     {row.source}
                   </Badge>
                 </Row>
               )}
-              <Row label='Note' align='start'>
+              <Row label={t('detail.note')} align='start'>
                 {row.note ? (
                   <span className='whitespace-pre-wrap break-words'>
                     {row.note}
                   </span>
                 ) : (
-                  <span className='text-muted-foreground italic'>No note</span>
+                  <span className='text-muted-foreground italic'>
+                    {t('detail.noNote')}
+                  </span>
                 )}
               </Row>
             </dl>
 
             <div className='space-y-2'>
               <p className='text-xs font-medium uppercase tracking-wide text-muted-foreground'>
-                Proof
+                {t('detail.proof')}
               </p>
               {row.attachment ? (
                 <AttachmentPreview
@@ -99,7 +101,7 @@ export function IncomeDetailDialog({
                 />
               ) : (
                 <p className='text-sm text-muted-foreground italic'>
-                  No attachment
+                  {t('detail.noAttachment')}
                 </p>
               )}
             </div>
@@ -113,11 +115,11 @@ export function IncomeDetailDialog({
             className='text-destructive hover:bg-destructive/10 hover:text-destructive'
           >
             <Trash2 className='size-4' />
-            Delete
+            {t('common:actions.delete')}
           </Button>
           <Button onClick={onEdit}>
             <Pencil className='size-4' />
-            Edit
+            {t('actions.edit')}
           </Button>
         </DialogFooter>
       </DialogContent>

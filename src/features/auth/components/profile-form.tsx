@@ -1,4 +1,6 @@
+import { useMemo } from 'react';
 import { Controller, useForm, useWatch } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from '@/components/ui/button';
 import {
@@ -12,7 +14,7 @@ import { Input } from '@/components/ui/input';
 import { CurrencySelect } from '@/components/shared/currency-select';
 import { CurrencyAmountInput } from '@/components/shared/currency-amount-input';
 import { CURRENCY_CODES, type CurrencyCode } from '@/lib/fx';
-import { onboardingSchema, type OnboardingInput } from '../schemas';
+import { makeOnboardingSchema, type OnboardingInput } from '../schemas';
 import type { Profile } from '../types';
 
 interface ProfileFormProps {
@@ -31,15 +33,17 @@ function toCurrencyCode(value: string | null | undefined): CurrencyCode {
 export function ProfileForm({
   initialValues,
   onSubmit,
-  submitLabel = 'Save',
-  submittingLabel = 'Saving…',
+  submitLabel,
+  submittingLabel,
 }: ProfileFormProps) {
+  const { t } = useTranslation('auth');
+  const schema = useMemo(() => makeOnboardingSchema(t), [t]);
   const {
     control,
     handleSubmit,
     formState: { isSubmitting },
   } = useForm<OnboardingInput>({
-    resolver: zodResolver(onboardingSchema),
+    resolver: zodResolver(schema),
     defaultValues: {
       display_name: initialValues?.display_name ?? '',
       base_currency: toCurrencyCode(initialValues?.base_currency),
@@ -59,7 +63,7 @@ export function ProfileForm({
           render={({ field, fieldState }) => (
             <Field data-invalid={fieldState.invalid || undefined}>
               <FieldLabel htmlFor='profile-display-name'>
-                Display name
+                {t('profileFields.displayName')}
               </FieldLabel>
               <Input
                 {...field}
@@ -79,10 +83,10 @@ export function ProfileForm({
           render={({ field, fieldState }) => (
             <Field data-invalid={fieldState.invalid || undefined}>
               <FieldLabel htmlFor='profile-base-currency'>
-                Base currency
+                {t('profileFields.baseCurrency')}
               </FieldLabel>
               <FieldDescription>
-                Used to display dashboard totals.
+                {t('profileFields.baseCurrencyHint')}
               </FieldDescription>
               <CurrencySelect
                 id='profile-base-currency'
@@ -101,11 +105,10 @@ export function ProfileForm({
           render={({ field, fieldState }) => (
             <Field data-invalid={fieldState.invalid || undefined}>
               <FieldLabel htmlFor='profile-expected-income'>
-                Expected monthly income
+                {t('profileFields.expectedIncome')}
               </FieldLabel>
               <FieldDescription>
-                Your typical monthly income. If you have multiple streams, enter
-                your main one — log others on the Incomes page.
+                {t('profileFields.expectedIncomeHint')}
               </FieldDescription>
               <CurrencyAmountInput
                 id='profile-expected-income'
@@ -129,10 +132,10 @@ export function ProfileForm({
           render={({ field, fieldState }) => (
             <Field data-invalid={fieldState.invalid || undefined}>
               <FieldLabel htmlFor='profile-month-start-day'>
-                Budget cycle start day
+                {t('profileFields.cycleStartDay')}
               </FieldLabel>
               <FieldDescription>
-                Day of the month your budget resets (1–28).
+                {t('profileFields.cycleStartDayHint')}
               </FieldDescription>
               <Input
                 ref={field.ref}
@@ -158,7 +161,9 @@ export function ProfileForm({
           )}
         />
         <Button type='submit' disabled={isSubmitting}>
-          {isSubmitting ? submittingLabel : submitLabel}
+          {isSubmitting
+            ? (submittingLabel ?? t('profileForm.saving'))
+            : (submitLabel ?? t('profileForm.save'))}
         </Button>
       </FieldGroup>
     </form>

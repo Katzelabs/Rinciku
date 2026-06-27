@@ -1,4 +1,5 @@
 import type { ColumnDef } from '@tanstack/react-table';
+import { useTranslation } from 'react-i18next';
 import { CategoryTag } from '@/components/shared/category-tag';
 import {
   DataTable,
@@ -29,11 +30,12 @@ export function EssentialTable({
   bordered,
   isLoading,
 }: Props) {
+  const { t } = useTranslation('essentials');
   const columns: ColumnDef<EssentialWithCategory>[] = [
     {
       accessorKey: 'name',
       header: ({ column }) => (
-        <DataTableColumnHeader column={column} title='Name' />
+        <DataTableColumnHeader column={column} title={t('table.name')} />
       ),
       cell: ({ row }) => (
         <span className='font-medium'>{row.original.name}</span>
@@ -43,7 +45,7 @@ export function EssentialTable({
       id: 'category',
       accessorFn: (row) => row.category?.name ?? '',
       header: ({ column }) => (
-        <DataTableColumnHeader column={column} title='Category' />
+        <DataTableColumnHeader column={column} title={t('table.category')} />
       ),
       cell: ({ row }) => <CategoryTag category={row.original.category} />,
       sortingFn: 'text',
@@ -59,7 +61,7 @@ export function EssentialTable({
       header: ({ column }) => (
         <DataTableColumnHeader
           column={column}
-          title='Amount'
+          title={t('table.amount')}
           className='w-full justify-end'
         />
       ),
@@ -77,11 +79,11 @@ export function EssentialTable({
     {
       id: 'actions',
       enableSorting: false,
-      header: 'Actions',
+      header: t('table.actions'),
       cell: ({ row }) => (
         <RowActions
-          editLabel='Edit essential'
-          deleteLabel='Delete essential'
+          editLabel={t('table.editLabel')}
+          deleteLabel={t('table.deleteLabel')}
           onEdit={() => onEdit(row.original)}
           onDelete={() => onDelete(row.original)}
         />
@@ -95,9 +97,9 @@ export function EssentialTable({
 
   const emptyMessage = (
     <div className='space-y-1'>
-      <p>No essentials yet.</p>
+      <p>{t('table.empty')}</p>
       <Button type='button' variant='link' className='mt-1' onClick={onAdd}>
-        Add your first essential
+        {t('table.addFirst')}
       </Button>
     </div>
   );

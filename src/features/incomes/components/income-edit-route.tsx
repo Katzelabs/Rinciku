@@ -4,6 +4,7 @@ import {
   useNavigate,
   useOutletContext,
 } from 'react-router';
+import { useTranslation } from 'react-i18next';
 
 import {
   Dialog,
@@ -21,6 +22,7 @@ type OutletContext = { refetch: () => void };
 export function IncomeEditRoute() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { t } = useTranslation('incomes');
   const loaderRow = useLoaderData() as IncomeWithRelations;
   const { refetch } = useOutletContext<OutletContext>();
 
@@ -38,8 +40,8 @@ export function IncomeEditRoute() {
     >
       <DialogContent className='sm:max-w-lg'>
         <DialogHeader>
-          <DialogTitle>Edit income</DialogTitle>
-          <DialogDescription>Update the details below.</DialogDescription>
+          <DialogTitle>{t('detail.editTitle')}</DialogTitle>
+          <DialogDescription>{t('detail.editDescription')}</DialogDescription>
         </DialogHeader>
         <IncomeForm
           mode='edit'

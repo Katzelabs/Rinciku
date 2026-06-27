@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { isAuthApiError } from '@supabase/supabase-js';
 import { WalletIcon } from 'lucide-react';
 import { Link, useNavigate, useSearchParams } from 'react-router';
@@ -27,6 +28,7 @@ function safeInternalPath(value: string | null): string | null {
 }
 
 export function SignInPage() {
+  const { t } = useTranslation('auth');
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const target = safeInternalPath(searchParams.get('redirectTo')) ?? '/';
@@ -51,12 +53,12 @@ export function SignInPage() {
         isAuthApiError(error) &&
           (error.code === 'over_email_send_rate_limit' ||
             error.code === 'over_request_rate_limit')
-          ? 'Please wait a moment before requesting another email.'
-          : 'Could not resend the email. Please try again.'
+          ? t('resend.rateLimited')
+          : t('resend.error')
       );
       return;
     }
-    setResendMessage('Confirmation email sent. Check your inbox.');
+    setResendMessage(t('resend.confirmationSent'));
     cooldown.start(RESEND_COOLDOWN_SECONDS);
   }
 
@@ -78,10 +80,8 @@ export function SignInPage() {
 
         <Card className='w-full max-w-sm'>
           <CardHeader>
-            <CardTitle>Welcome back</CardTitle>
-            <CardDescription>
-              Sign in with your email and password to continue.
-            </CardDescription>
+            <CardTitle>{t('signIn.title')}</CardTitle>
+            <CardDescription>{t('signIn.description')}</CardDescription>
           </CardHeader>
           <CardContent>
             {justReset && (
@@ -89,14 +89,13 @@ export function SignInPage() {
                 role='status'
                 className='mb-4 rounded-md border border-primary/30 bg-primary/10 px-3 py-2 text-sm text-foreground'
               >
-                Password updated. Sign in with your new password.
+                {t('signIn.resetSuccess')}
               </div>
             )}
             {unverifiedEmail && (
               <div className='mb-4 flex flex-col gap-2 rounded-md border border-border bg-muted/40 px-3 py-3 text-sm'>
                 <p className='text-muted-foreground'>
-                  Your email isn&apos;t confirmed yet. Check your inbox, or
-                  resend the confirmation link.
+                  {t('signIn.unverifiedMessage')}
                 </p>
                 <Button
                   type='button'
@@ -108,10 +107,10 @@ export function SignInPage() {
                 >
                   {resending && <Spinner data-icon='inline-start' />}
                   {resending
-                    ? 'Resending…'
+                    ? t('resend.resending')
                     : cooldown.active
-                      ? `Resend in ${cooldown.remaining}s`
-                      : 'Resend confirmation email'}
+                      ? t('resend.countdown', { seconds: cooldown.remaining })
+                      : t('resend.confirmation')}
                 </Button>
                 {resendMessage && (
                   <p role='status' className='text-xs text-muted-foreground'>
@@ -131,17 +130,15 @@ export function SignInPage() {
                   ) {
                     setUnverifiedEmail(values.email);
                     setResendMessage(null);
-                    setRootError(
-                      'Please confirm your email before signing in.'
-                    );
+                    setRootError(t('signIn.errors.emailNotConfirmed'));
                   } else if (
                     isAuthApiError(error) &&
                     (error.code === 'invalid_credentials' ||
                       error.message === 'Invalid login credentials')
                   ) {
-                    setRootError('Email or password is incorrect');
+                    setRootError(t('signIn.errors.invalidCredentials'));
                   } else {
-                    setRootError('Something went wrong. Please try again.');
+                    setRootError(t('signIn.errors.generic'));
                   }
                   return;
                 }
@@ -152,12 +149,12 @@ export function SignInPage() {
           </CardContent>
           <CardFooter className='justify-center text-sm text-muted-foreground'>
             <span>
-              Don&apos;t have an account?{' '}
+              {t('signIn.noAccount')}{' '}
               <Link
                 to='/sign-up'
                 className='font-medium text-foreground underline-offset-4 hover:underline'
               >
-                Sign up
+                {t('signIn.signUpLink')}
               </Link>
             </span>
           </CardFooter>

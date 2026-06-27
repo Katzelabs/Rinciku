@@ -1,0 +1,82 @@
+{
+  "page": {
+    "title": "Essentials",
+    "subtitle": "Your monthly non-negotiables. The total powers the baseline the AI consults against.",
+    "addButton": "Add essential",
+    "loadError": "Failed to load essentials: {{error}}"
+  },
+  "dialog": {
+    "create": {
+      "title": "Add essential",
+      "description": "Add a new monthly line item to your baseline."
+    },
+    "edit": {
+      "title": "Edit essential",
+      "description": "Update the details below."
+    },
+    "delete": {
+      "title": "Delete essential?",
+      "description": "This permanently removes the essential from your baseline.",
+      "deleting": "Deleting…"
+    }
+  },
+  "form": {
+    "name": {
+      "label": "Name",
+      "placeholder": "Rent, internet, …"
+    },
+    "amount": {
+      "label": "Estimated amount"
+    },
+    "category": {
+      "label": "Category",
+      "placeholder": "Pick a category",
+      "loading": "Loading categories…",
+      "error": "Failed to load categories",
+      "untiered": "Untiered"
+    },
+    "notes": {
+      "label": "Notes (optional)",
+      "placeholder": "Anything to remember about this line item?"
+    },
+    "submit": {
+      "add": "Add essential",
+      "update": "Update essential",
+      "adding": "Saving…",
+      "updating": "Updating…"
+    }
+  },
+  "table": {
+    "name": "Name",
+    "category": "Category",
+    "amount": "Amount",
+    "actions": "Actions",
+    "editLabel": "Edit essential",
+    "deleteLabel": "Delete essential",
+    "empty": "No essentials yet.",
+    "addFirst": "Add your first essential"
+  },
+  "summary": {
+    "label": "Monthly baseline",
+    "labelInline": "Monthly baseline: ",
+    "error": "Could not load baseline."
+  },
+  "toast": {
+    "added": "Essential added",
+    "updated": "Essential updated",
+    "deleted": "Essential deleted",
+    "deleteError": "Could not delete essential.",
+    "saveError": "Could not save essential. Please try again.",
+    "signInRequired": "You need to be signed in to save an essential.",
+    "missingId": "Missing essential id for edit."
+  },
+  "errors": {
+    "nameRequired": "Name is required",
+    "nameMax": "Name must be 80 characters or fewer",
+    "amountRequired": "Enter an estimated amount",
+    "amountPositive": "Amount must be greater than 0",
+    "currencyRequired": "Pick a currency",
+    "categoryRequired": "Pick a category",
+    "notesMax": "Notes must be 280 characters or fewer"
+  }
+}

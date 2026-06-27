@@ -1,0 +1,54 @@
+{
+  "page": {
+    "title": "Anggaran",
+    "subtitle": "Tetapkan target pengeluaran bulanan per kategori dan tingkat, lalu pantau terhadap pengeluaran sebenarnya pada siklus ini.",
+    "cycle": "Siklus: {{label}}",
+    "copyLastMonth": "Salin bulan lalu",
+    "copying": "Menyalin…",
+    "untiered": "Tanpa tingkat",
+    "noCategories": "Tidak ada kategori di tingkat ini.",
+    "setCap": "Atur batas",
+    "editCap": "Ubah batas",
+    "setTarget": "Atur target",
+    "edit": "Ubah",
+    "loadError": "Gagal memuat anggaran."
+  },
+  "status": {
+    "ok": "Sesuai rencana",
+    "approaching": "Mendekati batas",
+    "over": "Melebihi",
+    "none": "Tanpa target"
+  },
+  "meter": {
+    "noTarget": "tanpa target",
+    "of": "dari {{amount}}"
+  },
+  "dialog": {
+    "tierCap": "Batas {{name}}",
+    "tierFallback": "Tingkat",
+    "categoryTarget": "Target {{name}}",
+    "categoryFallback": "Kategori",
+    "tierDescription": "Batas tersendiri untuk seluruh tingkat — bukan jumlah dari kategori-kategorinya.",
+    "monthlyTarget": "Target bulanan",
+    "removeTarget": "Hapus target",
+    "removing": "Menghapus…",
+    "saveTarget": "Simpan target",
+    "saving": "Menyimpan…"
+  },
+  "toast": {
+    "noTargetsToCopy": "Tidak ada target pada periode sebelumnya untuk disalin.",
+    "copied_one": "{{count}} target disalin.",
+    "copied_other": "{{count}} target disalin.",
+    "copyFailed": "Tidak dapat menyalin bulan lalu. Silakan coba lagi.",
+    "signInRequired": "Anda harus masuk untuk menetapkan target.",
+    "saved": "Target disimpan",
+    "saveFailed": "Tidak dapat menyimpan target. Silakan coba lagi.",
+    "removed": "Target dihapus",
+    "removeFailed": "Tidak dapat menghapus target. Silakan coba lagi."
+  },
+  "errors": {
+    "amountRequired": "Masukkan jumlah",
+    "amountNegative": "Jumlah tidak boleh negatif",
+    "currencyRequired": "Pilih mata uang"
+  }
+}

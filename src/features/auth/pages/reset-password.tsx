@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router';
 import type { EmailOtpType } from '@supabase/supabase-js';
 import { TriangleAlertIcon, WalletIcon } from 'lucide-react';
@@ -19,6 +20,7 @@ import type { ResetPasswordInput } from '../schemas';
 type Status = 'checking' | 'ready' | 'invalid';
 
 export function ResetPasswordPage() {
+  const { t } = useTranslation('auth');
   const navigate = useNavigate();
   const [status, setStatus] = useState<Status>('checking');
 
@@ -61,7 +63,7 @@ export function ResetPasswordPage() {
   ) {
     const { error } = await updatePassword(password);
     if (error) {
-      setRootError('Could not update your password. Please try again.');
+      setRootError(t('resetPassword.error'));
       return;
     }
     // Force a fresh sign-in with the new password.
@@ -92,9 +94,9 @@ export function ResetPasswordPage() {
         {status === 'ready' ? (
           <>
             <CardHeader>
-              <CardTitle>Set a new password</CardTitle>
+              <CardTitle>{t('resetPassword.title')}</CardTitle>
               <CardDescription>
-                Choose a new password for your account.
+                {t('resetPassword.description')}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -107,10 +109,9 @@ export function ResetPasswordPage() {
               <span className='flex size-10 items-center justify-center rounded-full bg-destructive/10 text-destructive'>
                 <TriangleAlertIcon className='size-5' />
               </span>
-              <CardTitle>Link expired or invalid</CardTitle>
+              <CardTitle>{t('resetPassword.invalid.title')}</CardTitle>
               <CardDescription>
-                This password reset link is no longer valid. Request a new one
-                to try again.
+                {t('resetPassword.invalid.description')}
               </CardDescription>
             </CardHeader>
             <CardFooter className='justify-center text-sm text-muted-foreground'>
@@ -118,7 +119,7 @@ export function ResetPasswordPage() {
                 to='/forgot-password'
                 className='font-medium text-foreground underline-offset-4 hover:underline'
               >
-                Request a new link
+                {t('resetPassword.invalid.requestNew')}
               </Link>
             </CardFooter>
           </>

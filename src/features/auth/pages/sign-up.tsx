@@ -1,6 +1,8 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 import { isAuthApiError, type AuthError } from '@supabase/supabase-js';
+import type { TFunction } from 'i18next';
 import { MailCheckIcon, WalletIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -21,7 +23,7 @@ import type { SignUpInput } from '../schemas';
 // Map Supabase auth errors to user-facing copy that doesn't leak account
 // existence and steers users to the next step. Prefer error.code over message
 // strings — messages change with locale/version.
-function mapSignUpError(error: AuthError): string {
+function mapSignUpError(error: AuthError, t: TFunction): string {
   if (isAuthApiError(error)) {
     const code = error.code;
     if (
@@ -29,24 +31,25 @@ function mapSignUpError(error: AuthError): string {
       code === 'email_exists' ||
       error.message === 'User already registered'
     ) {
-      return 'If an account already exists for this email, check your inbox for a confirmation link, or try signing in.';
+      return t('signUp.errors.exists');
     }
     if (code === 'weak_password') {
-      return "That password doesn't meet the requirements above.";
+      return t('signUp.errors.weakPassword');
     }
     if (
       code === 'over_email_send_rate_limit' ||
       code === 'over_request_rate_limit'
     ) {
-      return 'Too many attempts. Please wait a few minutes and try again.';
+      return t('signUp.errors.rateLimit');
     }
   }
-  return 'Something went wrong. Please try again.';
+  return t('signUp.errors.generic');
 }
 
 type ResendState = 'idle' | 'sending' | 'sent' | 'error';
 
 export function SignUpPage() {
+  const { t } = useTranslation('auth');
   const [pendingEmail, setPendingEmail] = useState<string | null>(null);
   const [resend, setResend] = useState<ResendState>('idle');
   const [resendMessage, setResendMessage] = useState<string | null>(null);
@@ -63,13 +66,13 @@ export function SignUpPage() {
         isAuthApiError(error) &&
           (error.code === 'over_email_send_rate_limit' ||
             error.code === 'over_request_rate_limit')
-          ? 'Please wait a moment before requesting another email.'
-          : 'Could not resend the email. Please try again.'
+          ? t('resend.rateLimited')
+          : t('resend.error')
       );
       return;
     }
     setResend('sent');
-    setResendMessage('Sent! Check your inbox again.');
+    setResendMessage(t('resend.sentInbox'));
     cooldown.start(RESEND_COOLDOWN_SECONDS);
   }
 
@@ -80,7 +83,7 @@ export function SignUpPage() {
     const { data, error } = await signUpWithPassword({ email, password });
 
     if (error) {
-      setRootError(mapSignUpError(error));
+      setRootError(mapSignUpError(error, t));
       return;
     }
 
@@ -119,13 +122,13 @@ export function SignUpPage() {
                 <span className='flex size-10 items-center justify-center rounded-full bg-primary/10 text-primary'>
                   <MailCheckIcon className='size-5' />
                 </span>
-                <CardTitle>Check your email</CardTitle>
+                <CardTitle>{t('signUp.checkEmail.title')}</CardTitle>
                 <CardDescription>
-                  We sent a confirmation link to{' '}
+                  {t('signUp.checkEmail.descriptionBefore')}{' '}
                   <span className='font-medium text-foreground'>
                     {pendingEmail}
                   </span>
-                  . Click the link to activate your account.
+                  {t('signUp.checkEmail.descriptionAfter')}
                 </CardDescription>
               </CardHeader>
               <CardContent className='flex flex-col items-center gap-2 text-center'>
@@ -137,10 +140,10 @@ export function SignUpPage() {
                 >
                   {resend === 'sending' && <Spinner data-icon='inline-start' />}
                   {resend === 'sending'
-                    ? 'Resending…'
+                    ? t('resend.resending')
                     : cooldown.active
-                      ? `Resend in ${cooldown.remaining}s`
-                      : 'Resend confirmation email'}
+                      ? t('resend.countdown', { seconds: cooldown.remaining })
+                      : t('resend.confirmation')}
                 </Button>
                 {resendMessage && (
                   <p
@@ -160,29 +163,27 @@ export function SignUpPage() {
                   to='/sign-in'
                   className='font-medium text-foreground underline-offset-4 hover:underline'
                 >
-                  Back to sign in
+                  {t('signUp.backToSignIn')}
                 </Link>
               </CardFooter>
             </>
           ) : (
             <>
               <CardHeader>
-                <CardTitle>Create your account</CardTitle>
-                <CardDescription>
-                  Sign up with your email and a password to get started.
-                </CardDescription>
+                <CardTitle>{t('signUp.title')}</CardTitle>
+                <CardDescription>{t('signUp.description')}</CardDescription>
               </CardHeader>
               <CardContent>
                 <SignUpForm onSubmit={handleSignUp} />
               </CardContent>
               <CardFooter className='justify-center text-sm text-muted-foreground'>
                 <span>
-                  Already have an account?{' '}
+                  {t('signUp.haveAccount')}{' '}
                   <Link
                     to='/sign-in'
                     className='font-medium text-foreground underline-offset-4 hover:underline'
                   >
-                    Sign in
+                    {t('signUp.signInLink')}
                   </Link>
                 </span>
               </CardFooter>
@@ -192,19 +193,19 @@ export function SignUpPage() {
 
         {!pendingEmail && (
           <p className='max-w-sm text-balance text-center text-xs text-muted-foreground'>
-            By creating an account, you agree to our{' '}
+            {t('signUp.terms.prefix')}{' '}
             <a
               href='#'
               className='underline underline-offset-2 hover:text-foreground'
             >
-              Terms of Service
+              {t('signUp.terms.tos')}
             </a>{' '}
-            and{' '}
+            {t('signUp.terms.and')}{' '}
             <a
               href='#'
               className='underline underline-offset-2 hover:text-foreground'
             >
-              Privacy Policy
+              {t('signUp.terms.privacy')}
             </a>
             .
           </p>

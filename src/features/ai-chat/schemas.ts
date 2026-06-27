@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import type { TFunction } from 'i18next';
 
 import { CURRENCY_CODES } from '@/lib/fx';
 
@@ -33,43 +34,53 @@ function endOfToday() {
   return d;
 }
 
-const noteField = z
-  .string()
-  .trim()
-  .max(280, 'Note must be 280 characters or fewer')
-  .optional()
-  .or(z.literal(''));
+function makeNoteField(t: TFunction) {
+  return z
+    .string()
+    .trim()
+    .max(280, t('errors.noteTooLong'))
+    .optional()
+    .or(z.literal(''));
+}
 
 // Editable confirm forms for the inline proposal cards. Unlike the manual
 // expense/income forms, currency stays editable here since the AI may extract a
 // non-base currency from an image or message.
-export const expenseConfirmSchema = z.object({
-  amount: z
-    .number({ message: 'Enter an amount' })
-    .positive('Amount must be greater than 0'),
-  currency: z.enum(CURRENCY_CODES, { message: 'Pick a currency' }),
-  category_id: z.string().uuid('Pick a category'),
-  occurred_at: z
-    .date({ message: 'Pick a date' })
-    .max(endOfToday(), 'Date cannot be in the future'),
-  note: noteField,
-});
+export function makeExpenseConfirmSchema(t: TFunction) {
+  return z.object({
+    amount: z
+      .number({ message: t('errors.amountRequired') })
+      .positive(t('errors.amountPositive')),
+    currency: z.enum(CURRENCY_CODES, { message: t('errors.currencyRequired') }),
+    category_id: z.string().uuid(t('errors.categoryRequired')),
+    occurred_at: z
+      .date({ message: t('errors.dateRequired') })
+      .max(endOfToday(), t('errors.dateFuture')),
+    note: makeNoteField(t),
+  });
+}
 
-export type ExpenseConfirmInput = z.infer<typeof expenseConfirmSchema>;
+export type ExpenseConfirmInput = z.infer<
+  ReturnType<typeof makeExpenseConfirmSchema>
+>;
 
-export const incomeConfirmSchema = z.object({
-  amount: z
-    .number({ message: 'Enter an amount' })
-    .positive('Amount must be greater than 0'),
-  currency: z.enum(CURRENCY_CODES, { message: 'Pick a currency' }),
-  source_id: z.string().uuid().or(z.literal('')).optional(),
-  occurred_at: z
-    .date({ message: 'Pick a date' })
-    .max(endOfToday(), 'Date cannot be in the future'),
-  note: noteField,
-});
+export function makeIncomeConfirmSchema(t: TFunction) {
+  return z.object({
+    amount: z
+      .number({ message: t('errors.amountRequired') })
+      .positive(t('errors.amountPositive')),
+    currency: z.enum(CURRENCY_CODES, { message: t('errors.currencyRequired') }),
+    source_id: z.string().uuid().or(z.literal('')).optional(),
+    occurred_at: z
+      .date({ message: t('errors.dateRequired') })
+      .max(endOfToday(), t('errors.dateFuture')),
+    note: makeNoteField(t),
+  });
+}
 
-export type IncomeConfirmInput = z.infer<typeof incomeConfirmSchema>;
+export type IncomeConfirmInput = z.infer<
+  ReturnType<typeof makeIncomeConfirmSchema>
+>;
 
 // Validates the raw `input` of a propose_change tool call (the generic CRUD
 // proposal for categories, essentials, budgets, tiers, income sources, and

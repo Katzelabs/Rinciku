@@ -1,5 +1,6 @@
 import { Check, Monitor, Moon, Sun } from 'lucide-react';
 import { useTheme } from 'next-themes';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -9,12 +10,13 @@ import {
 } from '@/components/ui/dropdown-menu';
 
 const options = [
-  { value: 'light', label: 'Light', icon: Sun },
-  { value: 'dark', label: 'Dark', icon: Moon },
-  { value: 'system', label: 'System', icon: Monitor },
+  { value: 'light', labelKey: 'appearance.theme.light', icon: Sun },
+  { value: 'dark', labelKey: 'appearance.theme.dark', icon: Moon },
+  { value: 'system', labelKey: 'appearance.theme.system', icon: Monitor },
 ] as const;
 
 export function ThemeToggle() {
+  const { t } = useTranslation('common');
   const { theme, setTheme } = useTheme();
 
   return (
@@ -24,7 +26,7 @@ export function ThemeToggle() {
           variant='ghost'
           size='icon'
           className='rounded-full'
-          aria-label='Toggle theme'
+          aria-label={t('appearance.theme.toggle')}
         >
           <Sun className='size-[1.15rem] scale-100 rotate-0 transition-all dark:scale-0 dark:-rotate-90' />
           <Moon className='absolute size-[1.15rem] scale-0 rotate-90 transition-all dark:scale-100 dark:rotate-0' />
@@ -37,7 +39,7 @@ export function ThemeToggle() {
             onSelect={() => setTheme(option.value)}
           >
             <option.icon />
-            <span>{option.label}</span>
+            <span>{t(option.labelKey)}</span>
             {theme === option.value ? (
               <Check className='ml-auto size-4' />
             ) : null}

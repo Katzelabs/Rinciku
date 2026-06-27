@@ -6,6 +6,7 @@ import {
   MultiSelect,
   type MultiSelectOption,
 } from '@/components/shared/multi-select';
+import { useTranslation } from 'react-i18next';
 import { Input } from '@/components/ui/input';
 import { useIncomeCategories } from '../hooks/use-income-categories';
 
@@ -26,6 +27,7 @@ export function IncomeFilters({
   dateRange,
   onDateRangeChange,
 }: Props) {
+  const { t } = useTranslation('incomes');
   const { data: categories } = useIncomeCategories();
   const options: MultiSelectOption[] = (categories ?? []).map((category) => ({
     label: category.name,
@@ -36,7 +38,7 @@ export function IncomeFilters({
   return (
     <div className='flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center'>
       <Input
-        placeholder='Search notes…'
+        placeholder={t('filters.searchPlaceholder')}
         value={search}
         onChange={(event) => onSearchChange(event.target.value)}
         className='sm:max-w-[240px]'
@@ -45,9 +47,9 @@ export function IncomeFilters({
         options={options}
         value={categoryIds}
         onChange={onCategoryIdsChange}
-        placeholder='All sources'
-        searchPlaceholder='Search sources…'
-        emptyText='No income sources.'
+        placeholder={t('filters.allSources')}
+        searchPlaceholder={t('filters.searchSources')}
+        emptyText={t('filters.noSources')}
         className='w-full sm:w-[220px]'
       />
       <DateRangePicker

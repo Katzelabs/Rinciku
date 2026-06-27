@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { ExternalLink, FileText } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
@@ -33,6 +34,7 @@ export function AttachmentPreview({
   getSignedUrl,
   variant = 'card',
 }: Props) {
+  const { t } = useTranslation('common');
   const isImage = mimeType?.startsWith('image/') ?? false;
   const [thumbUrl, setThumbUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(isImage);
@@ -55,7 +57,7 @@ export function AttachmentPreview({
   async function open() {
     const { data, error } = await getSignedUrl(storagePath, 60);
     if (error || !data?.signedUrl) {
-      toast.error('Could not open the attachment.');
+      toast.error(t('attachment.openError'));
       return;
     }
     window.open(data.signedUrl, '_blank', 'noopener,noreferrer');
@@ -67,7 +69,7 @@ export function AttachmentPreview({
         <button
           type='button'
           onClick={open}
-          title='Open full size'
+          title={t('attachment.openFullSize')}
           className='group block w-full overflow-hidden rounded-lg border border-input bg-muted'
         >
           {loading ? (
@@ -77,12 +79,12 @@ export function AttachmentPreview({
           ) : thumbUrl ? (
             <img
               src={thumbUrl}
-              alt='Attachment preview'
+              alt={t('attachment.previewAlt')}
               className='mx-auto max-h-80 w-auto max-w-full object-contain transition group-hover:opacity-90'
             />
           ) : (
             <div className='flex h-48 items-center justify-center text-sm text-muted-foreground'>
-              Preview unavailable
+              {t('attachment.previewUnavailable')}
             </div>
           )}
         </button>

@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 import { formatCurrency } from '@/lib/format';
 import type { CurrencyCode } from '@/lib/fx';
@@ -28,6 +29,7 @@ export function TierBreakdown({
   base,
   className,
 }: Props) {
+  const { t } = useTranslation('dashboard');
   const segments: Segment[] = tiers
     .map((tier) => ({
       key: tier.id,
@@ -40,7 +42,7 @@ export function TierBreakdown({
   if (uncategorized > 0) {
     segments.push({
       key: '__untiered__',
-      label: 'Untiered',
+      label: t('tier.untiered'),
       color: UNTIERED_COLOR,
       amount: uncategorized,
     });
@@ -56,7 +58,7 @@ export function TierBreakdown({
           className
         )}
       >
-        No spending yet this cycle.
+        {t('tier.empty')}
       </div>
     );
   }
@@ -66,7 +68,7 @@ export function TierBreakdown({
       <div
         className='flex h-3 w-full overflow-hidden rounded-full bg-muted'
         role='img'
-        aria-label='Spending by tier'
+        aria-label={t('tier.ariaLabel')}
       >
         {segments.map((s) => {
           const percent = (s.amount / total) * 100;

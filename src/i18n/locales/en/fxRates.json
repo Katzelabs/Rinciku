@@ -1,0 +1,48 @@
+{
+  "page": {
+    "title": "Currency rates",
+    "description": "Live exchange rates used across the app to convert amounts into your base currency ({{currency}})."
+  },
+  "status": {
+    "live": "Live",
+    "cached": "Cached",
+    "stale": "Stale",
+    "fallback": "Fallback",
+    "updated": "updated {{time}}",
+    "snapshot": "snapshot from {{date}}"
+  },
+  "relative": {
+    "never": "never",
+    "recently": "recently",
+    "justNow": "just now",
+    "minutes_one": "{{count}}m ago",
+    "minutes_other": "{{count}}m ago",
+    "hours_one": "{{count}}h ago",
+    "hours_other": "{{count}}h ago",
+    "days_one": "{{count}}d ago",
+    "days_other": "{{count}}d ago"
+  },
+  "refresh": {
+    "button": "Refresh",
+    "refreshing": "Refreshing…"
+  },
+  "error": {
+    "unreachable": "Couldn't reach the live FX source: {{error}}"
+  },
+  "converter": {
+    "title": "Convert",
+    "from": "From",
+    "to": "To",
+    "swap": "Swap currencies",
+    "rateLine": "1 {{from}} = {{fromRate}} · 1 {{to}} = {{toRate}}"
+  },
+  "table": {
+    "title": "All rates",
+    "currency": "Currency",
+    "perUnit": "1 unit in {{base}}",
+    "inverse": "1 {{base}} in currency",
+    "searchPlaceholder": "Search currency…",
+    "searchLabel": "Search currency",
+    "noMatch": "No currency matches “{{query}}”."
+  }
+}

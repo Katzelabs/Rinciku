@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router';
 import type { EmailOtpType } from '@supabase/supabase-js';
 import { TriangleAlertIcon, WalletIcon } from 'lucide-react';
@@ -19,6 +20,7 @@ import { AuthLoading } from '../components/auth-loading';
 // success the session is established and requireOnboardedLoader routes new
 // users to /onboarding.
 export function AuthCallbackPage() {
+  const { t } = useTranslation('auth');
   const navigate = useNavigate();
   const [failed, setFailed] = useState(false);
 
@@ -75,24 +77,21 @@ export function AuthCallbackPage() {
           <span className='flex size-10 items-center justify-center rounded-full bg-destructive/10 text-destructive'>
             <TriangleAlertIcon className='size-5' />
           </span>
-          <CardTitle>Confirmation failed</CardTitle>
-          <CardDescription>
-            This confirmation link is invalid or has expired. Try signing in to
-            resend it, or sign up again.
-          </CardDescription>
+          <CardTitle>{t('authCallback.title')}</CardTitle>
+          <CardDescription>{t('authCallback.description')}</CardDescription>
         </CardHeader>
         <CardFooter className='justify-center gap-4 text-sm text-muted-foreground'>
           <Link
             to='/sign-in'
             className='font-medium text-foreground underline-offset-4 hover:underline'
           >
-            Sign in
+            {t('authCallback.signIn')}
           </Link>
           <Link
             to='/sign-up'
             className='font-medium text-foreground underline-offset-4 hover:underline'
           >
-            Sign up
+            {t('authCallback.signUp')}
           </Link>
         </CardFooter>
       </Card>

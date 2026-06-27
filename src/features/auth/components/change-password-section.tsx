@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
   CheckIcon,
@@ -34,12 +35,13 @@ import { Spinner } from '@/components/ui/spinner';
 import { cn } from '@/lib/utils';
 import { updatePassword } from '../api';
 import {
-  changePasswordSchema,
+  makeChangePasswordSchema,
   passwordPolicy,
   type ChangePasswordInput,
 } from '../schemas';
 
 function PasswordRules({ value }: { value: string }) {
+  const { t } = useTranslation('auth');
   return (
     <ul className='mt-1 grid gap-1 text-xs' aria-live='polite'>
       {passwordPolicy.map((rule) => {
@@ -57,8 +59,10 @@ function PasswordRules({ value }: { value: string }) {
             ) : (
               <CircleIcon className='size-3.5' aria-hidden />
             )}
-            <span>{rule.label}</span>
-            <span className='sr-only'>{ok ? ' — met' : ' — not yet met'}</span>
+            <span>{t(rule.labelKey)}</span>
+            <span className='sr-only'>
+              {ok ? t('passwordRules.met') : t('passwordRules.notMet')}
+            </span>
           </li>
         );
       })}
@@ -67,8 +71,10 @@ function PasswordRules({ value }: { value: string }) {
 }
 
 export function ChangePasswordSection() {
+  const { t } = useTranslation('auth');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const schema = useMemo(() => makeChangePasswordSchema(t), [t]);
 
   const {
     control,
@@ -78,7 +84,7 @@ export function ChangePasswordSection() {
     setError,
     formState: { errors, isSubmitting },
   } = useForm<ChangePasswordInput>({
-    resolver: zodResolver(changePasswordSchema),
+    resolver: zodResolver(schema),
     defaultValues: { password: '', confirmPassword: '' },
   });
 
@@ -89,28 +95,26 @@ export function ChangePasswordSection() {
     if (error) {
       console.error('Failed to update password', error);
       setError('root', {
-        message: error.message || 'Could not update your password.',
+        message: error.message || t('changePassword.error'),
       });
       return;
     }
     reset({ password: '', confirmPassword: '' });
-    toast.success('Password updated');
+    toast.success(t('changePassword.updated'));
   }
 
   return (
     <Card>
       <form onSubmit={handleSubmit(onSubmit)} noValidate>
         <CardHeader>
-          <CardTitle>Password</CardTitle>
-          <CardDescription>
-            Set a new password for signing in to your account.
-          </CardDescription>
+          <CardTitle>{t('changePassword.title')}</CardTitle>
+          <CardDescription>{t('changePassword.description')}</CardDescription>
         </CardHeader>
         <CardContent>
           <FieldGroup>
             <Field data-invalid={errors.password ? true : undefined}>
               <FieldLabel htmlFor='settings-new-password'>
-                New password
+                {t('fields.newPassword')}
               </FieldLabel>
               <InputGroup>
                 <InputGroupAddon>
@@ -120,7 +124,7 @@ export function ChangePasswordSection() {
                   id='settings-new-password'
                   type={showPassword ? 'text' : 'password'}
                   autoComplete='new-password'
-                  placeholder='At least 8 characters'
+                  placeholder={t('fields.passwordMinPlaceholder')}
                   aria-invalid={errors.password ? true : undefined}
                   aria-describedby='settings-password-rules'
                   {...register('password')}
@@ -129,7 +133,9 @@ export function ChangePasswordSection() {
                   <InputGroupButton
                     size='icon-xs'
                     aria-label={
-                      showPassword ? 'Hide password' : 'Show password'
+                      showPassword
+                        ? t('fields.hidePassword')
+                        : t('fields.showPassword')
                     }
                     aria-pressed={showPassword}
                     onClick={() => setShowPassword((value) => !value)}
@@ -148,7 +154,7 @@ export function ChangePasswordSection() {
 
             <Field data-invalid={errors.confirmPassword ? true : undefined}>
               <FieldLabel htmlFor='settings-confirm-password'>
-                Confirm new password
+                {t('changePassword.confirmNewPassword')}
               </FieldLabel>
               <InputGroup>
                 <InputGroupAddon>
@@ -158,7 +164,7 @@ export function ChangePasswordSection() {
                   id='settings-confirm-password'
                   type={showConfirmPassword ? 'text' : 'password'}
                   autoComplete='new-password'
-                  placeholder='Repeat your password'
+                  placeholder={t('fields.passwordRepeatPlaceholder')}
                   aria-invalid={errors.confirmPassword ? true : undefined}
                   {...register('confirmPassword')}
                 />
@@ -166,7 +172,9 @@ export function ChangePasswordSection() {
                   <InputGroupButton
                     size='icon-xs'
                     aria-label={
-                      showConfirmPassword ? 'Hide password' : 'Show password'
+                      showConfirmPassword
+                        ? t('fields.hidePassword')
+                        : t('fields.showPassword')
                     }
                     aria-pressed={showConfirmPassword}
                     onClick={() => setShowConfirmPassword((value) => !value)}
@@ -188,7 +196,9 @@ export function ChangePasswordSection() {
         <CardFooter className='justify-end border-t'>
           <Button type='submit' disabled={isSubmitting}>
             {isSubmitting && <Spinner data-icon='inline-start' />}
-            {isSubmitting ? 'Updating…' : 'Update password'}
+            {isSubmitting
+              ? t('changePassword.submitting')
+              : t('changePassword.submit')}
           </Button>
         </CardFooter>
       </form>
