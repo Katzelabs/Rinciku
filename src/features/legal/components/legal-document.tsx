@@ -5,7 +5,7 @@ import ReactMarkdown from 'react-markdown';
 import { Logo } from '@/components/shared/logo';
 import { LanguageSelect } from '@/components/shared/language-select';
 import { Button } from '@/components/ui/button';
-import i18n, { isLanguage } from '@/i18n';
+import { isLanguage } from '@/i18n';
 
 type DocName = 'terms' | 'privacy';
 
@@ -33,7 +33,7 @@ interface LegalDocumentProps {
 }
 
 export function LegalDocument({ doc, titleKey }: LegalDocumentProps) {
-  const { t } = useTranslation('legal');
+  const { t, i18n } = useTranslation('legal');
   const navigate = useNavigate();
   const lang = isLanguage(i18n.resolvedLanguage) ? i18n.resolvedLanguage : 'en';
   const content = getContent(doc, lang);

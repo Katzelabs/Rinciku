@@ -1,6 +1,6 @@
 import { Languages } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import i18n, { isLanguage, type Language } from '@/i18n';
+import { isLanguage, type Language } from '@/i18n';
 import {
   Select,
   SelectContent,
@@ -21,7 +21,7 @@ interface LanguageSelectProps {
 }
 
 export function LanguageSelect({ className }: LanguageSelectProps) {
-  const { t } = useTranslation('common');
+  const { t, i18n } = useTranslation('common');
 
   const current = isLanguage(i18n.resolvedLanguage)
     ? i18n.resolvedLanguage

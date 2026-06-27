@@ -2,7 +2,7 @@ import { Languages, Monitor, Moon, Sun } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
-import i18n, { isLanguage, type Language } from '@/i18n';
+import { isLanguage, type Language } from '@/i18n';
 import {
   Card,
   CardContent,
@@ -35,7 +35,7 @@ const languageOptions: { value: Language; label: string }[] = [
 ];
 
 export function AppearanceSection() {
-  const { t } = useTranslation('common');
+  const { t, i18n } = useTranslation('common');
   const { theme, setTheme } = useTheme();
   const { user, refreshProfile } = useAuth();
 
