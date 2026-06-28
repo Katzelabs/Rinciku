@@ -44,7 +44,7 @@ Kami menyimpan data Anda selama akun Anda aktif. Saat Anda menghapus akun, kami 
 
 ## 7. Hak Anda
 
-Sesuai hukum yang berlaku, Anda berhak mengakses, memperbaiki, mengekspor, atau menghapus data pribadi Anda, serta menarik persetujuan. Untuk menggunakan hak ini, atau meminta penghapusan akun, hubungi kami di hrofiyani@gmail.com.
+Sesuai hukum yang berlaku, Anda berhak mengakses, memperbaiki, mengekspor, atau menghapus data pribadi Anda, serta menarik persetujuan. Anda dapat menghapus akun beserta seluruh datanya sendiri kapan saja melalui Pengaturan → Hapus akun. Untuk menggunakan hak lainnya, atau jika Anda memerlukan bantuan, hubungi kami di hrofiyani@gmail.com.
 
 ## 8. Anak-anak
 

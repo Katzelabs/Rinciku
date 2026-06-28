@@ -45,7 +45,7 @@ Sejauh diizinkan oleh hukum, kami tidak bertanggung jawab atas kerugian tidak la
 
 ## 10. Penghentian
 
-Anda dapat berhenti menggunakan Layanan dan menghapus akun Anda kapan saja. Kami dapat menangguhkan atau menghentikan akses Anda jika Anda melanggar Ketentuan ini.
+Anda dapat berhenti menggunakan Layanan dan menghapus akun Anda kapan saja melalui Pengaturan → Hapus akun. Kami dapat menangguhkan atau menghentikan akses Anda jika Anda melanggar Ketentuan ini.
 
 ## 11. Hukum yang berlaku
 

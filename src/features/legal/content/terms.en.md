@@ -45,7 +45,7 @@ To the maximum extent permitted by law, we are not liable for any indirect, inci
 
 ## 10. Termination
 
-You may stop using the Service and delete your account at any time. We may suspend or terminate your access if you breach these Terms.
+You may stop using the Service and delete your account at any time from Settings → Delete account. We may suspend or terminate your access if you breach these Terms.
 
 ## 11. Governing law
 

@@ -44,7 +44,7 @@ We keep your data for as long as your account is active. When you delete your ac
 
 ## 7. Your rights
 
-Subject to applicable law, you have the right to access, correct, export, or delete your personal data, and to withdraw consent. To exercise these rights, or to request account deletion, contact us at hrofiyani@gmail.com.
+Subject to applicable law, you have the right to access, correct, export, or delete your personal data, and to withdraw consent. You can delete your account and all of its data yourself at any time from Settings → Delete account. To exercise your other rights, or if you need help, contact us at hrofiyani@gmail.com.
 
 ## 8. Children
 

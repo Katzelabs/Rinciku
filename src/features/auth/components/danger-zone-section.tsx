@@ -40,7 +40,7 @@ export function DangerZoneSection() {
     setDeleting(true);
     try {
       await deleteAccount();
-      navigate('/sign-in', { replace: true });
+      navigate('/sign-in?deleted=success', { replace: true });
     } catch (error) {
       console.error('Failed to delete account', error);
       const detail =

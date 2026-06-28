@@ -34,6 +34,7 @@ export function SignInPage() {
   const [searchParams] = useSearchParams();
   const target = safeInternalPath(searchParams.get('redirectTo')) ?? '/';
   const justReset = searchParams.get('reset') === 'success';
+  const justDeleted = searchParams.get('deleted') === 'success';
 
   // When a sign-in fails because the email isn't confirmed yet, we surface a
   // resend option here — this survives page reloads, unlike the post-signup
@@ -86,6 +87,14 @@ export function SignInPage() {
                 className='mb-4 rounded-md border border-primary/30 bg-primary/10 px-3 py-2 text-sm text-foreground'
               >
                 {t('signIn.resetSuccess')}
+              </div>
+            )}
+            {justDeleted && (
+              <div
+                role='status'
+                className='mb-4 rounded-md border border-primary/30 bg-primary/10 px-3 py-2 text-sm text-foreground'
+              >
+                {t('signIn.deletedSuccess')}
               </div>
             )}
             {unverifiedEmail && (
