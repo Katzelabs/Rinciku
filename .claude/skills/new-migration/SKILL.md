@@ -59,8 +59,9 @@ description: Create a timestamped Supabase migration under supabase/migrations/ 
    ```
 6. **Regenerate types** so feature `api.ts` files stay typed:
    ```bash
-   supabase gen types typescript --local > src/lib/database.types.ts
+   supabase gen types typescript --local > packages/db/src/database.types.ts
    ```
+   (Or run `pnpm gen:types` from the repo root, which does exactly this.)
 7. Run `pnpm build` to confirm no type drift downstream.
 
 ## Conventions to enforce
@@ -75,7 +76,7 @@ description: Create a timestamped Supabase migration under supabase/migrations/ 
 ## Verification
 
 - `supabase db reset` runs clean (no SQL errors).
-- `supabase gen types typescript --local > src/lib/database.types.ts` succeeds and the diff shows the new table.
+- `supabase gen types typescript --local > packages/db/src/database.types.ts` succeeds and the diff shows the new table.
 - `pnpm build` succeeds.
 - In Supabase Studio (`http://127.0.0.1:54323`), inspect the table — confirm RLS is enabled (lock icon) and policies are listed.
 - Manually test RLS: connect as one user, insert a row; switch user, attempt to select — should return zero rows.

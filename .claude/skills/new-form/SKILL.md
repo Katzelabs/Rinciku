@@ -13,8 +13,8 @@ description: Build a form using react-hook-form + Zod + shadcn Form components i
 
 ## Steps
 
-1. Identify the target feature under `src/features/<feature>/`.
-2. **Schema** — add the Zod schema to `src/features/<feature>/schemas.ts`. Export both the schema and the inferred type:
+1. Identify the target feature under `apps/web/src/features/<feature>/`.
+2. **Schema** — add the Zod schema to `apps/web/src/features/<feature>/schemas.ts`. Export both the schema and the inferred type:
    ```ts
    import { z } from 'zod';
 
@@ -23,8 +23,8 @@ description: Build a form using react-hook-form + Zod + shadcn Form components i
    });
    export type <Name>Input = z.infer<typeof <Name>Schema>;
    ```
-3. **shadcn Form primitive** — verify `src/components/ui/form.tsx` exists. If not, install with `add-shadcn-ui` (`form` component). The shadcn `Form` wraps react-hook-form's `FormProvider` and provides `FormField`, `FormItem`, `FormLabel`, `FormControl`, `FormMessage`.
-4. **Form component** — create the form at `src/features/<feature>/components/<name>-form.tsx`:
+3. **shadcn Form primitive** — verify `apps/web/src/components/ui/form.tsx` exists. If not, install with `add-shadcn-ui` (`form` component). The shadcn `Form` wraps react-hook-form's `FormProvider` and provides `FormField`, `FormItem`, `FormLabel`, `FormControl`, `FormMessage`.
+4. **Form component** — create the form at `apps/web/src/features/<feature>/components/<name>-form.tsx`:
    ```tsx
    import { zodResolver } from '@hookform/resolvers/zod';
    import { useForm } from 'react-hook-form';
@@ -55,7 +55,7 @@ description: Build a form using react-hook-form + Zod + shadcn Form components i
 - One schema per form (or per logical input shape) lives in the feature's `schemas.ts`.
 - Always use `zodResolver` from `@hookform/resolvers/zod`.
 - Use the shadcn `Form` primitive (`@/components/ui/form`), not raw `<form>` with manual `register` calls — it gives consistent error/aria handling.
-- Form components live under `src/features/<feature>/components/`, kebab-case filenames, named export `<Name>Form`.
+- Form components live under `apps/web/src/features/<feature>/components/`, kebab-case filenames, named export `<Name>Form`.
 - Submit handler is a prop, not hardcoded — keeps the form testable and reusable.
 - Validate currency / IDR amounts with `z.number().int().nonnegative()` when storing in minor units (cents/rupiah-sen). Be explicit about units in field comments only when non-obvious.
 - Trust the React Compiler — no `useCallback` on the submit handler.

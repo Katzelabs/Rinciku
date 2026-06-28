@@ -13,15 +13,15 @@ description: Populate or extend a Rinciku feature's api.ts with Supabase-backed 
 
 ## Pre-requisite
 
-- `src/lib/supabase.ts` and `src/lib/database.types.ts` must exist. If not, run `supabase-setup` first.
+- `apps/web/src/lib/supabase.ts` and `packages/db/src/database.types.ts` must exist. If not, run `supabase-setup` first.
 
 ## Steps
 
-1. Identify the target feature: `src/features/<feature>/api.ts`.
+1. Identify the target feature: `apps/web/src/features/<feature>/api.ts`.
 2. Import the shared Supabase client and types:
    ```ts
    import { supabase } from '@/lib/supabase';
-   import type { Database } from '@/lib/database.types';
+   import type { Database } from '@rinciku/db';
 
    type <Row> = Database['public']['Tables']['<table>']['Row'];
    type <Insert> = Database['public']['Tables']['<table>']['Insert'];
@@ -56,6 +56,6 @@ description: Populate or extend a Rinciku feature's api.ts with Supabase-backed 
 
 ## Verification
 
-- `pnpm build` succeeds — type errors here usually mean `database.types.ts` is stale; regenerate via `supabase gen types typescript --local > src/lib/database.types.ts`.
+- `pnpm build` succeeds — type errors here usually mean `database.types.ts` is stale; regenerate via `supabase gen types typescript --local > packages/db/src/database.types.ts` (or `pnpm gen:types` from the repo root, which does exactly this).
 - Call the new function from a loader/action/hook and exercise the flow in `pnpm dev`.
 - Confirm RLS works: log in as a different user and verify the row isn't returned.
