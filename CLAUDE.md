@@ -12,21 +12,38 @@ The codebase is an early scaffold: feature folders and routes exist as empty stu
 
 ## Commands
 
-Package manager is **pnpm** (see `pnpm-workspace.yaml`). Node `>=24 <26`.
+Package manager is **pnpm** (see `pnpm-workspace.yaml`), orchestrated by **Turborepo** (`turbo.json`). Node `>=24 <26`. Run from the repo root:
 
-- `pnpm dev` — Vite dev server
-- `pnpm build` — `tsc -b && vite build` (typecheck is part of build; run it to catch type errors)
-- `pnpm lint` — ESLint flat config
+- `pnpm dev` — `turbo run dev` (Vite dev server for `apps/web`)
+- `pnpm build` — `turbo run build` → `apps/web` runs `tsc -b && vite build` (typecheck is part of build)
+- `pnpm typecheck` — `turbo run typecheck` across all workspaces
+- `pnpm lint` — `turbo run lint` across all workspaces
 - `pnpm format` — Prettier write across the repo
-- `pnpm preview` — preview production build
+- `pnpm gen:types` — regenerate `packages/db/src/database.types.ts` from the local DB
 
-There is no test runner configured yet.
+Target a single workspace with `pnpm --filter @rinciku/web <script>`. There is no test runner configured yet. Turborepo **remote** caching is not set up yet (local caching works).
 
 ## Architecture
 
+### Monorepo layout
+
+This is a pnpm + Turborepo monorepo. The web app and the shared domain layer are separate workspaces:
+
+```
+apps/web/                ← the Vite React app (everything below was once the root src/)
+packages/core/           ← @rinciku/core: format, locale, currency-meta, fx, cycle, csv, attachments, i18n
+packages/db/             ← @rinciku/db: createSupabaseClient() factory + generated Database types
+packages/config/         ← @rinciku/config: shared eslint flat config + tsconfig base
+supabase/                ← stays at the repo ROOT (CLI config, schemas, migrations, edge functions)
+```
+
+- **Packages are consumed as TypeScript source** (no build step): each `package.json` `exports` points at `./src/*.ts`; Vite + `tsc` transpile them. Import them as `@rinciku/core`, `@rinciku/core/i18n`, `@rinciku/db`.
+- **Only portable domain logic lives in `packages/core`.** Web/UI-coupled helpers stay in `apps/web/src/lib`: `supabase.ts` (reads Vite `import.meta.env` then calls `createSupabaseClient`), `utils.ts` (`cn()`), `use-fx-status.ts`.
+- **Deferred (manual later):** `apps/mobile` (Expo/RN), `apps/landing` (SSG), the GitHub org, remote caching. Keep new shared code portable (no `import.meta.glob`, no direct env access) so those apps can reuse it.
+
 ### Feature-sliced layout
 
-`src/features/<feature>/` is the unit of organization. Each feature owns the same file set:
+`apps/web/src/features/<feature>/` is the unit of organization. Each feature owns the same file set:
 
 ```
 actions.ts     api.ts        components/   hooks/
@@ -37,7 +54,7 @@ schemas.ts     types.ts
 Conventions:
 
 - `routes.tsx` exports a typed `RouteObject[]` (e.g. `authRoutes`). `index.ts` re-exports only what other features/app need (typically the routes).
-- All feature route arrays are aggregated in `src/app/router.tsx` as children of `RootLayout`. To add routes for a new feature, create the folder, export `xxxRoutes` from its `index.ts`, then import & spread it in `router.tsx`.
+- All feature route arrays are aggregated in `apps/web/src/app/router.tsx` as children of `RootLayout`. To add routes for a new feature, create the folder, export `xxxRoutes` from its `index.ts`, then import & spread it in `router.tsx`.
 - `loaders.ts` / `actions.ts` are intended for react-router v7 data APIs.
 - `schemas.ts` is for Zod schemas (paired with `@hookform/resolvers` + react-hook-form).
 - `api.ts` is the Supabase-facing data layer for the feature.
@@ -46,7 +63,7 @@ Current features (mostly stubs): `auth`, `dashboard`, `expenses`, `essentials`, 
 
 ### App shell
 
-`src/main.tsx` → `RouterProvider` only. `src/app/`:
+`apps/web/src/main.tsx` → `RouterProvider` only (and a side-effect `import '@rinciku/core/i18n'`). `apps/web/src/app/`:
 - `router.tsx` — single `createBrowserRouter` call composing all feature routes.
 - `root-layout.tsx` — wraps `<Outlet />` in `Providers`.
 - `providers.tsx` — currently a passthrough; add global context providers here (auth, query client, theme) rather than in `main.tsx`.
@@ -54,18 +71,18 @@ Current features (mostly stubs): `auth`, `dashboard`, `expenses`, `essentials`, 
 
 ### Path alias
 
-`@/*` → `./src/*` (configured in both `vite.config.ts` and `tsconfig.app.json`). Always use `@/...` for cross-feature imports.
+`@/*` → `apps/web/src/*` (configured in `apps/web/vite.config.ts` and `apps/web/tsconfig.app.json`). Use `@/...` for cross-feature imports **within the web app**; use `@rinciku/*` for the shared workspace packages.
 
 ### UI layer
 
-- **shadcn/ui** with `style: radix-rhea`, `baseColor: olive`, `iconLibrary: lucide` (see `components.json`). New shadcn components land in `src/components/ui/`.
-- **Tailwind v4** via `@tailwindcss/vite` (no `tailwind.config.*` file — config lives in `src/index.css` using v4's CSS-first config).
-- `src/components/shared/` for cross-feature reusable components; feature-local components stay under `src/features/<feature>/components/`.
-- `cn()` helper in `src/lib/utils.ts` (clsx + tailwind-merge) — use it for conditional class composition.
+- **shadcn/ui** with `style: radix-rhea`, `baseColor: olive`, `iconLibrary: lucide` (see `apps/web/components.json`). New shadcn components land in `apps/web/src/components/ui/`.
+- **Tailwind v4** via `@tailwindcss/vite` (no `tailwind.config.*` file — config lives in `apps/web/src/index.css` using v4's CSS-first config).
+- `apps/web/src/components/shared/` for cross-feature reusable components; feature-local components stay under `apps/web/src/features/<feature>/components/`.
+- `cn()` helper in `apps/web/src/lib/utils.ts` (clsx + tailwind-merge) — use it for conditional class composition.
 
 ### React Compiler
 
-Enabled via `@rolldown/plugin-babel` + `babel-plugin-react-compiler` in `vite.config.ts`. Do not hand-write `useMemo`/`useCallback` micro-optimizations the compiler will handle; follow the Rules of React so the compiler can analyze components.
+Enabled via `@rolldown/plugin-babel` + `babel-plugin-react-compiler` in `apps/web/vite.config.ts`. Do not hand-write `useMemo`/`useCallback` micro-optimizations the compiler will handle; follow the Rules of React so the compiler can analyze components.
 
 ### Backend
 
