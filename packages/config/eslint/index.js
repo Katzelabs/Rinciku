@@ -23,6 +23,37 @@ export function baseConfig() {
   ];
 }
 
+/**
+ * React Hooks rules for React Native (Expo) apps. Mirrors `reactConfig` but
+ * drops the web-only `react-refresh/vite` plugin and swaps browser globals for
+ * the React Native runtime: `__DEV__` plus the browser/node names RN polyfills
+ * (`fetch`, `console`, timers).
+ */
+export function reactNativeConfig() {
+  return [
+    {
+      files: ['**/*.{ts,tsx}'],
+      extends: [
+        js.configs.recommended,
+        tseslint.configs.recommended,
+        reactHooks.configs.flat.recommended,
+      ],
+      languageOptions: {
+        globals: {
+          ...globals.browser,
+          ...globals.node,
+          __DEV__: 'readonly',
+        },
+      },
+      rules: {
+        // Metro resolves static assets/fonts via `require('./foo.png')`; this is
+        // the idiomatic React Native pattern, so the web-oriented ban is off.
+        '@typescript-eslint/no-require-imports': 'off',
+      },
+    },
+  ];
+}
+
 /** Base rules plus the React Hooks + Refresh plugins for app/UI packages. */
 export function reactConfig() {
   return [

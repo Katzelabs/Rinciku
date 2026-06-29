@@ -28,17 +28,18 @@
     "react-native-web": "~0.21.0",
     "react-native-worklets": "0.8.3"
   },
-  "devDependencies": {
-    "@types/react": "~19.2.2",
-    "typescript": "~6.0.3"
-  },
   "scripts": {
     "start": "expo start",
     "reset-project": "node ./scripts/reset-project.js",
     "android": "expo run:android",
     "ios": "expo run:ios",
-    "web": "expo start --web",
-    "lint": "expo lint"
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit"
   },
-  "private": true
+  "private": true,
+  "devDependencies": {
+    "@types/react": "~19.2.2",
+    "@rinciku/config": "workspace:*",
+    "typescript": "~6.0.3"
+  }
 }

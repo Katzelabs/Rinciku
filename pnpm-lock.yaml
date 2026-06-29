@@ -36,7 +36,7 @@ importers:
         specifier: ^8.59.2
         version: 8.60.0(eslint@10.4.0(jiti@2.7.0))(typescript@6.0.3)
 
-  apps/rinciku:
+  apps/mobile:
     dependencies:
       '@expo/ui':
         specifier: ~56.0.18
@@ -111,6 +111,9 @@ importers:
         specifier: 0.8.3
         version: 0.8.3(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(react-native@0.85.3(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.15)(react@19.2.3))(react@19.2.3)
     devDependencies:
+      '@rinciku/config':
+        specifier: workspace:*
+        version: link:../../packages/config
       '@types/react':
         specifier: ~19.2.2
         version: 19.2.15

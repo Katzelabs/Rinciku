@@ -1,56 +1,46 @@
-# Welcome to your Expo app 👋
+# @rinciku/mobile
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+Rinciku's [Expo](https://expo.dev) (React Native) app — **iOS + Android only**. The
+Expo web target is intentionally OFF: the web app stays the standalone Vite + shadcn
+app at `apps/web`. The two apps share a brain (`packages/*`), never a face.
 
-## Get started
+This is a workspace in the pnpm + Turborepo monorepo. Run pnpm from the repo root;
+Expo's Metro is auto-configured for monorepos on SDK 54+, so there is no
+`metro.config.js` to maintain.
 
-1. Install dependencies
-
-   ```bash
-   npm install
-   ```
-
-2. Start the app
-
-   ```bash
-   npx expo start
-   ```
-
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
+## Develop
 
 ```bash
-npm run reset-project
+pnpm install                          # from repo root — wires workspace packages
+
+# Start the dev server (local dev build; Liquid Glass needs a dev build, not Expo Go)
+pnpm --filter @rinciku/mobile start
+
+# Native builds via local Xcode / Gradle (no EAS yet)
+pnpm --filter @rinciku/mobile ios
+pnpm --filter @rinciku/mobile android
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+## Tooling
 
-### Other setup steps
+Mobile participates in the monorepo's Turborepo pipelines and shares the root
+toolchain (one ESLint + TypeScript + Prettier setup across all workspaces):
 
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
+```bash
+pnpm typecheck    # tsc --noEmit (this workspace: pnpm --filter @rinciku/mobile typecheck)
+pnpm lint         # eslint . via @rinciku/config's reactNativeConfig()
+pnpm format       # prettier --write . (repo root)
+```
 
-## Learn more
+- **ESLint:** `eslint.config.mjs` consumes `reactNativeConfig()` from `@rinciku/config`.
+  `*.web.*` files and generated/native dirs (`.expo`, `ios`, `android`) are ignored.
+- **TypeScript:** extends `expo/tsconfig.base`; `@/*` → `./src/*`.
 
-To learn more about developing your project with Expo, look at the following resources:
+## Architecture
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
-
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+UI is native primitives + iOS 26 Liquid Glass chrome (`expo-glass-effect`,
+expo-router NativeTabs) over shared brand tokens — no Material kit; glass on the
+nav/chrome layer only, content stays solid; Android renders solid branded
+equivalents. Shared data/domain logic comes from `@rinciku/*` workspace packages
+(Supabase client dependency-injected). See the `Mobile App (Expo, iOS + Android)`
+ClickUp epic and repo memory `project_mobile_app` for the full plan.

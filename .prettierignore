@@ -2,3 +2,10 @@ node_modules
 build
 .dist
 *.md
+pnpm-lock.yaml
+
+# Expo (apps/mobile) — generated + native build output
+.expo
+apps/mobile/ios
+apps/mobile/android
+apps/mobile/expo-env.d.ts
