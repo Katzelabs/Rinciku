@@ -105,6 +105,20 @@ export const Radius = {
   lg: 10,
   xl: 14,
   '2xl': 18,
+  /** Fully rounded — for pills / circular chrome. */
+  pill: 999,
+} as const;
+
+/**
+ * Soft elevation presets as CSS `boxShadow` strings (the RN `boxShadow` style
+ * prop is supported on the New Architecture — already used by `glass-fab`).
+ * Keep shadows subtle; they read on light surfaces and stay invisible in dark.
+ */
+export const Shadow = {
+  /** Resting elevation for primary buttons / cards. */
+  sm: '0 1px 2px rgba(12,12,9,0.06), 0 2px 6px rgba(12,12,9,0.06)',
+  /** Focused input / pressed-card emphasis. */
+  md: '0 2px 8px rgba(12,12,9,0.10)',
 } as const;
 
 export const BottomTabInset = Platform.select({ ios: 50, android: 80 }) ?? 0;

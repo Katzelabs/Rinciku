@@ -25,5 +25,9 @@ export function TextLink({
 
 const styles = StyleSheet.create({
   link: {},
-  text: { fontFamily: Fonts.semibold, fontSize: 14 },
+  text: {
+    fontFamily: Fonts.semibold,
+    fontSize: 14,
+    textDecorationLine: 'underline',
+  },
 });

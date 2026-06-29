@@ -7,6 +7,7 @@ import { useTranslation } from 'react-i18next';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { Fonts, Spacing } from '@/constants/theme';
+import { Icon } from '@/components/icon';
 import { LanguageToggle } from '@/components/language-toggle';
 import { signInWithPassword, resendConfirmation } from '@/features/auth/api';
 import { AuthScreenShell } from '@/features/auth/components/auth-screen-shell';
@@ -139,6 +140,7 @@ export default function SignInScreen() {
           control={control}
           name='email'
           label={t('fields.email')}
+          leading={<Icon name='envelope' size={18} />}
           placeholder={t('fields.emailPlaceholder')}
           keyboardType='email-address'
           autoCapitalize='none'

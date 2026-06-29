@@ -16,6 +16,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import {
   CURRENCY_CODES,
@@ -26,6 +27,7 @@ import {
 import { createCategoriesApi } from '@rinciku/domain/categories';
 
 import { Fonts, Radius, Spacing } from '@/constants/theme';
+import { Icon } from '@/components/icon';
 import { upsertProfile } from '@/features/auth/api';
 import { Button } from '@/features/auth/components/button';
 import {
@@ -57,10 +59,38 @@ function toCurrencyCode(value: string | null | undefined): CurrencyCode {
     : 'IDR';
 }
 
+// Step indicator: a row of segments that fill with the brand color as the user
+// advances. The textual "step X of Y" stays as the accessibility label.
+function WizardProgress({ step, total }: { step: number; total: number }) {
+  const c = useTheme();
+  const { t } = useTranslation('auth');
+  return (
+    <View
+      style={styles.progressWrap}
+      accessibilityRole='progressbar'
+      accessibilityLabel={t('onboarding.progress', {
+        current: step + 1,
+        total,
+      })}
+    >
+      {Array.from({ length: total }).map((_, i) => (
+        <View
+          key={i}
+          style={[
+            styles.progressSeg,
+            { backgroundColor: i <= step ? c.primary : c.muted },
+          ]}
+        />
+      ))}
+    </View>
+  );
+}
+
 export function OnboardingWizard() {
   const c = useTheme();
   const { t } = useTranslation('auth');
   const { user, profile, refreshProfile } = useAuth();
+  const insets = useSafeAreaInsets();
   const [step, setStep] = useState(0);
 
   const schema = useMemo(() => makeOnboardingSchema(t), [t]);
@@ -101,19 +131,25 @@ export function OnboardingWizard() {
   return (
     <ScrollView
       style={{ backgroundColor: c.background }}
-      contentInsetAdjustmentBehavior='automatic'
       keyboardShouldPersistTaps='handled'
-      contentContainerStyle={styles.content}
+      showsVerticalScrollIndicator={false}
+      contentContainerStyle={[
+        styles.content,
+        {
+          paddingTop: insets.top + Spacing.four,
+          paddingBottom: insets.bottom + Spacing.six,
+        },
+      ]}
     >
-      <Text style={[styles.progress, { color: c.mutedForeground }]}>
-        {t('onboarding.progress', { current: step + 1, total: STEPS.length })}
-      </Text>
-      <Text style={[styles.title, { color: c.foreground }]}>
-        {t(`onboarding.steps.${current.key}.title`)}
-      </Text>
-      <Text style={[styles.description, { color: c.mutedForeground }]}>
-        {t(`onboarding.steps.${current.key}.description`)}
-      </Text>
+      <WizardProgress step={step} total={STEPS.length} />
+      <View style={styles.header}>
+        <Text style={[styles.title, { color: c.foreground }]}>
+          {t(`onboarding.steps.${current.key}.title`)}
+        </Text>
+        <Text style={[styles.description, { color: c.mutedForeground }]}>
+          {t(`onboarding.steps.${current.key}.description`)}
+        </Text>
+      </View>
 
       <FormProvider {...methods}>
         <View style={styles.stepBody}>
@@ -192,12 +228,22 @@ function CurrencyStep() {
                     selected && { backgroundColor: c.muted },
                   ]}
                 >
+                  <View
+                    style={[
+                      styles.currencyAccent,
+                      { backgroundColor: selected ? c.primary : 'transparent' },
+                    ]}
+                  />
                   <Text style={styles.currencyFlag}>{currencyFlag(code)}</Text>
                   <Text style={[styles.currencyName, { color: c.foreground }]}>
                     {code} · {CURRENCY_NAMES[code]}
                   </Text>
                   {selected ? (
-                    <Text style={[styles.check, { color: c.primary }]}>✓</Text>
+                    <Icon
+                      name='checkmark.circle.fill'
+                      size={20}
+                      color={c.primary}
+                    />
                   ) : null}
                 </Pressable>
               );
@@ -221,6 +267,7 @@ function NumberField({
 }) {
   const c = useTheme();
   const { control } = useFormContext<OnboardingInput>();
+  const [focused, setFocused] = useState(false);
   return (
     <Controller
       control={control}
@@ -228,11 +275,15 @@ function NumberField({
       render={({ field, fieldState }) => (
         <View style={styles.fieldGap}>
           <FieldLabel>{label}</FieldLabel>
-          <InputShell invalid={!!fieldState.error}>
+          <InputShell invalid={!!fieldState.error} focused={focused}>
             <NumberInput
               value={field.value}
               onChange={field.onChange}
-              onBlur={field.onBlur}
+              onFocus={() => setFocused(true)}
+              onBlur={() => {
+                setFocused(false);
+                field.onBlur();
+              }}
             />
           </InputShell>
           {hint ? (
@@ -250,10 +301,12 @@ function NumberField({
 function NumberInput({
   value,
   onChange,
+  onFocus,
   onBlur,
 }: {
   value: number | undefined;
   onChange: (v: number | undefined) => void;
+  onFocus: () => void;
   onBlur: () => void;
 }) {
   const c = useTheme();
@@ -263,6 +316,7 @@ function NumberInput({
       placeholderTextColor={c.mutedForeground}
       keyboardType='numeric'
       value={value == null ? '' : String(value)}
+      onFocus={onFocus}
       onBlur={onBlur}
       onChangeText={(text: string) => {
         const cleaned = text.replace(/[^0-9.]/g, '');
@@ -324,10 +378,21 @@ function CategoriesReviewStep() {
 }
 
 const styles = StyleSheet.create({
-  content: { padding: Spacing.four, gap: Spacing.three, paddingBottom: Spacing.six },
-  progress: { fontFamily: Fonts.medium, fontSize: 13 },
-  title: { fontFamily: Fonts.bold, fontSize: 26 },
-  description: { fontFamily: Fonts.regular, fontSize: 15, lineHeight: 21 },
+  content: { paddingHorizontal: Spacing.four, gap: Spacing.three },
+  progressWrap: { flexDirection: 'row', gap: Spacing.one, marginBottom: Spacing.one },
+  progressSeg: {
+    flex: 1,
+    height: 5,
+    borderRadius: Radius.pill,
+  },
+  header: { gap: Spacing.two, alignItems: 'center' },
+  title: { fontFamily: Fonts.bold, fontSize: 26, textAlign: 'center' },
+  description: {
+    fontFamily: Fonts.regular,
+    fontSize: 15,
+    lineHeight: 21,
+    textAlign: 'center',
+  },
   stepBody: { marginTop: Spacing.two },
   fieldGap: { gap: Spacing.two },
   nav: { flexDirection: 'row', gap: Spacing.three, marginTop: Spacing.three },
@@ -341,7 +406,7 @@ const styles = StyleSheet.create({
   hint: { fontFamily: Fonts.regular, fontSize: 13 },
   currencyList: {
     borderWidth: StyleSheet.hairlineWidth * 2,
-    borderRadius: Radius.lg,
+    borderRadius: Radius['2xl'],
     borderCurve: 'continuous',
     overflow: 'hidden',
   },
@@ -352,12 +417,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.three,
   },
+  currencyAccent: {
+    position: 'absolute',
+    left: 0,
+    top: Spacing.two,
+    bottom: Spacing.two,
+    width: 3,
+    borderTopRightRadius: Radius.pill,
+    borderBottomRightRadius: Radius.pill,
+  },
   currencyFlag: { fontSize: 20 },
   currencyName: { flex: 1, fontFamily: Fonts.medium, fontSize: 15 },
-  check: { fontFamily: Fonts.semibold, fontSize: 16 },
   reviewBox: {
     borderWidth: StyleSheet.hairlineWidth * 2,
-    borderRadius: Radius.lg,
+    borderRadius: Radius['2xl'],
     borderCurve: 'continuous',
     padding: Spacing.three,
     gap: Spacing.two,

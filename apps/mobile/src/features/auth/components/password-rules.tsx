@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { passwordPolicy } from '@rinciku/domain/auth';
 
 import { Fonts, Spacing } from '@/constants/theme';
+import { Icon } from '@/components/icon';
 import { useTheme } from '@/hooks/use-theme';
 
 // Renders the shared password policy as a live checklist. `passwordPolicy` is
@@ -18,11 +19,11 @@ export function PasswordRules({ value }: { value: string }) {
         const ok = rule.test(value);
         return (
           <View key={rule.id} style={styles.row}>
-            <Text
-              style={[styles.mark, { color: ok ? c.primary : c.mutedForeground }]}
-            >
-              {ok ? '✓' : '○'}
-            </Text>
+            <Icon
+              name={ok ? 'checkmark.circle.fill' : 'circle'}
+              size={15}
+              color={ok ? c.primary : c.mutedForeground}
+            />
             <Text
               style={[
                 styles.label,
@@ -41,6 +42,5 @@ export function PasswordRules({ value }: { value: string }) {
 const styles = StyleSheet.create({
   list: { gap: Spacing.one, marginTop: Spacing.one },
   row: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
-  mark: { fontFamily: Fonts.semibold, fontSize: 13, width: 16 },
   label: { fontFamily: Fonts.regular, fontSize: 13 },
 });

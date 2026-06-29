@@ -59,6 +59,7 @@ export default function AuthCallbackScreen() {
 
   return (
     <AuthScreenShell
+      badge='exclamationmark.triangle.fill'
       title={t('authCallback.title')}
       footer={
         <View style={styles.footerRow}>

@@ -7,6 +7,7 @@ import { useTranslation } from 'react-i18next';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { Fonts, Spacing } from '@/constants/theme';
+import { Icon } from '@/components/icon';
 import { LanguageToggle } from '@/components/language-toggle';
 import { resendConfirmation, signUpWithPassword } from '@/features/auth/api';
 import { AuthScreenShell } from '@/features/auth/components/auth-screen-shell';
@@ -108,6 +109,7 @@ export default function SignUpScreen() {
   if (pendingEmail) {
     return (
       <AuthScreenShell
+        badge='envelope'
         title={t('signUp.checkEmail.title')}
         description={`${t('signUp.checkEmail.descriptionBefore')} ${pendingEmail}${t('signUp.checkEmail.descriptionAfter')}`}
         footer={<TextLink href='/sign-in'>{t('signUp.backToSignIn')}</TextLink>}
@@ -159,6 +161,7 @@ export default function SignUpScreen() {
           control={control}
           name='email'
           label={t('fields.email')}
+          leading={<Icon name='envelope' size={18} />}
           placeholder={t('fields.emailPlaceholder')}
           keyboardType='email-address'
           autoCapitalize='none'

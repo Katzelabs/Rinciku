@@ -7,7 +7,7 @@ import {
   type ViewStyle,
 } from 'react-native';
 
-import { Fonts, Radius, Spacing } from '@/constants/theme';
+import { Fonts, Radius, Shadow, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
 type Variant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'destructive';
@@ -55,11 +55,13 @@ export function Button({
       onPress={onPress}
       style={({ pressed }) => [
         styles.base,
+        variant === 'primary' && !isDisabled ? styles.elevated : null,
         {
           backgroundColor: bg[variant],
           borderColor: variant === 'outline' ? c.border : 'transparent',
           borderWidth: variant === 'outline' ? StyleSheet.hairlineWidth * 2 : 0,
-          opacity: isDisabled ? 0.5 : pressed ? 0.85 : 1,
+          opacity: isDisabled ? 0.5 : pressed ? 0.9 : 1,
+          transform: [{ scale: pressed && !isDisabled ? 0.98 : 1 }],
         },
         style,
       ]}
@@ -78,8 +80,9 @@ const styles = StyleSheet.create({
     gap: Spacing.two,
     minHeight: 50,
     paddingHorizontal: Spacing.four,
-    borderRadius: Radius.lg,
+    borderRadius: Radius['2xl'],
     borderCurve: 'continuous',
   },
+  elevated: { boxShadow: Shadow.sm },
   label: { fontFamily: Fonts.semibold, fontSize: 16 },
 });

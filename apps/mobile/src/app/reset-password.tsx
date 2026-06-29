@@ -108,6 +108,7 @@ export default function ResetPasswordScreen() {
   if (status === 'invalid') {
     return (
       <AuthScreenShell
+        badge='exclamationmark.triangle.fill'
         title={t('resetPassword.invalid.title')}
         footer={
           <TextLink href='/forgot-password'>

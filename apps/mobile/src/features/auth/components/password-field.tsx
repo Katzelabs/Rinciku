@@ -8,7 +8,6 @@ import {
 import {
   Pressable,
   StyleSheet,
-  Text,
   TextInput,
   View,
   type TextInputProps,
@@ -16,6 +15,7 @@ import {
 import { useTranslation } from 'react-i18next';
 
 import { Fonts, Spacing } from '@/constants/theme';
+import { Icon } from '@/components/icon';
 import { useTheme } from '@/hooks/use-theme';
 import { FieldError, FieldLabel, InputShell } from './text-field';
 
@@ -41,6 +41,7 @@ export function PasswordField<T extends FieldValues>({
   const c = useTheme();
   const { t } = useTranslation('auth');
   const [visible, setVisible] = useState(false);
+  const [focused, setFocused] = useState(false);
 
   return (
     <View style={styles.field}>
@@ -50,7 +51,11 @@ export function PasswordField<T extends FieldValues>({
         name={name}
         render={({ field, fieldState }) => (
           <>
-            <InputShell invalid={!!fieldState.error}>
+            <InputShell
+              invalid={!!fieldState.error}
+              focused={focused}
+              leading={<Icon name='lock' size={18} />}
+            >
               <TextInput
                 style={[styles.input, { color: c.foreground }]}
                 placeholderTextColor={c.mutedForeground}
@@ -58,7 +63,11 @@ export function PasswordField<T extends FieldValues>({
                 autoCapitalize='none'
                 value={field.value == null ? '' : String(field.value)}
                 onChangeText={field.onChange}
-                onBlur={field.onBlur}
+                onFocus={() => setFocused(true)}
+                onBlur={() => {
+                  setFocused(false);
+                  field.onBlur();
+                }}
                 {...inputProps}
               />
               <Pressable
@@ -69,9 +78,7 @@ export function PasswordField<T extends FieldValues>({
                 }
                 onPress={() => setVisible((v) => !v)}
               >
-                <Text style={[styles.toggle, { color: c.mutedForeground }]}>
-                  {visible ? t('fields.hidePassword') : t('fields.showPassword')}
-                </Text>
+                <Icon name={visible ? 'eye.slash' : 'eye'} size={20} />
               </Pressable>
             </InputShell>
             {showError ? (
@@ -92,5 +99,4 @@ const styles = StyleSheet.create({
     fontSize: 16,
     paddingVertical: Spacing.three,
   },
-  toggle: { fontFamily: Fonts.medium, fontSize: 13 },
 });
