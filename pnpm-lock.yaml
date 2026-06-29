@@ -141,6 +141,9 @@ importers:
       '@rinciku/db':
         specifier: workspace:*
         version: link:../../packages/db
+      '@rinciku/domain':
+        specifier: workspace:*
+        version: link:../../packages/domain
       '@supabase/supabase-js':
         specifier: ^2.106.2
         version: 2.106.2
@@ -320,6 +323,28 @@ importers:
       '@supabase/supabase-js':
         specifier: ^2.106.2
         version: 2.106.2
+    devDependencies:
+      '@rinciku/config':
+        specifier: workspace:*
+        version: link:../config
+
+  packages/domain:
+    dependencies:
+      '@rinciku/core':
+        specifier: workspace:*
+        version: link:../core
+      '@rinciku/db':
+        specifier: workspace:*
+        version: link:../db
+      '@supabase/supabase-js':
+        specifier: ^2.106.2
+        version: 2.106.2
+      i18next:
+        specifier: ^26.3.2
+        version: 26.3.2(typescript@6.0.3)
+      zod:
+        specifier: ^4.4.3
+        version: 4.4.3
     devDependencies:
       '@rinciku/config':
         specifier: workspace:*
@@ -7960,7 +7985,9 @@ snapshots:
       metro-runtime: 0.84.4
     transitivePeerDependencies:
       - '@babel/core'
+      - bufferutil
       - supports-color
+      - utf-8-validate
 
   '@react-native/normalize-colors@0.74.89': {}
 

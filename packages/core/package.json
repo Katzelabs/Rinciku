@@ -5,7 +5,8 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
-    "./i18n": "./src/i18n/index.ts"
+    "./i18n": "./src/i18n/index.ts",
+    "./i18n/init": "./src/i18n/init.ts"
   },
   "scripts": {
     "lint": "eslint .",

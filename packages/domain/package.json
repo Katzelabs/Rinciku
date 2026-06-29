@@ -1,0 +1,26 @@
+{
+  "name": "@rinciku/domain",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./auth": "./src/features/auth/index.ts",
+    "./categories": "./src/features/categories/index.ts",
+    "./expenses": "./src/features/expenses/index.ts"
+  },
+  "scripts": {
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@rinciku/core": "workspace:*",
+    "@rinciku/db": "workspace:*",
+    "@supabase/supabase-js": "^2.106.2",
+    "i18next": "^26.3.2",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@rinciku/config": "workspace:*"
+  }
+}
