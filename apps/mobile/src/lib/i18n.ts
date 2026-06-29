@@ -1,31 +1,41 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getLocales } from 'expo-localization';
-import type { LanguageDetectorAsyncModule } from 'i18next';
 
 import {
   initI18n,
   isLanguage,
   LANGUAGE_STORAGE_KEY,
+  type Language,
 } from '@rinciku/core/i18n/init';
 
-// Mobile language detector: read the persisted choice from AsyncStorage, else
-// fall back to the device locale (expo-localization), else English. The web
-// entry (`@rinciku/core/i18n`) uses a browser detector + localStorage, which we
-// deliberately avoid here — only `.../i18n/init` is imported so no
-// browser-only deps reach Metro. Persisting back through `cacheUserLanguage`
-// keeps i18next and storage in sync when the language changes.
-const languageDetector: LanguageDetectorAsyncModule = {
-  type: 'languageDetector',
-  async: true,
-  detect: async () => {
-    const stored = await AsyncStorage.getItem(LANGUAGE_STORAGE_KEY);
-    if (isLanguage(stored)) return stored;
-    const device = getLocales()[0]?.languageCode;
-    return isLanguage(device) ? device : 'en';
-  },
-  cacheUserLanguage: async (lng: string) => {
-    await AsyncStorage.setItem(LANGUAGE_STORAGE_KEY, lng);
-  },
-};
+// Resolve the device language synchronously (expo-localization's getLocales is
+// sync). Guarded because the native module can throw if called too early.
+function deviceLanguage(): Language {
+  try {
+    const code = getLocales()[0]?.languageCode;
+    return isLanguage(code) ? code : 'en';
+  } catch {
+    return 'en';
+  }
+}
 
-export const i18n = initI18n({ plugins: [languageDetector] });
+// Initialize i18next SYNCHRONOUSLY with an explicit language, so translations
+// are ready on the very first render. An async language detector would resolve
+// after the first frame (or stall init entirely if it rejected), leaving the UI
+// showing raw keys like "signIn.title". This mirrors the web app, which also
+// inits synchronously. The web entry (`@rinciku/core/i18n`) is deliberately not
+// imported — it pulls a browser-only detector.
+export const i18n = initI18n({ lng: deviceLanguage() });
+
+// Persist every language change (toggle, settings) back to storage.
+i18n.on('languageChanged', (lng: string) => {
+  void AsyncStorage.setItem(LANGUAGE_STORAGE_KEY, lng);
+});
+
+// Restore the user's persisted choice, if any, after the synchronous init.
+// `changeLanguage` fires 'languageChanged', which react-i18next re-renders on.
+void AsyncStorage.getItem(LANGUAGE_STORAGE_KEY).then((stored) => {
+  if (isLanguage(stored) && stored !== i18n.resolvedLanguage) {
+    void i18n.changeLanguage(stored);
+  }
+});

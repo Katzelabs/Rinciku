@@ -1,6 +1,5 @@
-import '@/lib/i18n';
-
 import { useEffect } from 'react';
+import { I18nextProvider } from 'react-i18next';
 import { AppState, useColorScheme } from 'react-native';
 import {
   Figtree_400Regular,
@@ -17,6 +16,12 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { Colors } from '@/constants/theme';
 import { AuthProvider } from '@/features/auth/components/auth-provider';
 import { useAuth } from '@/features/auth/hooks/use-auth';
+// Importing `i18n` also runs the init side-effect once. It must be provided via
+// I18nextProvider (below) because this app and @rinciku/core resolve different
+// physical copies of react-i18next (different react peer hash under pnpm), so
+// the instance @rinciku/core registers globally is invisible to the app's
+// useTranslation — context wins and bridges the gap.
+import { i18n } from '@/lib/i18n';
 import { supabase } from '@/lib/supabase';
 
 SplashScreen.preventAutoHideAsync();
@@ -71,13 +76,15 @@ export default function RootLayout() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <SafeAreaProvider>
-        <ThemeProvider value={scheme === 'dark' ? navDark : navLight}>
-          <AuthProvider>
-            <RootNavigator fontsLoaded={fontsLoaded} />
-          </AuthProvider>
-        </ThemeProvider>
-      </SafeAreaProvider>
+      <I18nextProvider i18n={i18n}>
+        <SafeAreaProvider>
+          <ThemeProvider value={scheme === 'dark' ? navDark : navLight}>
+            <AuthProvider>
+              <RootNavigator fontsLoaded={fontsLoaded} />
+            </AuthProvider>
+          </ThemeProvider>
+        </SafeAreaProvider>
+      </I18nextProvider>
     </GestureHandlerRootView>
   );
 }
