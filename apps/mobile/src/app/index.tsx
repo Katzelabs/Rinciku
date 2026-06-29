@@ -1,3 +1,4 @@
+import { CURRENCY_NAMES } from '@rinciku/core';
 import * as Device from 'expo-device';
 import { Platform, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -6,13 +7,14 @@ import { AnimatedIcon } from '@/components/animated-icon';
 import { HintRow } from '@/components/hint-row';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { WebBadge } from '@/components/web-badge';
 import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
 
+// Proves the monorepo wiring: `@rinciku/core` resolves through Metro and its
+// raw TypeScript transpiles, and an `EXPO_PUBLIC_*` var is readable client-side.
+const workspaceCurrency = CURRENCY_NAMES.IDR;
+const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL ?? '(unset)';
+
 function getDevMenuHint() {
-  if (Platform.OS === 'web') {
-    return <ThemedText type='small'>use browser devtools</ThemedText>;
-  }
   if (Device.isDevice) {
     return (
       <ThemedText type='small'>
@@ -50,12 +52,24 @@ export default function HomeScreen() {
           />
           <HintRow title='Dev tools' hint={getDevMenuHint()} />
           <HintRow
-            title='Fresh start'
-            hint={<ThemedText type='code'>npm run reset-project</ThemedText>}
+            title='Workspace'
+            hint={
+              <ThemedText type='small'>
+                @rinciku/core →{' '}
+                <ThemedText type='code'>{workspaceCurrency}</ThemedText>
+              </ThemedText>
+            }
+          />
+          <HintRow
+            title='Env'
+            hint={
+              <ThemedText type='small'>
+                EXPO_PUBLIC_SUPABASE_URL ={' '}
+                <ThemedText type='code'>{supabaseUrl}</ThemedText>
+              </ThemedText>
+            }
           />
         </ThemedView>
-
-        {Platform.OS === 'web' && <WebBadge />}
       </SafeAreaView>
     </ThemedView>
   );
