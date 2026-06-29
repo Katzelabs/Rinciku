@@ -11,6 +11,7 @@ description: One-shot wiring for Rinciku's Supabase integration — typed browse
 - `apps/web/src/lib/supabase.ts` does not yet exist.
 - Before any feature's `api.ts` can be implemented (it depends on the shared client and generated types).
 - If `apps/web/src/lib/supabase.ts` already exists, **stop and report** — this is a one-shot skill; further changes should be targeted edits, not a re-run.
+- **Web only.** The mobile app (`apps/mobile`) has its own client at `apps/mobile/src/lib/supabase.ts` using `createMobileClient(url, anonKey, AsyncStorage)` from `@rinciku/db` (env `EXPO_PUBLIC_SUPABASE_*`) and its own `AuthProvider`. It is already wired — don't run this skill for mobile.
 
 ## Steps
 

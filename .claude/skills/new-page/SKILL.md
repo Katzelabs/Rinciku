@@ -1,15 +1,17 @@
 ---
 name: new-page
-description: Add a page to an existing feature in apps/web/src/features/<feature>/, register the route in that feature's routes.tsx, and optionally scaffold a react-router v7 loader or action. Use when adding a route inside a feature that already exists.
+description: Add a page to an existing WEB feature in apps/web/src/features/<feature>/, register the route in that feature's routes.tsx, and optionally scaffold a react-router v7 loader or action. Use when adding a route inside a feature that already exists. For mobile (Expo) screens, use mobile-screen instead.
 ---
 
 # new-page
 
+> **Web only.** This skill targets the React Router app at `apps/web`. To add a screen to the Expo app (`apps/mobile`, file-based expo-router), use the **`mobile-screen`** skill instead.
+
 ## When to use
 
-- The user asks to "add a page" or "add a route" inside an existing feature (e.g. "add a settings page to the dashboard feature").
+- The user asks to "add a page" or "add a route" inside an existing **web** feature (e.g. "add a settings page to the dashboard feature").
 - The page belongs to an existing feature folder under `apps/web/src/features/`. If the feature doesn't exist yet, run `new-feature` first.
-- The page renders a route that the user can navigate to (not just an internal component — for that, use `ui-component`).
+- The page renders a route that the user can navigate to (not just an internal component).
 
 ## Steps
 

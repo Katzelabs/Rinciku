@@ -1,6 +1,6 @@
 ---
 name: new-api
-description: Populate or extend a Rinciku feature's api.ts with Supabase-backed queries and mutations. Imports the shared client from @/lib/supabase, returns typed rows from database.types.ts, surfaces PostgrestError, and keeps the file free of business logic.
+description: Add a Supabase-backed query/mutation to a Rinciku feature. The data layer lives in @rinciku/domain as a create<Feature>Api(db) factory (portable, shared by web + mobile); each app's features/<feature>/api.ts is a thin shim that binds the factory to its own Supabase client. Returns typed rows from the generated Database types and throws PostgrestError.
 ---
 
 # new-api
@@ -8,54 +8,83 @@ description: Populate or extend a Rinciku feature's api.ts with Supabase-backed 
 ## When to use
 
 - The user asks to add a query/mutation/CRUD function to a feature (e.g. "add listExpenses", "let me create a budget").
-- A loader/action/hook needs a new data-access function in the feature's `api.ts`.
-- Do **not** put data fetching inside components, loaders, actions, or hooks directly — it belongs in `api.ts`.
+- A loader/action/hook/screen needs a new data-access function.
+- Do **not** put data fetching inside components, loaders, actions, hooks, or screens directly — it belongs in the domain factory.
+
+## Where the code goes (read first)
+
+Data access is **portable and shared** between web and mobile. It lives in `@rinciku/domain`, NOT in an app:
+
+- **`packages/domain/src/features/<feature>/api.ts`** — the real logic: `export function create<Feature>Api(db, deps?)` returning the query/mutation functions. The Supabase client is **dependency-injected** (`db: TypedSupabaseClient`), never imported, so the same code runs on both platforms.
+- **`apps/web/src/features/<feature>/api.ts`** and **`apps/mobile/src/features/<feature>/api.ts`** — thin shims that call `create<Feature>Api(supabase, ...)` with that app's client and re-export the bound functions.
+
+If the feature isn't in `@rinciku/domain` yet, create the folder there (`api.ts` + `index.ts`, plus `schemas.ts`/`types.ts` as needed) and add an `exports` entry `"./<feature>": "./src/features/<feature>/index.ts"` to `packages/domain/package.json`.
 
 ## Pre-requisite
 
-- `apps/web/src/lib/supabase.ts` and `packages/db/src/database.types.ts` must exist. If not, run `supabase-setup` first.
+- `packages/db/src/database.types.ts` must exist and be current. If not, run `pnpm gen:types`.
+- Each app's `src/lib/supabase.ts` must exist (web: `createSupabaseClient`; mobile: `createMobileClient`). If web's is missing, run `supabase-setup`.
 
 ## Steps
 
-1. Identify the target feature: `apps/web/src/features/<feature>/api.ts`.
-2. Import the shared Supabase client and types:
+1. **Open the domain factory** at `packages/domain/src/features/<feature>/api.ts`. Import types from `@rinciku/db`:
    ```ts
-   import { supabase } from '@/lib/supabase';
-   import type { Database } from '@rinciku/db';
+   import type { TypedSupabaseClient, Database } from '@rinciku/db';
 
    type <Row> = Database['public']['Tables']['<table>']['Row'];
    type <Insert> = Database['public']['Tables']['<table>']['Insert'];
    type <Update> = Database['public']['Tables']['<table>']['Update'];
    ```
-3. Write each function as a small async wrapper around a single Supabase call:
+2. **Add the function inside `create<Feature>Api`**, closing over the injected `db`:
    ```ts
-   export async function list<Things>(): Promise<<Row>[]> {
-     const { data, error } = await supabase.from('<table>').select('*').order('created_at', { ascending: false });
-     if (error) throw error;
-     return data;
-   }
+   export function create<Feature>Api(db: TypedSupabaseClient) {
+     async function list<Things>(): Promise<<Row>[]> {
+       const { data, error } = await db
+         .from('<table>')
+         .select('*')
+         .order('created_at', { ascending: false });
+       if (error) throw error;
+       return data;
+     }
 
-   export async function create<Thing>(input: <Insert>): Promise<<Row>> {
-     const { data, error } = await supabase.from('<table>').insert(input).select().single();
-     if (error) throw error;
-     return data;
+     async function create<Thing>(input: <Insert>): Promise<<Row>> {
+       const { data, error } = await db.from('<table>').insert(input).select().single();
+       if (error) throw error;
+       return data;
+     }
+
+     return { list<Things>, create<Thing> /* , ... */ };
    }
    ```
-4. Always destructure `{ data, error }` and throw `error` so callers can rely on a single failure path (`try/catch` or react-router's error boundary).
-5. Run `pnpm build` to catch type drift between the schema and the function signatures.
+   - If the operation needs a platform-specific value (e.g. a redirect URL), add it to a `deps` parameter and inject it from each app's shim — don't reach for `window`, `import.meta`, or `process.env` inside `packages/domain`. (See `createAuthApi(db, redirects)` for the pattern.)
+3. **Re-export from the app shims** so callers get the bound functions. Each app's `features/<feature>/api.ts`:
+   ```ts
+   import { create<Feature>Api } from '@rinciku/domain/<feature>';
+   import { supabase } from '@/lib/supabase';
+
+   export const { list<Things>, create<Thing> } = create<Feature>Api(supabase);
+   ```
+   Web and mobile shims are near-identical — only the imported `supabase` client (and any injected `deps`) differ.
+4. **Typecheck** the domain package and the consuming app(s):
+   ```bash
+   pnpm --filter @rinciku/domain typecheck
+   pnpm build                              # web (tsc + vite)
+   pnpm --filter @rinciku/mobile typecheck
+   ```
 
 ## Conventions to enforce
 
-- `api.ts` is the **only** place that touches `supabase.from(...)` for a feature.
-- Pure data layer: no formatting, no business rules, no Zod validation, no toast notifications. Those belong in `actions.ts`, `hooks/`, or the page.
-- Use the generated `Database` types — never type rows manually.
-- Throw on error; never swallow or `return null` on failure.
-- One function per logical operation. Don't bundle (e.g. `getAllAndCount` is two functions).
-- Filter by `user_id` only when the table lacks an RLS owner policy. With RLS in place, `auth.uid()` constrains rows automatically — adding redundant `.eq('user_id', uid)` is fine for clarity but not required.
-- Use minor units (cents / rupiah-sen) for currency columns; types reflect that with `number` (integer).
+- **The domain factory is the only place that calls `db.from(...)`** for a feature. App `api.ts` files only bind and re-export — never add a raw `supabase.from(...)` call there.
+- **Inject, don't import.** `packages/domain` must stay free of `window`/DOM, `import.meta`, `process.env`, AsyncStorage, and any web- or RN-only API. Platform values come in through the factory's arguments.
+- Pure data layer: no formatting, no business rules, no toasts. Zod *parsing* can live in the domain function if it guards the input shape; UI-side validation stays with the form.
+- Use the generated `Database` types — never type rows by hand.
+- Throw on error; never swallow or `return null` on failure. One function per logical operation.
+- Filter by `user_id` only when the table lacks an RLS owner policy — with RLS, `auth.uid()` already constrains rows. Redundant `.eq('user_id', uid)` is allowed for clarity but not required.
+- Currency columns are **minor units** (`bigint` → `number` in TS): sen for IDR, cents for USD.
 
 ## Verification
 
-- `pnpm build` succeeds — type errors here usually mean `database.types.ts` is stale; regenerate via `supabase gen types typescript --local > packages/db/src/database.types.ts` (or `pnpm gen:types` from the repo root, which does exactly this).
-- Call the new function from a loader/action/hook and exercise the flow in `pnpm dev`.
-- Confirm RLS works: log in as a different user and verify the row isn't returned.
+- `pnpm --filter @rinciku/domain typecheck` is clean — type errors usually mean `database.types.ts` is stale; regenerate via `pnpm gen:types`.
+- `pnpm build` (web) and `pnpm --filter @rinciku/mobile typecheck` both pass — confirms both shims still bind cleanly.
+- Exercise the flow from a loader/action/hook (web) or screen/hook (mobile).
+- Confirm RLS: sign in as a different user and verify the row isn't returned.
