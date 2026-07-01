@@ -6,6 +6,7 @@
   "exports": {
     ".": "./src/index.ts",
     "./auth": "./src/features/auth/index.ts",
+    "./budgets": "./src/features/budgets/index.ts",
     "./categories": "./src/features/categories/index.ts",
     "./dashboard": "./src/features/dashboard/index.ts",
     "./essentials": "./src/features/essentials/index.ts",

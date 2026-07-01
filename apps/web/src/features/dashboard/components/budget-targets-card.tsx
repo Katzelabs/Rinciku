@@ -6,11 +6,9 @@ import { Link } from 'react-router';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
+import { getBudgetsView, type BudgetsView } from '@rinciku/domain/budgets';
 import { useAuth } from '@/features/auth';
-import {
-  getBudgetsView,
-  type BudgetsView,
-} from '@/features/budgets/hooks/use-budgets';
+import { supabase } from '@/lib/supabase';
 
 // Compact dashboard summary of budget-vs-actual for the current cycle. Reuses
 // the budgets feature's view-model orchestration (getBudgetsView).
@@ -24,7 +22,7 @@ export function BudgetTargetsCard() {
   useEffect(() => {
     if (!profile) return;
     let cancelled = false;
-    getBudgetsView(profile)
+    getBudgetsView(supabase, profile)
       .then(({ data, error }) => {
         if (cancelled) return;
         setView(data);
