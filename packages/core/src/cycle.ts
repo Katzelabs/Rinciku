@@ -1,5 +1,6 @@
+import { endOfDay, endOfWeek, startOfDay, startOfWeek } from 'date-fns';
 import type { Database } from '@rinciku/db';
-import { activeLocale } from './locale';
+import { activeDateFnsLocale, activeLocale } from './locale';
 
 type ProfileRow = Database['public']['Tables']['profiles']['Row'];
 
@@ -57,6 +58,39 @@ export function getCycleLabel(cycle: Cycle): string {
     return `${startDay}–${endDay} ${startMonth}`;
   }
   return `${startDay} ${startMonth} – ${endDay} ${endMonth}`;
+}
+
+// Preset periods for filtering dashboard/analytics views. `month` maps to the
+// user's billing cycle (respecting month_start_day); the others are plain
+// calendar windows. Week start follows the active language's locale (Sunday for
+// en, Monday for id) via date-fns.
+export type PeriodPreset = 'today' | 'week' | 'month' | 'custom';
+
+export function getPeriodRange(
+  preset: PeriodPreset,
+  profile: Pick<ProfileRow, 'month_start_day'>,
+  opts: { now?: Date; customFrom?: Date; customTo?: Date } = {}
+): Cycle {
+  const now = opts.now ?? new Date();
+  switch (preset) {
+    case 'today':
+      return { start: startOfDay(now), end: endOfDay(now) };
+    case 'week': {
+      const locale = activeDateFnsLocale();
+      return {
+        start: startOfWeek(now, { locale }),
+        end: endOfWeek(now, { locale }),
+      };
+    }
+    case 'custom':
+      return {
+        start: startOfDay(opts.customFrom ?? now),
+        end: endOfDay(opts.customTo ?? now),
+      };
+    case 'month':
+    default:
+      return getCurrentCycle(profile, now);
+  }
 }
 
 function clampDay(value: number): number {

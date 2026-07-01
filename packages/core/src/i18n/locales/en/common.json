@@ -11,16 +11,20 @@
       "assistant": "Assistant"
     },
     "items": {
+      "home": "Home",
       "dashboard": "Dashboard",
       "expenses": "Expenses",
       "incomes": "Incomes",
       "essentials": "Essentials",
       "budgets": "Budgets",
       "categories": "Categories",
+      "manage": "Manage",
       "rates": "Currency rates",
       "aiChat": "AI Chat",
       "more": "More"
-    }
+    },
+    "openSettings": "Open settings",
+    "addExpense": "Add expense"
   },
   "settings": {
     "title": "Settings",
@@ -50,7 +54,8 @@
     "cancel": "Cancel",
     "confirm": "Confirm",
     "delete": "Delete",
-    "close": "Close"
+    "close": "Close",
+    "apply": "Apply"
   },
   "fx": {
     "refreshFailed": "Couldn't refresh FX rates",

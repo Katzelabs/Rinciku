@@ -1,4 +1,10 @@
-import { type ReactNode, useEffect, useState } from 'react';
+import {
+  forwardRef,
+  type ReactNode,
+  useEffect,
+  useImperativeHandle,
+  useState,
+} from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   ActivityIndicator,
@@ -50,16 +56,32 @@ type FetchState = {
   error: string | null;
 };
 
+export type CategoriesManagerHandle = { openCreate: () => void };
+
+interface CategoriesManagerProps {
+  /** Show the inline top-row "Add tier" pill. Off on the standalone screen,
+   * which provides the action in the header instead. */
+  inlineAdd?: boolean;
+}
+
 // Full tiers + categories CRUD, mirroring the web onboarding review step. Reused
-// by the onboarding wizard now, and available for a standalone categories screen
-// later. Tiers/categories already exist (seeded at signup); edits persist
-// immediately via the shared api and a refetch.
-export function CategoriesManager() {
+// by the onboarding wizard (inline add pill) and the standalone categories
+// screen (header "+" via the imperative `openCreate` handle → new tier).
+// Tiers/categories already exist (seeded at signup); edits persist immediately
+// via the shared api and a refetch.
+export const CategoriesManager = forwardRef<
+  CategoriesManagerHandle,
+  CategoriesManagerProps
+>(function CategoriesManager({ inlineAdd = true }, ref) {
   const c = useTheme();
   const { t } = useTranslation('categories');
   const [refetchToken, setRefetchToken] = useState(0);
   const [data, setData] = useState<FetchState | null>(null);
   const [dialog, setDialog] = useState<DialogState>(null);
+
+  useImperativeHandle(ref, () => ({
+    openCreate: () => setDialog({ kind: 'create-tier' }),
+  }));
 
   useEffect(() => {
     let cancelled = false;
@@ -140,13 +162,15 @@ export function CategoriesManager() {
           {t('spending.subtitle')}
           {!loading ? `  ${tiers.length}/${MAX_TIERS}` : ''}
         </Text>
-        <PillButton
-          icon={<Plus size={16} color={c.primaryForeground} />}
-          label={t('spending.addTier')}
-          onPress={() => setDialog({ kind: 'create-tier' })}
-          disabled={loading || atTierLimit}
-          tone='primary'
-        />
+        {inlineAdd ? (
+          <PillButton
+            icon={<Plus size={16} color={c.primaryForeground} />}
+            label={t('spending.addTier')}
+            onPress={() => setDialog({ kind: 'create-tier' })}
+            disabled={loading || atTierLimit}
+            tone='primary'
+          />
+        ) : null}
       </View>
 
       {error ? <Notice tone='error'>{error}</Notice> : null}
@@ -180,7 +204,7 @@ export function CategoriesManager() {
       />
     </View>
   );
-}
+});
 
 // --- form modal ------------------------------------------------------------
 

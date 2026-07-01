@@ -4,7 +4,6 @@ import {
   ActivityIndicator,
   Alert,
   Pressable,
-  ScrollView,
   StyleSheet,
   Text,
   View,
@@ -24,8 +23,10 @@ import { CategoryIcon } from '@/features/categories/components/category-icon';
 import { useTheme } from '@/hooks/use-theme';
 
 // Lean v1 (M11): per-category targets + status meters for the current period.
+// Renders a plain View so the host screen owns the scroll container (mirrors
+// EssentialsManager / CategoriesManager); reused by the Manage tab.
 // TODO(M11 follow-up): tier caps, copy-from-previous-month, period navigation.
-export default function BudgetsScreen() {
+export function BudgetsManager() {
   const c = useTheme();
   const { t } = useTranslation('budgets');
   const { user } = useAuth();
@@ -65,11 +66,7 @@ export default function BudgetsScreen() {
   }
 
   return (
-    <ScrollView
-      style={{ backgroundColor: c.background }}
-      contentInsetAdjustmentBehavior='automatic'
-      contentContainerStyle={styles.content}
-    >
+    <View style={styles.container}>
       <Text style={[styles.subtitle, { color: c.mutedForeground }]}>
         {t('page.subtitle')}
       </Text>
@@ -172,16 +169,12 @@ export default function BudgetsScreen() {
         onSave={handleSave}
         onRemove={editing?.budgetId ? handleRemove : undefined}
       />
-    </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  content: {
-    padding: Spacing.four,
-    paddingBottom: Spacing.six,
-    gap: Spacing.three,
-  },
+  container: { gap: Spacing.three },
   subtitle: { fontFamily: Fonts.regular, fontSize: 14, lineHeight: 20 },
   cycle: { fontFamily: Fonts.medium, fontSize: 13 },
   loader: { marginVertical: Spacing.four },

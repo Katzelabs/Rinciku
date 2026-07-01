@@ -1,4 +1,7 @@
 {
+  "placeholder": {
+    "subtitle": "Pelacakan pemasukan segera hadir. Untuk saat ini, atur perkiraan pemasukan bulanan Anda di Pengaturan."
+  },
   "page": {
     "title": "Pemasukan",
     "subtitle": "Catat pemasukan yang diterima dan simpan bukti transfer dalam satu tempat.",

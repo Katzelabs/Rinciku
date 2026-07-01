@@ -1,9 +1,16 @@
 import { useCallback } from 'react';
-import { useFocusEffect, useRouter } from 'expo-router';
+import { Stack, useFocusEffect, useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
-import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
+import {
+  ActivityIndicator,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 
 import { Fonts, Radius, Spacing } from '@/constants/theme';
+import { HeaderAddButton } from '@/components/header-add-button';
 import { Notice } from '@/features/auth/components/notice';
 import { ExpenseFilters } from '@/features/expenses/components/expense-filters';
 import { ExpenseListItem } from '@/features/expenses/components/expense-list-item';
@@ -52,6 +59,17 @@ export default function ExpensesScreen() {
       keyboardShouldPersistTaps='handled'
       contentContainerStyle={styles.content}
     >
+      <Stack.Screen
+        options={{
+          headerRight: () => (
+            <HeaderAddButton
+              accessibilityLabel={t('common:nav.addExpense')}
+              onPress={() => router.push('/(app)/(expenses)/new')}
+            />
+          ),
+        }}
+      />
+
       <ExpenseSummary total={total} count={count} base={base} days={days} />
 
       <ExpenseFilters
@@ -74,7 +92,10 @@ export default function ExpensesScreen() {
         </Text>
       ) : (
         <View
-          style={[styles.card, { backgroundColor: c.card, borderColor: c.border }]}
+          style={[
+            styles.card,
+            { backgroundColor: c.card, borderColor: c.border },
+          ]}
         >
           {expenses.map((expense, i) => (
             <ExpenseListItem
@@ -96,7 +117,11 @@ export default function ExpensesScreen() {
 }
 
 const styles = StyleSheet.create({
-  content: { padding: Spacing.four, paddingBottom: Spacing.six, gap: Spacing.three },
+  content: {
+    padding: Spacing.four,
+    paddingBottom: Spacing.six,
+    gap: Spacing.three,
+  },
   loader: { marginVertical: Spacing.four },
   empty: {
     fontFamily: Fonts.regular,

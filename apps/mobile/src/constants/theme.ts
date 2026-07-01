@@ -111,7 +111,7 @@ export const Radius = {
 
 /**
  * Soft elevation presets as CSS `boxShadow` strings (the RN `boxShadow` style
- * prop is supported on the New Architecture — already used by `glass-fab`).
+ * prop is supported on the New Architecture).
  * Keep shadows subtle; they read on light surfaces and stay invisible in dark.
  */
 export const Shadow = {

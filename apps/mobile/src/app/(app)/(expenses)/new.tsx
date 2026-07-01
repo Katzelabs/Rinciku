@@ -5,8 +5,8 @@ import { Spacing } from '@/constants/theme';
 import { ExpenseForm } from '@/features/expenses/components/expense-form';
 import { useTheme } from '@/hooks/use-theme';
 
-// New-expense modal, launched from the GlassFab. On success the list refetches
-// on focus (see the expenses index screen).
+// New-expense modal, launched from the Expenses header "+". On success the list
+// refetches on focus (see the expenses index screen).
 export default function NewExpenseScreen() {
   const c = useTheme();
   const router = useRouter();

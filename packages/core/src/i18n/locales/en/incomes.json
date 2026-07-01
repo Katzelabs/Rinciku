@@ -1,4 +1,7 @@
 {
+  "placeholder": {
+    "subtitle": "Income tracking is coming soon. For now, set your expected monthly income in Settings."
+  },
   "page": {
     "title": "Incomes",
     "subtitle": "Log received income and keep transfer proofs in one place.",

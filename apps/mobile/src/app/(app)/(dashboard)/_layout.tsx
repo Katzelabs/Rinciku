@@ -6,6 +6,8 @@ export default function DashboardLayout() {
   return (
     <Stack screenOptions={{ headerLargeTitle: true }}>
       <Stack.Screen name='index' options={{ title: t('nav.items.dashboard') }} />
+      <Stack.Screen name='settings' options={{ title: t('settings.title') }} />
+      <Stack.Screen name='fx' options={{ title: t('nav.items.rates') }} />
     </Stack>
   );
 }

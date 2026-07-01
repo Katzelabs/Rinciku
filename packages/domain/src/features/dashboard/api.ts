@@ -12,7 +12,7 @@ import {
 import type { Profile } from '../auth';
 import { createCategoriesApi } from '../categories';
 import { createEssentialsApi, computeBaseline } from '../essentials';
-import type { MonthlySummary, TierTotals } from './types';
+import type { MonthlySummary, PeriodSpend, TierTotals } from './types';
 
 type Result<T> = {
   data: T | null;
@@ -107,7 +107,43 @@ export function createDashboardApi(db: TypedSupabaseClient) {
     };
   }
 
-  return { getMonthlySummary };
+  // Spend total + by-tier breakdown for an arbitrary [from, to] window (the RPC
+  // window is half-open, so pass `to + 1ms` as the exclusive upper bound like
+  // getMonthlySummary does). Powers the dashboard's period picker without
+  // touching the monthly budget cards.
+  async function getPeriodSpend(
+    profile: Profile,
+    from: Date,
+    to: Date
+  ): Promise<Result<PeriodSpend>> {
+    const base = (profile.base_currency ?? 'IDR') as CurrencyCode;
+    const endExclusive = new Date(to.getTime() + 1).toISOString();
+
+    await ensureRates();
+
+    const res = await db
+      .rpc('dashboard_monthly_summary', {
+        p_start_at: from.toISOString(),
+        p_end_at: endExclusive,
+        p_base: base,
+        p_rates: getCurrentRates(),
+      })
+      .single();
+
+    if (res.error) return { data: null, error: res.error };
+
+    return {
+      data: {
+        base_currency: base,
+        spent_total: round2(Number(res.data.spent_total ?? 0)),
+        by_tier: parseTierTotals(res.data.by_tier),
+        uncategorized_spent: round2(Number(res.data.uncategorized_spent ?? 0)),
+      },
+      error: null,
+    };
+  }
+
+  return { getMonthlySummary, getPeriodSpend };
 }
 
 export type DashboardApi = ReturnType<typeof createDashboardApi>;

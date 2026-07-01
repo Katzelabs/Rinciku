@@ -1,70 +1,96 @@
-import { useRouter } from 'expo-router';
+import MaterialDesignIcons from '@react-native-vector-icons/material-design-icons';
 import { NativeTabs } from 'expo-router/unstable-native-tabs';
 import { useTranslation } from 'react-i18next';
-import { StyleSheet, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { GlassFab } from '@/components/glass-fab';
+import { useTheme } from '@/hooks/use-theme';
+
+// Tab-bar icons. Both platforms use the same Material Design Icons for a
+// consistent custom look: the glyphs are rasterized from the icon font via
+// `getImageSourceSync` and passed to `src` (we intentionally omit `sf`, which
+// would take priority on iOS and show SF Symbols instead). Image sources are
+// computed once at module scope — `getImageSourceSync` is synchronous and must
+// not run per render. The baked color is a placeholder; the native tab bar
+// renders `src` as a template and re-tints per selection state (selected →
+// `tintColor`). Requires a development build so the vector-icons native module +
+// font are bundled (iOS needs the font in Info.plist `UIAppFonts`).
+const ICON_SIZE = 24;
+type MdiName = Parameters<typeof MaterialDesignIcons.getImageSourceSync>[0];
+const src = (name: MdiName) =>
+  MaterialDesignIcons.getImageSourceSync(name, ICON_SIZE, 'black');
+
+const icons = {
+  home: {
+    default: src('home-variant-outline'),
+    selected: src('home-variant-outline'),
+  },
+  expenses: {
+    default: src('credit-card-outline'),
+    selected: src('credit-card-outline'),
+  },
+  incomes: {
+    default: src('wallet-bifold-outline'),
+    selected: src('wallet-bifold-outline'),
+  },
+  manage: {
+    default: src('view-dashboard-outline'),
+    selected: src('view-dashboard-outline'),
+  },
+  ai: {
+    default: src('robot-excited-outline'),
+    selected: src('robot-excited-outline'),
+  },
+};
 
 // The authenticated shell. NativeTabs renders a native tab bar — Liquid Glass on
-// iOS 26+, Material 3 on Android — so we don't tint the bar ourselves. Each
-// trigger's `name` matches a child route group that nests its own Stack for
-// headers. The "More" tab is a real route group with a native list; `role` only
-// styles the system item.
+// iOS 26+, Material 3 on Android. We tint the *selected* item with the brand
+// primary (lime/green) via `tintColor`; the rest of the bar chrome stays system.
+// Each trigger's `name` matches a child route group that nests its own Stack for
+// headers. Tabs: Home · Expenses · Incomes · Manage · AI. Settings + FX live off
+// the tab bar (reached from the dashboard profile avatar), so there is no
+// "More" tab.
 export default function AppLayout() {
-  const router = useRouter();
-  const insets = useSafeAreaInsets();
   const { t } = useTranslation('common');
+  const c = useTheme();
 
   return (
-    <View style={styles.flex}>
-      <NativeTabs minimizeBehavior='onScrollDown'>
-        <NativeTabs.Trigger name='(dashboard)'>
-          <NativeTabs.Trigger.Icon sf='square.grid.2x2.fill' md='dashboard' />
-          <NativeTabs.Trigger.Label>
-            {t('nav.items.dashboard')}
-          </NativeTabs.Trigger.Label>
-        </NativeTabs.Trigger>
+    <NativeTabs minimizeBehavior='onScrollDown' tintColor={c.primary}>
+      <NativeTabs.Trigger name='(dashboard)'>
+        <NativeTabs.Trigger.Icon src={icons.home} renderingMode='template' />
+        <NativeTabs.Trigger.Label>
+          {t('nav.items.home')}
+        </NativeTabs.Trigger.Label>
+      </NativeTabs.Trigger>
 
-        <NativeTabs.Trigger name='(expenses)'>
-          <NativeTabs.Trigger.Icon sf='creditcard.fill' md='payments' />
-          <NativeTabs.Trigger.Label>
-            {t('nav.items.expenses')}
-          </NativeTabs.Trigger.Label>
-        </NativeTabs.Trigger>
-
-        <NativeTabs.Trigger name='(ai)'>
-          <NativeTabs.Trigger.Icon sf='sparkles' md='auto_awesome' />
-          <NativeTabs.Trigger.Label>
-            {t('nav.items.aiChat')}
-          </NativeTabs.Trigger.Label>
-        </NativeTabs.Trigger>
-
-        <NativeTabs.Trigger name='(more)' role='more'>
-          <NativeTabs.Trigger.Icon sf='ellipsis' md='more_horiz' />
-          <NativeTabs.Trigger.Label>
-            {t('nav.items.more')}
-          </NativeTabs.Trigger.Label>
-        </NativeTabs.Trigger>
-      </NativeTabs>
-
-      <View
-        pointerEvents='box-none'
-        style={[styles.fabWrap, { bottom: insets.bottom + 72 }]}
-      >
-        <GlassFab
-          accessibilityLabel={t('nav.items.expenses')}
-          onPress={() => router.push('/(app)/(expenses)/new')}
+      <NativeTabs.Trigger name='(expenses)'>
+        <NativeTabs.Trigger.Icon
+          src={icons.expenses}
+          renderingMode='template'
         />
-      </View>
-    </View>
+        <NativeTabs.Trigger.Label>
+          {t('nav.items.expenses')}
+        </NativeTabs.Trigger.Label>
+      </NativeTabs.Trigger>
+
+      <NativeTabs.Trigger name='(incomes)'>
+        <NativeTabs.Trigger.Icon src={icons.incomes} renderingMode='template' />
+        <NativeTabs.Trigger.Label>
+          {t('nav.items.incomes')}
+        </NativeTabs.Trigger.Label>
+      </NativeTabs.Trigger>
+
+      <NativeTabs.Trigger name='(manage)'>
+        <NativeTabs.Trigger.Icon src={icons.manage} renderingMode='template' />
+        <NativeTabs.Trigger.Label>
+          {t('nav.items.manage')}
+        </NativeTabs.Trigger.Label>
+      </NativeTabs.Trigger>
+
+      <NativeTabs.Trigger name='(ai)'>
+        <NativeTabs.Trigger.Icon src={icons.ai} renderingMode='template' />
+        <NativeTabs.Trigger.Label>
+          {t('nav.items.aiChat')}
+        </NativeTabs.Trigger.Label>
+      </NativeTabs.Trigger>
+    </NativeTabs>
   );
 }
-
-const styles = StyleSheet.create({
-  flex: { flex: 1 },
-  fabWrap: {
-    position: 'absolute',
-    right: 20,
-  },
-});

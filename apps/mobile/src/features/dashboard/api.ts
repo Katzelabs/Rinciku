@@ -7,6 +7,6 @@ import { supabase } from '@/lib/supabase';
 // analytics charts are web-only (deferred per the M7 plan).
 const api = createDashboardApi(supabase);
 
-export const { getMonthlySummary } = api;
+export const { getMonthlySummary, getPeriodSpend } = api;
 
 export type { DashboardApi } from '@rinciku/domain/dashboard';

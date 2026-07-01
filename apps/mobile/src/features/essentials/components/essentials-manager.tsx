@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { forwardRef, useImperativeHandle, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   ActivityIndicator,
@@ -31,10 +31,23 @@ type DialogState =
   | { kind: 'edit'; row: EssentialWithCategory }
   | null;
 
+export type EssentialsManagerHandle = { openCreate: () => void };
+
+interface EssentialsManagerProps {
+  /** Show the inline top-row "Add" pill. Off on the standalone screen, which
+   * provides the action in the header instead. */
+  inlineAdd?: boolean;
+}
+
 // Essentials list + baseline summary + create/edit/delete, mirroring the web
 // essentials page. The Stack header supplies the large title; this renders a
 // plain View so the screen owns the scroll container (like CategoriesManager).
-export function EssentialsManager() {
+// The standalone screen drives creation from the header via the imperative
+// `openCreate` handle; the onboarding wizard uses the inline add pill.
+export const EssentialsManager = forwardRef<
+  EssentialsManagerHandle,
+  EssentialsManagerProps
+>(function EssentialsManager({ inlineAdd = true }, ref) {
   const c = useTheme();
   const { t } = useTranslation('essentials');
   const { profile } = useAuth();
@@ -43,6 +56,10 @@ export function EssentialsManager() {
   const { essentials, tiers, baseline, loading, error, refetch } =
     useEssentials(base);
   const [dialog, setDialog] = useState<DialogState>(null);
+
+  useImperativeHandle(ref, () => ({
+    openCreate: () => setDialog({ kind: 'create' }),
+  }));
 
   function confirmDelete(row: EssentialWithCategory) {
     Alert.alert(t('dialog.delete.title'), t('dialog.delete.description'), [
@@ -68,19 +85,21 @@ export function EssentialsManager() {
         <Text style={[styles.subtitle, { color: c.mutedForeground }]}>
           {t('page.subtitle')}
         </Text>
-        <Pressable
-          accessibilityRole='button'
-          onPress={() => setDialog({ kind: 'create' })}
-          style={({ pressed }) => [
-            styles.addPill,
-            { backgroundColor: c.primary, opacity: pressed ? 0.85 : 1 },
-          ]}
-        >
-          <Plus size={16} color={c.primaryForeground} />
-          <Text style={[styles.addLabel, { color: c.primaryForeground }]}>
-            {t('page.addButton')}
-          </Text>
-        </Pressable>
+        {inlineAdd ? (
+          <Pressable
+            accessibilityRole='button'
+            onPress={() => setDialog({ kind: 'create' })}
+            style={({ pressed }) => [
+              styles.addPill,
+              { backgroundColor: c.primary, opacity: pressed ? 0.85 : 1 },
+            ]}
+          >
+            <Plus size={16} color={c.primaryForeground} />
+            <Text style={[styles.addLabel, { color: c.primaryForeground }]}>
+              {t('page.addButton')}
+            </Text>
+          </Pressable>
+        ) : null}
       </View>
 
       {error ? <Notice tone='error'>{error}</Notice> : null}
@@ -93,7 +112,10 @@ export function EssentialsManager() {
         </Text>
       ) : (
         <View
-          style={[styles.card, { backgroundColor: c.card, borderColor: c.border }]}
+          style={[
+            styles.card,
+            { backgroundColor: c.card, borderColor: c.border },
+          ]}
         >
           {essentials.map((row, i) => (
             <View
@@ -123,9 +145,7 @@ export function EssentialsManager() {
                   {row.name}
                 </Text>
                 {row.category ? (
-                  <Text
-                    style={[styles.category, { color: c.mutedForeground }]}
-                  >
+                  <Text style={[styles.category, { color: c.mutedForeground }]}>
                     {row.category.name}
                   </Text>
                 ) : null}
@@ -167,7 +187,7 @@ export function EssentialsManager() {
       />
     </View>
   );
-}
+});
 
 function FormModal({
   dialog,
@@ -250,7 +270,10 @@ function IconButton({
       hitSlop={8}
       accessibilityRole='button'
       accessibilityLabel={accessibilityLabel}
-      style={({ pressed }) => [styles.iconButton, { opacity: pressed ? 0.6 : 1 }]}
+      style={({ pressed }) => [
+        styles.iconButton,
+        { opacity: pressed ? 0.6 : 1 },
+      ]}
     >
       {children}
     </Pressable>
@@ -265,7 +288,12 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: Spacing.two,
   },
-  subtitle: { flex: 1, fontFamily: Fonts.regular, fontSize: 13, lineHeight: 18 },
+  subtitle: {
+    flex: 1,
+    fontFamily: Fonts.regular,
+    fontSize: 13,
+    lineHeight: 18,
+  },
   addPill: {
     flexDirection: 'row',
     alignItems: 'center',

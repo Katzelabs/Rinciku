@@ -20,3 +20,13 @@ export type MonthlySummary = {
   uncategorized_spent: number;
   tiers: Tier[];
 };
+
+// Spend-only slice for a caller-chosen period (Today / This week / Custom on the
+// dashboard). Unlike MonthlySummary this carries no budget context (income,
+// remaining, days left) — those stay tied to the monthly cycle.
+export type PeriodSpend = {
+  base_currency: CurrencyCode;
+  spent_total: number;
+  by_tier: TierTotals;
+  uncategorized_spent: number;
+};

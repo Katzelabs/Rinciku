@@ -11,16 +11,20 @@
       "assistant": "Asisten"
     },
     "items": {
+      "home": "Beranda",
       "dashboard": "Beranda",
       "expenses": "Pengeluaran",
       "incomes": "Pemasukan",
       "essentials": "Kebutuhan Pokok",
       "budgets": "Anggaran",
       "categories": "Kategori",
+      "manage": "Kelola",
       "rates": "Kurs mata uang",
       "aiChat": "Obrolan AI",
       "more": "Lainnya"
-    }
+    },
+    "openSettings": "Buka pengaturan",
+    "addExpense": "Tambah pengeluaran"
   },
   "settings": {
     "title": "Pengaturan",
@@ -50,7 +54,8 @@
     "cancel": "Batal",
     "confirm": "Konfirmasi",
     "delete": "Hapus",
-    "close": "Tutup"
+    "close": "Tutup",
+    "apply": "Terapkan"
   },
   "fx": {
     "refreshFailed": "Gagal memperbarui kurs",

@@ -32,6 +32,11 @@ const ICONS = {
   },
   globe: { ios: 'globe', android: 'language', fallback: '🌐' },
   checkmark: { ios: 'checkmark', android: 'check', fallback: '✓' },
+  'person.crop.circle': {
+    ios: 'person.crop.circle',
+    android: 'account_circle',
+    fallback: '👤',
+  },
 } as const;
 
 export type IconName = keyof typeof ICONS;

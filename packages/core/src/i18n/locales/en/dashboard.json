@@ -3,6 +3,14 @@
     "title": "Dashboard",
     "subtitle": "Explore spending across any range. Income isn't category-filtered."
   },
+  "period": {
+    "title": "Period",
+    "accessibilityLabel": "Change period",
+    "today": "Today",
+    "thisWeek": "This week",
+    "thisMonth": "This month",
+    "custom": "Custom"
+  },
   "filters": {
     "allCategories": "All categories",
     "searchCategories": "Search categories…",

@@ -1,38 +1,53 @@
 import { useTranslation } from 'react-i18next';
 import { StyleSheet, Text, View } from 'react-native';
 
-import { formatCurrency } from '@rinciku/core';
+import { formatCurrency, type CurrencyCode } from '@rinciku/core';
 
 import { Fonts, Radius, Spacing } from '@/constants/theme';
-import type { MonthlySummary } from '@/features/dashboard/types';
+import type { Tier } from '@/features/categories/types';
+import type { TierTotals } from '@/features/dashboard/types';
 import { useTheme } from '@/hooks/use-theme';
 
 const UNTIERED_COLOR = '#94a3b8';
 
-// Spend-by-tier breakdown: a proportional stacked bar plus a legend. Untiered /
-// uncategorized spend is folded into a trailing segment. No chart library — the
-// bar is plain flexed Views (the time-series/pie charts are deferred to a
-// follow-up).
-export function TierBreakdown({ summary }: { summary: MonthlySummary }) {
+interface TierBreakdownProps {
+  tiers: Tier[];
+  by_tier: TierTotals;
+  uncategorized_spent: number;
+  base_currency: CurrencyCode;
+  /** Optional subtitle naming the active period (e.g. "Today"). */
+  periodLabel?: string;
+}
+
+// Spend-by-tier breakdown for the selected period: a proportional stacked bar
+// plus a legend. Untiered / uncategorized spend is folded into a trailing
+// segment. No chart library — the bar is plain flexed Views (the time-series/pie
+// charts are deferred to a follow-up).
+export function TierBreakdown({
+  tiers,
+  by_tier,
+  uncategorized_spent,
+  base_currency: base,
+  periodLabel,
+}: TierBreakdownProps) {
   const { t } = useTranslation('dashboard');
   const c = useTheme();
-  const base = summary.base_currency;
 
-  const rows = summary.tiers
+  const rows = tiers
     .map((tier) => ({
       id: tier.id,
       name: tier.name,
       color: tier.color ?? UNTIERED_COLOR,
-      amount: summary.by_tier[tier.id] ?? 0,
+      amount: by_tier[tier.id] ?? 0,
     }))
     .filter((r) => r.amount > 0);
 
-  if (summary.uncategorized_spent > 0) {
+  if (uncategorized_spent > 0) {
     rows.push({
       id: '__uncategorized__',
       name: t('tier.untiered'),
       color: UNTIERED_COLOR,
-      amount: summary.uncategorized_spent,
+      amount: uncategorized_spent,
     });
   }
 
@@ -40,10 +55,19 @@ export function TierBreakdown({ summary }: { summary: MonthlySummary }) {
   const total = rows.reduce((acc, r) => acc + r.amount, 0);
 
   return (
-    <View style={[styles.card, { backgroundColor: c.card, borderColor: c.border }]}>
-      <Text style={[styles.title, { color: c.foreground }]}>
-        {t('tier.ariaLabel')}
-      </Text>
+    <View
+      style={[styles.card, { backgroundColor: c.card, borderColor: c.border }]}
+    >
+      <View style={styles.header}>
+        <Text style={[styles.title, { color: c.foreground }]}>
+          {t('tier.ariaLabel')}
+        </Text>
+        {periodLabel ? (
+          <Text style={[styles.period, { color: c.mutedForeground }]}>
+            {periodLabel}
+          </Text>
+        ) : null}
+      </View>
 
       {total <= 0 ? (
         <Text style={[styles.empty, { color: c.mutedForeground }]}>
@@ -89,7 +113,14 @@ const styles = StyleSheet.create({
     padding: Spacing.three,
     gap: Spacing.three,
   },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: Spacing.two,
+  },
   title: { fontFamily: Fonts.semibold, fontSize: 16 },
+  period: { fontFamily: Fonts.medium, fontSize: 13 },
   empty: { fontFamily: Fonts.regular, fontSize: 14 },
   bar: {
     flexDirection: 'row',
