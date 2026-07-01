@@ -6,6 +6,25 @@ export default function IncomesLayout() {
   return (
     <Stack screenOptions={{ headerLargeTitle: true }}>
       <Stack.Screen name='index' options={{ title: t('nav.items.incomes') }} />
+      <Stack.Screen
+        name='new'
+        options={{
+          presentation: 'modal',
+          headerLargeTitle: false,
+          title: t('nav.items.incomes'),
+        }}
+      />
+      <Stack.Screen
+        name='[id]'
+        options={{ headerLargeTitle: false, title: t('incomes:detail.title') }}
+      />
+      <Stack.Screen
+        name='sources'
+        options={{
+          headerLargeTitle: false,
+          title: t('incomes:categories.title'),
+        }}
+      />
     </Stack>
   );
 }

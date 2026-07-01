@@ -10,7 +10,8 @@
     "./categories": "./src/features/categories/index.ts",
     "./dashboard": "./src/features/dashboard/index.ts",
     "./essentials": "./src/features/essentials/index.ts",
-    "./expenses": "./src/features/expenses/index.ts"
+    "./expenses": "./src/features/expenses/index.ts",
+    "./incomes": "./src/features/incomes/index.ts"
   },
   "scripts": {
     "lint": "eslint .",

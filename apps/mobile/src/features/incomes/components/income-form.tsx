@@ -7,7 +7,6 @@ import { StyleSheet, View } from 'react-native';
 import { type CurrencyCode } from '@rinciku/core';
 
 import { Spacing } from '@/constants/theme';
-import { CategorySelect } from '@/components/category-select';
 import { CurrencyAmountInput } from '@/components/currency-amount-input';
 import { DateField } from '@/components/date-field';
 import { Button } from '@/features/auth/components/button';
@@ -18,37 +17,35 @@ import {
   TextField,
 } from '@/features/auth/components/text-field';
 import { useAuth } from '@/features/auth/hooks/use-auth';
-import { createExpense, updateExpense } from '@/features/expenses/api';
-import {
-  makeExpenseSchema,
-  type ExpenseInput,
-} from '@/features/expenses/schemas';
+import { createIncome, updateIncome } from '@/features/incomes/api';
+import { IncomeSourceSelect } from '@/features/incomes/components/income-source-select';
+import { makeIncomeSchema, type IncomeInput } from '@/features/incomes/schemas';
 
 type Props = {
   mode: 'create' | 'edit';
-  defaultValues?: Partial<ExpenseInput> & { id?: string };
+  defaultValues?: Partial<IncomeInput> & { id?: string };
   onSuccess: () => void;
 };
 
-// Create/edit form for an expense. Currency is locked to the user's base
-// currency; attachments are web-only for now (deferred per the M8 plan).
-export function ExpenseForm({ mode, defaultValues, onSuccess }: Props) {
-  const { t } = useTranslation('expenses');
+// Create/edit form for an income. Currency is locked to the user's base
+// currency; the source (income category) is optional. Save errors surface inline
+// via a Notice rather than a blocking Alert.
+export function IncomeForm({ mode, defaultValues, onSuccess }: Props) {
+  const { t } = useTranslation('incomes');
   const { user, profile } = useAuth();
   const base = (profile?.base_currency ?? 'IDR') as CurrencyCode;
 
-  const schema = useMemo(() => makeExpenseSchema(t), [t]);
+  const schema = useMemo(() => makeIncomeSchema(t), [t]);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const {
     control,
     handleSubmit,
     formState: { isSubmitting },
-  } = useForm<ExpenseInput>({
+  } = useForm<IncomeInput>({
     resolver: zodResolver(schema),
     defaultValues: {
       amount: defaultValues?.amount ?? undefined,
-      currency: (defaultValues?.currency ?? base) as CurrencyCode,
-      category_id: defaultValues?.category_id ?? '',
+      source_id: defaultValues?.source_id ?? '',
       occurred_at: defaultValues?.occurred_at ?? new Date(),
       note: defaultValues?.note ?? '',
     },
@@ -57,27 +54,28 @@ export function ExpenseForm({ mode, defaultValues, onSuccess }: Props) {
   const onSubmit = handleSubmit(async (values) => {
     setSubmitError(null);
     if (!user) {
-      setSubmitError(t('toast.signInRequired'));
+      setSubmitError(t('toast.needSignIn'));
       return;
     }
     const note = values.note?.trim() ? values.note.trim() : null;
+    const source_id = values.source_id ? values.source_id : null;
 
     const { error } =
       mode === 'create'
-        ? await createExpense({
+        ? await createIncome({
             user_id: user.id,
+            source_id,
             amount: values.amount,
-            currency: values.currency,
-            category_id: values.category_id,
+            currency: base,
             occurred_at: values.occurred_at.toISOString(),
             note,
             source: 'manual',
           })
         : defaultValues?.id
-          ? await updateExpense(defaultValues.id, {
+          ? await updateIncome(defaultValues.id, {
+              source_id,
               amount: values.amount,
-              currency: values.currency,
-              category_id: values.category_id,
+              currency: base,
               occurred_at: values.occurred_at.toISOString(),
               note,
             })
@@ -112,15 +110,15 @@ export function ExpenseForm({ mode, defaultValues, onSuccess }: Props) {
 
       <Controller
         control={control}
-        name='category_id'
+        name='source_id'
         render={({ field, fieldState }) => (
           <View style={styles.field}>
-            <FieldLabel>{t('form.category')}</FieldLabel>
-            <CategorySelect
+            <FieldLabel>{t('form.source')}</FieldLabel>
+            <IncomeSourceSelect
               value={field.value || null}
               onChange={field.onChange}
               invalid={!!fieldState.error}
-              placeholder={t('form.categoryPlaceholder')}
+              placeholder={t('form.pickSource')}
             />
             <FieldError message={fieldState.error?.message} />
           </View>

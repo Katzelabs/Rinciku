@@ -51,6 +51,7 @@
     "editLabel": "Edit expense",
     "deleteLabel": "Delete expense",
     "empty": "No expenses for this range.",
+    "noResults": "No expenses match your filters.",
     "total": "Total ({{currency}})"
   },
   "detail": {

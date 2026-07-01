@@ -55,7 +55,12 @@
     "confirm": "Konfirmasi",
     "delete": "Hapus",
     "close": "Tutup",
-    "apply": "Terapkan"
+    "apply": "Terapkan",
+    "clearFilters": "Hapus filter"
+  },
+  "time": {
+    "today": "Hari ini",
+    "yesterday": "Kemarin"
   },
   "fx": {
     "refreshFailed": "Gagal memperbarui kurs",

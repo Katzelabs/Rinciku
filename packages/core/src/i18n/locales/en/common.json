@@ -55,7 +55,12 @@
     "confirm": "Confirm",
     "delete": "Delete",
     "close": "Close",
-    "apply": "Apply"
+    "apply": "Apply",
+    "clearFilters": "Clear filters"
+  },
+  "time": {
+    "today": "Today",
+    "yesterday": "Yesterday"
   },
   "fx": {
     "refreshFailed": "Couldn't refresh FX rates",

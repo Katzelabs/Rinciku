@@ -10,6 +10,7 @@
     "import": "Import",
     "importAria": "Import CSV",
     "addIncome": "Add income",
+    "manageSources": "Manage income sources",
     "loadError": "Failed to load incomes: {{error}}",
     "createTitle": "Add income",
     "createDescription": "Log income received in the current cycle.",
@@ -41,6 +42,7 @@
     "deleteIncome": "Delete income",
     "total": "Total ({{currency}})",
     "empty": "No incomes for this range.",
+    "noResults": "No incomes match your filters.",
     "openAttachmentError": "Could not open the attachment."
   },
   "form": {

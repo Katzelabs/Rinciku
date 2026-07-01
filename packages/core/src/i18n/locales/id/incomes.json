@@ -10,6 +10,7 @@
     "import": "Impor",
     "importAria": "Impor CSV",
     "addIncome": "Tambah pemasukan",
+    "manageSources": "Kelola sumber pemasukan",
     "loadError": "Gagal memuat pemasukan: {{error}}",
     "createTitle": "Tambah pemasukan",
     "createDescription": "Catat pemasukan yang diterima pada siklus ini.",
@@ -41,6 +42,7 @@
     "deleteIncome": "Hapus pemasukan",
     "total": "Total ({{currency}})",
     "empty": "Tidak ada pemasukan untuk rentang ini.",
+    "noResults": "Tidak ada pemasukan yang cocok dengan filter.",
     "openAttachmentError": "Tidak dapat membuka lampiran."
   },
   "form": {

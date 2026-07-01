@@ -51,6 +51,7 @@
     "editLabel": "Edit pengeluaran",
     "deleteLabel": "Hapus pengeluaran",
     "empty": "Tidak ada pengeluaran untuk rentang ini.",
+    "noResults": "Tidak ada pengeluaran yang cocok dengan filter.",
     "total": "Total ({{currency}})"
   },
   "detail": {
