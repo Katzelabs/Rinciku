@@ -15,6 +15,7 @@
   },
   "tier": {
     "untiered": "Tanpa tingkat",
+    "selectCategory": "Pilih kategori",
     "essentialBadge": "Pokok",
     "addCategory": "Tambah kategori",
     "categoryLimitTooltip": "Setiap tingkat dapat memiliki paling banyak {{max}} kategori.",

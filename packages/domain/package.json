@@ -7,6 +7,8 @@
     ".": "./src/index.ts",
     "./auth": "./src/features/auth/index.ts",
     "./categories": "./src/features/categories/index.ts",
+    "./dashboard": "./src/features/dashboard/index.ts",
+    "./essentials": "./src/features/essentials/index.ts",
     "./expenses": "./src/features/expenses/index.ts"
   },
   "scripts": {

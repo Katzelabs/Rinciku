@@ -15,6 +15,7 @@
   },
   "tier": {
     "untiered": "Untiered",
+    "selectCategory": "Pick a category",
     "essentialBadge": "Essential",
     "addCategory": "Add category",
     "categoryLimitTooltip": "Each tier can have at most {{max}} categories.",

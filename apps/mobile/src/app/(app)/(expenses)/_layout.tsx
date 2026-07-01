@@ -14,6 +14,10 @@ export default function ExpensesLayout() {
           title: t('nav.items.expenses'),
         }}
       />
+      <Stack.Screen
+        name='[id]'
+        options={{ headerLargeTitle: false, title: t('expenses:detail.title') }}
+      />
     </Stack>
   );
 }
