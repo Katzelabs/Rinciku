@@ -131,9 +131,13 @@ export function MonthStartDayField() {
               const next = event.target.value;
               field.onChange(next === '' ? undefined : Number(next));
             }}
+            // Select the value on focus so the first keystroke replaces a
+            // pre-filled default instead of appending to it.
+            onFocus={(event) => event.currentTarget.select()}
             id='profile-month-start-day'
             type='number'
             inputMode='numeric'
+            placeholder='1–28'
             min='1'
             max='28'
             step='1'

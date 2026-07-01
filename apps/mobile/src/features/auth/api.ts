@@ -19,6 +19,8 @@ export const {
   signUpWithPassword,
   resendConfirmation,
   requestPasswordReset,
+  verifySignupOtp,
+  verifyRecoveryOtp,
   getProfile,
   upsertProfile,
   updateProfile,

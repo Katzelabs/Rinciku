@@ -80,7 +80,9 @@ const styles = StyleSheet.create({
     gap: Spacing.two,
     minHeight: 50,
     paddingHorizontal: Spacing.four,
-    borderRadius: Radius['2xl'],
+    // Fully rounded (pill) to match the web Button, whose `rounded-2xl` on a
+    // short 32px control reads as a pill. Our taller controls need `pill`.
+    borderRadius: Radius.pill,
     borderCurve: 'continuous',
   },
   elevated: { boxShadow: Shadow.sm },

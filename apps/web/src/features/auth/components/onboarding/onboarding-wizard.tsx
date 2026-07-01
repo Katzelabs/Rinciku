@@ -65,7 +65,9 @@ export function OnboardingWizard() {
       display_name: profile?.display_name ?? '',
       base_currency: toCurrencyCode(profile?.base_currency),
       expected_monthly_income: profile?.expected_monthly_income ?? 0,
-      month_start_day: profile?.month_start_day ?? 1,
+      // Start blank (not a pre-filled 1) so the user types their own day; the
+      // schema requires an integer 1–28, so empty/0 fail validation on submit.
+      month_start_day: profile?.month_start_day ?? undefined,
     },
   });
   const {

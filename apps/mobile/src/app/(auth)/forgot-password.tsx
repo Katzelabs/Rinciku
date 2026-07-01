@@ -1,5 +1,7 @@
 import { useMemo, useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { isAuthApiError } from '@supabase/supabase-js';
+import { useRouter } from 'expo-router';
 import { useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { StyleSheet, Text, View } from 'react-native';
@@ -7,10 +9,11 @@ import { StyleSheet, Text, View } from 'react-native';
 import { Fonts, Spacing } from '@/constants/theme';
 import { Icon } from '@/components/icon';
 import { LanguageToggle } from '@/components/language-toggle';
-import { requestPasswordReset } from '@/features/auth/api';
+import { requestPasswordReset, verifyRecoveryOtp } from '@/features/auth/api';
 import { AuthScreenShell } from '@/features/auth/components/auth-screen-shell';
 import { Button } from '@/features/auth/components/button';
-import { TextField } from '@/features/auth/components/text-field';
+import { OTP_LENGTH, OtpInput } from '@/features/auth/components/otp-input';
+import { FieldError, TextField } from '@/features/auth/components/text-field';
 import { TextLink } from '@/features/auth/components/text-link';
 import {
   RESEND_COOLDOWN_SECONDS,
@@ -25,7 +28,11 @@ import { useTheme } from '@/hooks/use-theme';
 export default function ForgotPasswordScreen() {
   const c = useTheme();
   const { t } = useTranslation('auth');
+  const router = useRouter();
   const [sentTo, setSentTo] = useState<string | null>(null);
+  const [code, setCode] = useState('');
+  const [verifying, setVerifying] = useState(false);
+  const [verifyError, setVerifyError] = useState<string | null>(null);
   const [resending, setResending] = useState(false);
   const [resentMessage, setResentMessage] = useState<string | null>(null);
   const cooldown = useCooldown();
@@ -48,6 +55,34 @@ export default function ForgotPasswordScreen() {
     cooldown.start(RESEND_COOLDOWN_SECONDS);
   });
 
+  // Verify the emailed recovery code. On success a short-lived recovery session
+  // is active, so we hand off to /reset-password (a root deep-link route
+  // reachable in any auth state), where its getSession check flips to 'ready'
+  // and the user sets a new password. Value is passed directly so auto-submit
+  // doesn't race the `code` state.
+  async function handleVerify(input?: string) {
+    const value = input ?? code;
+    if (!sentTo || verifying || value.length < OTP_LENGTH) return;
+    setVerifying(true);
+    setVerifyError(null);
+    const { error } = await verifyRecoveryOtp(sentTo, value);
+    setVerifying(false);
+    if (error) {
+      const rateLimited =
+        isAuthApiError(error) &&
+        (error.code === 'over_email_send_rate_limit' ||
+          error.code === 'over_request_rate_limit');
+      setVerifyError(
+        rateLimited
+          ? t('resend.rateLimited')
+          : t('resetPassword.enterCode.invalid')
+      );
+      setCode('');
+      return;
+    }
+    router.replace('/reset-password');
+  }
+
   async function handleResend() {
     if (!sentTo || resending || cooldown.active) return;
     setResending(true);
@@ -62,32 +97,57 @@ export default function ForgotPasswordScreen() {
     return (
       <AuthScreenShell
         badge='envelope'
-        title={t('forgotPassword.checkEmail.title')}
-        description={`${t('forgotPassword.checkEmail.descriptionBefore')} ${sentTo}${t('forgotPassword.checkEmail.descriptionAfter')}`}
+        title={t('resetPassword.enterCode.title')}
+        description={`${t('resetPassword.enterCode.descriptionBefore')} ${sentTo}${t('resetPassword.enterCode.descriptionAfter')}`}
         footer={
           <TextLink href='/sign-in'>
             {t('forgotPassword.backToSignIn')}
           </TextLink>
         }
       >
-        <Button
-          variant='outline'
-          label={
-            resending
-              ? t('resend.resending')
-              : cooldown.active
-                ? t('resend.countdown', { seconds: cooldown.remaining })
-                : t('resend.resetLink')
-          }
-          loading={resending}
-          disabled={cooldown.active}
-          onPress={handleResend}
-        />
-        {resentMessage ? (
-          <Text style={[styles.muted, { color: c.mutedForeground }]}>
-            {resentMessage}
-          </Text>
-        ) : null}
+        <View style={styles.form}>
+          <OtpInput
+            value={code}
+            onChange={(v) => {
+              setCode(v);
+              if (verifyError) setVerifyError(null);
+            }}
+            onComplete={(v) => void handleVerify(v)}
+            invalid={!!verifyError}
+            autoFocus
+          />
+          <FieldError message={verifyError} />
+
+          <Button
+            label={
+              verifying
+                ? t('resetPassword.enterCode.verifying')
+                : t('resetPassword.enterCode.submit')
+            }
+            loading={verifying}
+            disabled={code.length < OTP_LENGTH}
+            onPress={() => void handleVerify()}
+          />
+
+          <Button
+            variant='ghost'
+            label={
+              resending
+                ? t('resend.resending')
+                : cooldown.active
+                  ? t('resend.countdown', { seconds: cooldown.remaining })
+                  : t('resend.resetLink')
+            }
+            loading={resending}
+            disabled={cooldown.active}
+            onPress={handleResend}
+          />
+          {resentMessage ? (
+            <Text style={[styles.muted, { color: c.mutedForeground }]}>
+              {resentMessage}
+            </Text>
+          ) : null}
+        </View>
       </AuthScreenShell>
     );
   }
@@ -135,6 +195,10 @@ export default function ForgotPasswordScreen() {
 
 const styles = StyleSheet.create({
   form: { gap: Spacing.three },
-  footerRow: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center' },
+  footerRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   muted: { fontFamily: Fonts.regular, fontSize: 14 },
 });

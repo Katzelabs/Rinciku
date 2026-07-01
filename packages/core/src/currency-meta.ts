@@ -49,3 +49,49 @@ export function currencyFlag(code: CurrencyCode): string {
     REGIONAL_INDICATOR_A + (region.charCodeAt(1) - 65)
   );
 }
+
+// Conventional short symbol per currency. Unlike flag emojis (regional-indicator
+// pairs), these render on every platform — Android in particular does not draw
+// flag emojis, so a flag shows as a "?" tofu box there. CNY/JPY are both "¥", so
+// CNY is prefixed to disambiguate.
+const CURRENCY_SYMBOL: Record<CurrencyCode, string> = {
+  IDR: 'Rp',
+  USD: '$',
+  EUR: '€',
+  JPY: '¥',
+  GBP: '£',
+  SGD: 'S$',
+  MYR: 'RM',
+  AUD: 'A$',
+  CAD: 'C$',
+  CNY: 'CN¥',
+  KRW: '₩',
+  HKD: 'HK$',
+  THB: '฿',
+  PHP: '₱',
+  INR: '₹',
+  VND: '₫',
+};
+
+/** Short, cross-platform currency symbol (e.g. IDR → `Rp`, USD → `$`). */
+export function currencySymbol(code: CurrencyCode): string {
+  return CURRENCY_SYMBOL[code];
+}
+
+// Currencies with no minor unit (no sen/cents), so amounts are whole numbers.
+const ZERO_DECIMAL_CURRENCIES = new Set<CurrencyCode>([
+  'IDR',
+  'JPY',
+  'KRW',
+  'VND',
+]);
+
+/**
+ * Fractional digits a currency uses, from a static table — 0 for IDR/JPY/KRW/VND,
+ * 2 for the rest. Unlike `fractionDigitsForCurrency` (which reads CLDR via Intl),
+ * this needs no ICU data, so it's safe on React Native/Hermes where Intl
+ * currency support isn't guaranteed across platforms.
+ */
+export function currencyFractionDigits(code: CurrencyCode): number {
+  return ZERO_DECIMAL_CURRENCIES.has(code) ? 0 : 2;
+}

@@ -1,11 +1,17 @@
 import { useEffect, useState } from 'react';
 import type { Tables } from '@rinciku/db';
+// groupByTier + Tier/TierGroup types are shared with mobile in @rinciku/domain;
+// imported for local use and re-exported so existing web imports keep working.
+import {
+  groupByTier,
+  type Tier,
+  type TierGroup,
+} from '@rinciku/domain/categories';
 import { listCategories, listTiers } from '../api';
 
-type Category = Tables<'categories'>;
-export type Tier = Tables<'tiers'>;
+export { groupByTier, type Tier, type TierGroup };
 
-export type TierGroup = { tier: Tier | null; categories: Category[] };
+type Category = Tables<'categories'>;
 
 export type UseCategoriesResult = {
   data: Category[] | undefined;
@@ -75,35 +81,4 @@ export function useTiers(): UseTiersResult {
   }, []);
 
   return { data, isLoading, error };
-}
-
-// Group categories under their tier, ordered by the tiers list. Categories with
-// no tier (or whose tier was deleted) collect into a trailing "Untiered" group
-// (tier === null).
-export function groupByTier(
-  categories: Category[],
-  tiers: Tier[]
-): TierGroup[] {
-  const tierIds = new Set(tiers.map((t) => t.id));
-  const byTier = new Map<string, Category[]>();
-  const untiered: Category[] = [];
-
-  for (const category of categories) {
-    if (category.tier_id && tierIds.has(category.tier_id)) {
-      const bucket = byTier.get(category.tier_id) ?? [];
-      bucket.push(category);
-      byTier.set(category.tier_id, bucket);
-    } else {
-      untiered.push(category);
-    }
-  }
-
-  const groups: TierGroup[] = tiers.map((tier) => ({
-    tier,
-    categories: byTier.get(tier.id) ?? [],
-  }));
-  if (untiered.length > 0) {
-    groups.push({ tier: null, categories: untiered });
-  }
-  return groups;
 }

@@ -1,10 +1,11 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
   Controller,
   FormProvider,
   useForm,
   useFormContext,
+  useWatch,
 } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import {
@@ -21,13 +22,14 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   CURRENCY_CODES,
   CURRENCY_NAMES,
-  currencyFlag,
+  currencySymbol,
   type CurrencyCode,
 } from '@rinciku/core';
-import { createCategoriesApi } from '@rinciku/domain/categories';
 
 import { Fonts, Radius, Spacing } from '@/constants/theme';
+import { CurrencyAmountInput } from '@/components/currency-amount-input';
 import { Icon } from '@/components/icon';
+import { CategoriesManager } from '@/features/categories/components/categories-manager';
 import { upsertProfile } from '@/features/auth/api';
 import { Button } from '@/features/auth/components/button';
 import {
@@ -42,7 +44,6 @@ import {
   type OnboardingInput,
 } from '@/features/auth/schemas';
 import { useTheme } from '@/hooks/use-theme';
-import { supabase } from '@/lib/supabase';
 
 type StepKey = 'account' | 'currency' | 'budget' | 'review';
 
@@ -100,7 +101,9 @@ export function OnboardingWizard() {
       display_name: profile?.display_name ?? '',
       base_currency: toCurrencyCode(profile?.base_currency),
       expected_monthly_income: profile?.expected_monthly_income ?? 0,
-      month_start_day: profile?.month_start_day ?? 1,
+      // Start blank (not a pre-filled 1) so the user types their own day; the
+      // schema requires an integer 1–28, so empty/0 fail validation on Next.
+      month_start_day: profile?.month_start_day ?? undefined,
     },
   });
   const {
@@ -156,7 +159,7 @@ export function OnboardingWizard() {
           {current.key === 'account' ? <AccountStep /> : null}
           {current.key === 'currency' ? <CurrencyStep /> : null}
           {current.key === 'budget' ? <BudgetStep /> : null}
-          {current.key === 'review' ? <CategoriesReviewStep /> : null}
+          {current.key === 'review' ? <CategoriesManager /> : null}
         </View>
       </FormProvider>
 
@@ -234,7 +237,14 @@ function CurrencyStep() {
                       { backgroundColor: selected ? c.primary : 'transparent' },
                     ]}
                   />
-                  <Text style={styles.currencyFlag}>{currencyFlag(code)}</Text>
+                  <Text
+                    style={[
+                      styles.currencySymbol,
+                      { color: c.mutedForeground },
+                    ]}
+                  >
+                    {currencySymbol(code)}
+                  </Text>
                   <Text style={[styles.currencyName, { color: c.foreground }]}>
                     {code} · {CURRENCY_NAMES[code]}
                   </Text>
@@ -260,10 +270,12 @@ function NumberField({
   name,
   label,
   hint,
+  placeholder,
 }: {
   name: 'expected_monthly_income' | 'month_start_day';
   label: string;
   hint?: string;
+  placeholder?: string;
 }) {
   const c = useTheme();
   const { control } = useFormContext<OnboardingInput>();
@@ -279,6 +291,7 @@ function NumberField({
             <NumberInput
               value={field.value}
               onChange={field.onChange}
+              placeholder={placeholder}
               onFocus={() => setFocused(true)}
               onBlur={() => {
                 setFocused(false);
@@ -287,7 +300,9 @@ function NumberField({
             />
           </InputShell>
           {hint ? (
-            <Text style={[styles.hint, { color: c.mutedForeground }]}>{hint}</Text>
+            <Text style={[styles.hint, { color: c.mutedForeground }]}>
+              {hint}
+            </Text>
           ) : null}
           <FieldError message={fieldState.error?.message} />
         </View>
@@ -296,30 +311,59 @@ function NumberField({
   );
 }
 
-// Numeric input that maps the empty string to `undefined` so the Zod
-// "enter a number" message fires, and otherwise parses to a Number.
+// Integer input that maps the empty string to `undefined` so the Zod
+// "enter a number" message fires, and otherwise parses to a Number. It keeps its
+// own text state (rather than deriving the display straight from the numeric
+// value) so clearing the field to empty sticks — a value-derived controlled
+// input can snap a just-cleared "0"/"1" back on the next render.
 function NumberInput({
   value,
   onChange,
   onFocus,
   onBlur,
+  placeholder,
 }: {
   value: number | undefined;
   onChange: (v: number | undefined) => void;
   onFocus: () => void;
   onBlur: () => void;
+  placeholder?: string;
 }) {
   const c = useTheme();
+  const [editing, setEditing] = useState(false);
+  const [text, setText] = useState(value == null ? '' : String(value));
+
+  // While the user isn't editing, mirror the external value (form reset/default,
+  // a returning user's saved day). Guarded render-time sync — React's
+  // recommended alternative to a syncing effect — so it never clobbers what the
+  // user is typing, including an intentionally empty field.
+  if (!editing) {
+    const wanted = value == null ? '' : String(value);
+    if (wanted !== text) setText(wanted);
+  }
+
   return (
     <TextInput
       style={[styles.numberInput, { color: c.foreground }]}
+      placeholder={placeholder}
       placeholderTextColor={c.mutedForeground}
-      keyboardType='numeric'
-      value={value == null ? '' : String(value)}
-      onFocus={onFocus}
-      onBlur={onBlur}
-      onChangeText={(text: string) => {
-        const cleaned = text.replace(/[^0-9.]/g, '');
+      keyboardType='number-pad'
+      // Select the current value on focus so the first keystroke replaces an
+      // existing value (e.g. a returning user's saved day) instead of appending
+      // to it — otherwise "1" + typing "5" reads as "15".
+      selectTextOnFocus
+      value={text}
+      onFocus={() => {
+        setEditing(true);
+        onFocus();
+      }}
+      onBlur={() => {
+        setEditing(false);
+        onBlur();
+      }}
+      onChangeText={(input: string) => {
+        const cleaned = input.replace(/[^0-9]/g, '');
+        setText(cleaned);
         onChange(cleaned === '' ? undefined : Number(cleaned));
       }}
     />
@@ -327,59 +371,49 @@ function NumberInput({
 }
 
 function BudgetStep() {
+  const c = useTheme();
   const { t } = useTranslation('auth');
+  const { control } = useFormContext<OnboardingInput>();
+  const baseCurrency = useWatch({ control, name: 'base_currency' });
   return (
     <View style={styles.fieldGap}>
-      <NumberField
+      <Controller
+        control={control}
         name='expected_monthly_income'
-        label={t('profileFields.expectedIncome')}
-        hint={t('profileFields.expectedIncomeHint')}
+        render={({ field, fieldState }) => (
+          <View style={styles.fieldGap}>
+            <FieldLabel>{t('profileFields.expectedIncome')}</FieldLabel>
+            <CurrencyAmountInput
+              currency={baseCurrency}
+              value={field.value}
+              onChange={field.onChange}
+              onBlur={field.onBlur}
+              invalid={!!fieldState.error}
+            />
+            <Text style={[styles.hint, { color: c.mutedForeground }]}>
+              {t('profileFields.expectedIncomeHint')}
+            </Text>
+            <FieldError message={fieldState.error?.message} />
+          </View>
+        )}
       />
       <NumberField
         name='month_start_day'
         label={t('profileFields.cycleStartDay')}
         hint={t('profileFields.cycleStartDayHint')}
+        placeholder='1–28'
       />
-    </View>
-  );
-}
-
-// Read-only review of the categories seeded by the signup DB trigger. Full
-// category CRUD lands in the categories feature phase.
-function CategoriesReviewStep() {
-  const c = useTheme();
-  const [names, setNames] = useState<string[] | null>(null);
-
-  useEffect(() => {
-    let active = true;
-    const api = createCategoriesApi(supabase);
-    api.listCategories().then(({ data }) => {
-      if (active) setNames((data ?? []).map((row) => row.name));
-    });
-    return () => {
-      active = false;
-    };
-  }, []);
-
-  if (!names || names.length === 0) return null;
-
-  return (
-    <View style={[styles.reviewBox, { backgroundColor: c.card, borderColor: c.border }]}>
-      {names.map((name, i) => (
-        <Text
-          key={`${name}-${i}`}
-          style={[styles.reviewItem, { color: c.foreground }]}
-        >
-          {name}
-        </Text>
-      ))}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   content: { paddingHorizontal: Spacing.four, gap: Spacing.three },
-  progressWrap: { flexDirection: 'row', gap: Spacing.one, marginBottom: Spacing.one },
+  progressWrap: {
+    flexDirection: 'row',
+    gap: Spacing.one,
+    marginBottom: Spacing.one,
+  },
   progressSeg: {
     flex: 1,
     height: 5,
@@ -426,14 +460,10 @@ const styles = StyleSheet.create({
     borderTopRightRadius: Radius.pill,
     borderBottomRightRadius: Radius.pill,
   },
-  currencyFlag: { fontSize: 20 },
-  currencyName: { flex: 1, fontFamily: Fonts.medium, fontSize: 15 },
-  reviewBox: {
-    borderWidth: StyleSheet.hairlineWidth * 2,
-    borderRadius: Radius['2xl'],
-    borderCurve: 'continuous',
-    padding: Spacing.three,
-    gap: Spacing.two,
+  currencySymbol: {
+    fontFamily: Fonts.semibold,
+    fontSize: 15,
+    minWidth: 34,
   },
-  reviewItem: { fontFamily: Fonts.regular, fontSize: 15 },
+  currencyName: { flex: 1, fontFamily: Fonts.medium, fontSize: 15 },
 });

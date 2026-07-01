@@ -1,6 +1,12 @@
 <h2>Confirm your email</h2>
 
-<p>Welcome to Rinciku! Follow this link to confirm your account:</p>
+<p>Welcome to Rinciku! Enter this code in the app to confirm your account:</p>
+
+<p style="font-size: 28px; font-weight: bold; letter-spacing: 4px">
+  {{ .Token }}
+</p>
+
+<p>Or, if you signed up on the web, follow this link instead:</p>
 
 <p>
   <a href="{{ .SiteURL }}/auth/callback?token_hash={{ .TokenHash }}&type=signup"

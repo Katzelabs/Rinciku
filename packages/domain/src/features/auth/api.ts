@@ -33,7 +33,10 @@ export function createAuthApi(
   //
   // Email normalization (trim + lowercase) is handled by signUpSchema, so the
   // input reaching here is already normalized. Don't re-introduce raw form values.
-  async function signUpWithPassword(input: { email: string; password: string }) {
+  async function signUpWithPassword(input: {
+    email: string;
+    password: string;
+  }) {
     return db.auth.signUp({
       ...input,
       options: { emailRedirectTo: redirects.emailConfirm() },
@@ -56,6 +59,23 @@ export function createAuthApi(
     return db.auth.resetPasswordForEmail(email, {
       redirectTo: redirects.passwordReset(),
     });
+  }
+
+  // Verify the 6-digit signup confirmation code ({{ .Token }} in the
+  // confirmation email). This is the same token as the token_hash link, just
+  // typed by hand — the mobile OTP path, since opening a web link would break
+  // the native flow. `type: 'signup'` mirrors the link's `&type=signup`. On
+  // success a full session is established and the root guard hands off to
+  // onboarding.
+  async function verifySignupOtp(email: string, token: string) {
+    return db.auth.verifyOtp({ email, token, type: 'signup' });
+  }
+
+  // Verify the 6-digit password-recovery code ({{ .Token }} in the recovery
+  // email). `type: 'recovery'` mirrors the link's `&type=recovery` and yields a
+  // short-lived recovery session; the caller then updates the password.
+  async function verifyRecoveryOtp(email: string, token: string) {
+    return db.auth.verifyOtp({ email, token, type: 'recovery' });
   }
 
   async function getProfile(userId: string): Promise<Profile | null> {
@@ -158,6 +178,8 @@ export function createAuthApi(
     signUpWithPassword,
     resendConfirmation,
     requestPasswordReset,
+    verifySignupOtp,
+    verifyRecoveryOtp,
     getProfile,
     upsertProfile,
     updateProfile,

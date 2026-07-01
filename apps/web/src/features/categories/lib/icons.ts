@@ -1,41 +1,11 @@
 import { icons, type LucideIcon } from 'lucide-react';
 
-export const CATEGORY_ICONS = [
-  'Home',
-  'Wifi',
-  'Zap',
-  'Droplet',
-  'Flame',
-  'ShoppingCart',
-  'ShoppingBag',
-  'Car',
-  'Bus',
-  'Train',
-  'Fuel',
-  'HeartPulse',
-  'Stethoscope',
-  'Pill',
-  'Dumbbell',
-  'UtensilsCrossed',
-  'Coffee',
-  'Tv',
-  'Gamepad2',
-  'BookOpen',
-  'GraduationCap',
-  'Plane',
-  'Gift',
-  'Receipt',
-  'CreditCard',
-  'Wallet',
-  'Banknote',
-  'PiggyBank',
-  'Briefcase',
-  'TrendingUp',
-  'Shirt',
-  'Phone',
-] as const;
-
-export type CategoryIconName = (typeof CATEGORY_ICONS)[number];
+// The icon *name* list is shared with mobile in @rinciku/domain (no lucide
+// import there). Only the lucide resolution below is web-specific.
+export {
+  CATEGORY_ICONS,
+  type CategoryIconName,
+} from '@rinciku/domain/categories';
 
 export function resolveIcon(name: string | null | undefined): LucideIcon {
   if (name && name in icons) {

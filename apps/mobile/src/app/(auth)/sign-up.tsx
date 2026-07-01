@@ -9,9 +9,14 @@ import { StyleSheet, Text, View } from 'react-native';
 import { Fonts, Spacing } from '@/constants/theme';
 import { Icon } from '@/components/icon';
 import { LanguageToggle } from '@/components/language-toggle';
-import { resendConfirmation, signUpWithPassword } from '@/features/auth/api';
+import {
+  resendConfirmation,
+  signUpWithPassword,
+  verifySignupOtp,
+} from '@/features/auth/api';
 import { AuthScreenShell } from '@/features/auth/components/auth-screen-shell';
 import { Button } from '@/features/auth/components/button';
+import { OTP_LENGTH, OtpInput } from '@/features/auth/components/otp-input';
 import { PasswordField } from '@/features/auth/components/password-field';
 import { PasswordRules } from '@/features/auth/components/password-rules';
 import { FieldError, TextField } from '@/features/auth/components/text-field';
@@ -46,10 +51,27 @@ function mapSignUpError(error: AuthError, t: TFunction): string {
   return t('signUp.errors.generic');
 }
 
+// Verification-code errors. An expired/wrong code is the common case; keep the
+// copy generic so it doesn't leak whether the email exists.
+function mapVerifyError(error: AuthError, t: TFunction): string {
+  if (isAuthApiError(error)) {
+    if (
+      error.code === 'over_email_send_rate_limit' ||
+      error.code === 'over_request_rate_limit'
+    ) {
+      return t('signUp.errors.rateLimit');
+    }
+  }
+  return t('verify.errors.invalid');
+}
+
 export default function SignUpScreen() {
   const c = useTheme();
   const { t } = useTranslation('auth');
   const [pendingEmail, setPendingEmail] = useState<string | null>(null);
+  const [code, setCode] = useState('');
+  const [verifying, setVerifying] = useState(false);
+  const [verifyError, setVerifyError] = useState<string | null>(null);
   const [resending, setResending] = useState(false);
   const [resendMessage, setResendMessage] = useState<string | null>(null);
   const [resendFailed, setResendFailed] = useState(false);
@@ -68,6 +90,22 @@ export default function SignUpScreen() {
   });
 
   const passwordValue = useWatch({ control, name: 'password' }) ?? '';
+
+  // Verify the emailed 6-digit code. Accepts the value directly so auto-submit
+  // (onComplete) doesn't race the `code` state update. On success the session is
+  // established and the root guard hands off to onboarding automatically.
+  async function handleVerify(input?: string) {
+    const value = input ?? code;
+    if (!pendingEmail || verifying || value.length < OTP_LENGTH) return;
+    setVerifying(true);
+    setVerifyError(null);
+    const { error } = await verifySignupOtp(pendingEmail, value);
+    setVerifying(false);
+    if (error) {
+      setVerifyError(mapVerifyError(error, t));
+      setCode('');
+    }
+  }
 
   async function handleResend() {
     if (!pendingEmail || resending || cooldown.active) return;
@@ -110,33 +148,54 @@ export default function SignUpScreen() {
     return (
       <AuthScreenShell
         badge='envelope'
-        title={t('signUp.checkEmail.title')}
-        description={`${t('signUp.checkEmail.descriptionBefore')} ${pendingEmail}${t('signUp.checkEmail.descriptionAfter')}`}
+        title={t('verify.title')}
+        description={`${t('verify.descriptionBefore')} ${pendingEmail}${t('verify.descriptionAfter')}`}
         footer={<TextLink href='/sign-in'>{t('signUp.backToSignIn')}</TextLink>}
       >
-        <Button
-          variant='outline'
-          label={
-            resending
-              ? t('resend.resending')
-              : cooldown.active
-                ? t('resend.countdown', { seconds: cooldown.remaining })
-                : t('resend.confirmation')
-          }
-          loading={resending}
-          disabled={cooldown.active}
-          onPress={handleResend}
-        />
-        {resendMessage ? (
-          <Text
-            style={[
-              styles.muted,
-              { color: resendFailed ? c.destructive : c.mutedForeground },
-            ]}
-          >
-            {resendMessage}
-          </Text>
-        ) : null}
+        <View style={styles.verify}>
+          <OtpInput
+            value={code}
+            onChange={(v) => {
+              setCode(v);
+              if (verifyError) setVerifyError(null);
+            }}
+            onComplete={(v) => void handleVerify(v)}
+            invalid={!!verifyError}
+            autoFocus
+          />
+          <FieldError message={verifyError} />
+
+          <Button
+            label={verifying ? t('verify.verifying') : t('verify.submit')}
+            loading={verifying}
+            disabled={code.length < OTP_LENGTH}
+            onPress={() => void handleVerify()}
+          />
+
+          <Button
+            variant='ghost'
+            label={
+              resending
+                ? t('resend.resending')
+                : cooldown.active
+                  ? t('resend.countdown', { seconds: cooldown.remaining })
+                  : t('resend.confirmation')
+            }
+            loading={resending}
+            disabled={cooldown.active}
+            onPress={handleResend}
+          />
+          {resendMessage ? (
+            <Text
+              style={[
+                styles.muted,
+                { color: resendFailed ? c.destructive : c.mutedForeground },
+              ]}
+            >
+              {resendMessage}
+            </Text>
+          ) : null}
+        </View>
       </AuthScreenShell>
     );
   }
@@ -208,6 +267,11 @@ export default function SignUpScreen() {
 
 const styles = StyleSheet.create({
   form: { gap: Spacing.three },
-  footerRow: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center' },
-  muted: { fontFamily: Fonts.regular, fontSize: 14 },
+  verify: { gap: Spacing.three },
+  footerRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  muted: { fontFamily: Fonts.regular, fontSize: 14, textAlign: 'center' },
 });

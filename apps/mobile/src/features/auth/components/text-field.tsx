@@ -19,7 +19,9 @@ import { useTheme } from '@/hooks/use-theme';
 
 export function FieldLabel({ children }: { children: ReactNode }) {
   const c = useTheme();
-  return <Text style={[styles.label, { color: c.foreground }]}>{children}</Text>;
+  return (
+    <Text style={[styles.label, { color: c.foreground }]}>{children}</Text>
+  );
 }
 
 export function FieldError({ message }: { message?: string | null }) {
@@ -27,7 +29,11 @@ export function FieldError({ message }: { message?: string | null }) {
   if (!message) return null;
   return (
     <View style={styles.errorRow}>
-      <Icon name='exclamationmark.triangle.fill' size={13} color={c.destructive} />
+      <Icon
+        name='exclamationmark.triangle.fill'
+        size={13}
+        color={c.destructive}
+      />
       <Text selectable style={[styles.error, { color: c.destructive }]}>
         {message}
       </Text>
@@ -64,8 +70,10 @@ export function InputShell({
   );
 }
 
-interface TextFieldProps<T extends FieldValues>
-  extends Omit<TextInputProps, 'value' | 'onChangeText' | 'onBlur' | 'style'> {
+interface TextFieldProps<T extends FieldValues> extends Omit<
+  TextInputProps,
+  'value' | 'onChangeText' | 'onBlur' | 'style'
+> {
   control: Control<T>;
   name: FieldPath<T>;
   label?: string;
@@ -111,7 +119,9 @@ export function TextField<T extends FieldValues>({
                 {...inputProps}
               />
             </InputShell>
-            {showError ? <FieldError message={fieldState.error?.message} /> : null}
+            {showError ? (
+              <FieldError message={fieldState.error?.message} />
+            ) : null}
           </>
         )}
       />
@@ -129,7 +139,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: Spacing.two,
     borderWidth: StyleSheet.hairlineWidth * 2,
-    borderRadius: Radius['2xl'],
+    // Fully rounded (pill) to match the web Input — see button.tsx.
+    borderRadius: Radius.pill,
     paddingHorizontal: Spacing.three,
     borderCurve: 'continuous',
   },
