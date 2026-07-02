@@ -6,19 +6,23 @@ import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import {
   getCycleLabel,
   getPeriodRange,
+  type CurrencyCode,
   type PeriodPreset,
 } from '@rinciku/core';
 
 import { ProfileAvatar } from '@/components/profile-avatar';
-import { AppText, Notice, ScreenScroll } from '@/components/ui';
+import { AppText, Notice, ScreenScroll, SectionHeader } from '@/components/ui';
 import { Spacing } from '@/constants/theme';
 import { useAuth } from '@/features/auth/hooks/use-auth';
+import { CategoryBreakdownChart } from '@/features/dashboard/components/category-breakdown-chart';
+import { ChartCard } from '@/features/dashboard/components/chart-card';
 import { HealthBadge } from '@/features/dashboard/components/health-badge';
+import { IncomeVsExpenseChart } from '@/features/dashboard/components/income-vs-expense-chart';
 import { PeriodPicker } from '@/features/dashboard/components/period-picker';
+import { SpendTrendChart } from '@/features/dashboard/components/spend-trend-chart';
 import { SummaryCards } from '@/features/dashboard/components/summary-cards';
-import { TierBreakdown } from '@/features/dashboard/components/tier-breakdown';
+import { useAnalytics } from '@/features/dashboard/hooks/use-analytics';
 import { useMonthlySummary } from '@/features/dashboard/hooks/use-monthly-summary';
-import { usePeriodSpend } from '@/features/dashboard/hooks/use-period-spend';
 import { useTheme } from '@/hooks/use-theme';
 
 const PERIOD_LABEL_KEY: Record<PeriodPreset, string> = {
@@ -28,12 +32,16 @@ const PERIOD_LABEL_KEY: Record<PeriodPreset, string> = {
   custom: 'period.custom',
 };
 
+const MS_PER_DAY = 86_400_000;
+
 export default function DashboardScreen() {
   const c = useTheme();
   const { t } = useTranslation('dashboard');
   const router = useRouter();
   const { profile } = useAuth();
-  const { summary, loading, error, refetch } = useMonthlySummary();
+  const base = (profile?.base_currency ?? 'IDR') as CurrencyCode;
+
+  const { summary, refetch } = useMonthlySummary();
 
   const [period, setPeriod] = useState<PeriodPreset>('month');
   const [customFrom, setCustomFrom] = useState<Date>(
@@ -54,26 +62,42 @@ export default function DashboardScreen() {
     { month_start_day: profile?.month_start_day ?? 1 },
     { customFrom, customTo }
   );
-  const periodSpend = usePeriodSpend(range.start, range.end);
-  const refetchPeriodSpend = periodSpend.refetch;
+  const analytics = useAnalytics(range.start, range.end);
+  const refetchAnalytics = analytics.refetch;
 
-  // Refetch on focus so newly logged expenses reflect in the snapshot. Depend on
-  // the stable `refetch` fns, not the `periodSpend` object — that object is
-  // recreated every render, so depending on it would re-run this effect on every
-  // render and loop (refetch → setState → render → refetch).
+  // Refetch on focus so newly logged expenses reflect in both the period
+  // analytics and the monthly budget section. Depend on the stable refetch fns,
+  // not the analytics object (recreated every render — depending on it would
+  // loop: refetch → setState → render → refetch).
   useFocusEffect(
     useCallback(() => {
       refetch();
-      refetchPeriodSpend();
-    }, [refetch, refetchPeriodSpend])
+      refetchAnalytics();
+    }, [refetch, refetchAnalytics])
   );
+
+  // Period totals derived from the trend, exactly like the web dashboard.
+  const trend = analytics.data?.trend ?? [];
+  const breakdown = analytics.data?.breakdown ?? { byCategory: [], byTier: [] };
+  const totalIncome = trend.reduce((sum, p) => sum + p.income, 0);
+  const totalSpent = trend.reduce((sum, p) => sum + p.spent, 0);
+  const days = Math.max(
+    1,
+    Math.round((range.end.getTime() - range.start.getTime()) / MS_PER_DAY)
+  );
+
+  const hasTrend = trend.some((p) => p.spent > 0 || p.income > 0);
+  const hasBreakdown =
+    breakdown.byCategory.length > 0 || breakdown.byTier.length > 0;
+
+  const firstLoad = analytics.loading && analytics.data === null;
 
   return (
     <ScreenScroll
-      refreshing={loading && summary !== null}
+      refreshing={analytics.loading && analytics.data !== null}
       onRefresh={() => {
         refetch();
-        periodSpend.refetch();
+        refetchAnalytics();
       }}
     >
       <Stack.Screen
@@ -105,32 +129,63 @@ export default function DashboardScreen() {
         }}
       />
 
-      {loading && summary === null ? (
+      {firstLoad ? (
         <ActivityIndicator color={c.primary} style={styles.loader} />
-      ) : error ? (
-        <Notice tone='error'>{error}</Notice>
-      ) : summary ? (
+      ) : analytics.error ? (
+        <Notice tone='error'>{analytics.error}</Notice>
+      ) : (
         <>
           <AppText variant='label' color='mutedForeground'>
-            {getCycleLabel(summary.cycle)}
+            {t(PERIOD_LABEL_KEY[period])}
           </AppText>
-          <SummaryCards summary={summary} />
-          <HealthBadge summary={summary} />
-          <TierBreakdown
-            tiers={summary.tiers}
-            by_tier={periodSpend.spend?.by_tier ?? summary.by_tier}
-            uncategorized_spent={
-              periodSpend.spend?.uncategorized_spent ??
-              summary.uncategorized_spent
-            }
-            base_currency={
-              periodSpend.spend?.base_currency ?? summary.base_currency
-            }
-            periodLabel={t(PERIOD_LABEL_KEY[period])}
+          <SummaryCards
+            income={totalIncome}
+            spent={totalSpent}
+            days={days}
+            base={base}
           />
+
+          <ChartCard
+            title={t('charts.trend.title')}
+            description={t('charts.trend.description')}
+            loading={analytics.loading}
+            empty={!hasTrend}
+          >
+            <SpendTrendChart data={trend} base={base} />
+          </ChartCard>
+
+          <ChartCard
+            title={t('charts.breakdown.title')}
+            description={t('charts.breakdown.description')}
+            loading={analytics.loading}
+            empty={!hasBreakdown}
+          >
+            <CategoryBreakdownChart data={breakdown} base={base} />
+          </ChartCard>
+
+          <ChartCard
+            title={t('charts.incomeVsExpense.title')}
+            description={t('charts.incomeVsExpense.description')}
+            loading={analytics.loading}
+            empty={!hasTrend}
+          >
+            <IncomeVsExpenseChart data={trend} base={base} />
+          </ChartCard>
+
+          {summary ? (
+            <View style={styles.cycleSection}>
+              <SectionHeader
+                title={t('health.sectionTitle')}
+                right={
+                  <AppText variant='caption' color='mutedForeground'>
+                    {getCycleLabel(summary.cycle)}
+                  </AppText>
+                }
+              />
+              <HealthBadge summary={summary} />
+            </View>
+          ) : null}
         </>
-      ) : (
-        <View />
       )}
     </ScreenScroll>
   );
@@ -138,4 +193,5 @@ export default function DashboardScreen() {
 
 const styles = StyleSheet.create({
   loader: { marginVertical: Spacing.five },
+  cycleSection: { gap: Spacing.three },
 });

@@ -9,7 +9,7 @@ import {
   startOfWeek,
 } from 'date-fns';
 import { formatDate } from '@rinciku/core';
-import type { BucketGranularity } from '../types';
+import type { BucketGranularity } from './types';
 
 // Auto-pick the time granularity for the trend charts from the range length, so
 // short ranges read day-by-day and long ones don't render hundreds of bars.

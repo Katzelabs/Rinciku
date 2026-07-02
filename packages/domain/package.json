@@ -21,6 +21,7 @@
     "@rinciku/core": "workspace:*",
     "@rinciku/db": "workspace:*",
     "@supabase/supabase-js": "^2.106.2",
+    "date-fns": "^4.4.0",
     "i18next": "^26.3.2",
     "zod": "^4.4.3"
   },

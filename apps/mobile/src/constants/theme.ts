@@ -192,5 +192,26 @@ export const Shadow = {
   md: '0 2px 8px rgba(12,12,9,0.10)',
 } as const;
 
+/**
+ * Chart series colors for the dashboard analytics charts. The mobile theme has
+ * no `--chart-*` tokens (unlike the web), so the two fixed series — spend and
+ * income — live here, per scheme. Spend leans on the olive/lime brand hue;
+ * income is a cool sky so the two read apart in both light and dark. Categorical
+ * charts (the category/tier donut) use each item's own `.color`, not this
+ * palette. Select via `useChartColors()`.
+ */
+export const Chart = {
+  light: {
+    spent: '#65A30D', // lime-600 — readable on the light card
+    income: '#0EA5E9', // sky-500
+    grid: 'rgba(12,12,9,0.08)',
+  },
+  dark: {
+    spent: '#A3E635', // lime-400 — brighter for the dark card
+    income: '#38BDF8', // sky-400
+    grid: 'rgba(255,255,255,0.12)',
+  },
+} as const;
+
 export const BottomTabInset = Platform.select({ ios: 50, android: 80 }) ?? 0;
 export const MaxContentWidth = 800;

@@ -1,85 +1,102 @@
 import { useTranslation } from 'react-i18next';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
-import { formatCurrency, getCycleLengthDays } from '@rinciku/core';
+import { formatCurrency, type CurrencyCode } from '@rinciku/core';
 
-import { Fonts, Spacing } from '@/constants/theme';
-import { Card } from '@/components/ui';
-import type { MonthlySummary } from '@/features/dashboard/types';
+import { AppText, Card } from '@/components/ui';
+import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
-// Income / spent / net / avg-per-day cards for the current cycle. Mirrors the
-// web dashboard's top summary row.
-export function SummaryCards({ summary }: { summary: MonthlySummary }) {
+// Period summary for the dashboard, styled like the expenses / incomes
+// TransactionSummaryHeader: one hero total (Spent) over a compact row of two
+// secondary stats (Income · Net). Totals come from the range-scoped analytics
+// trend (see useAnalytics), so the whole card reacts to the header period
+// picker. Net turns red when spending outpaces income.
+export function SummaryCards({
+  income,
+  spent,
+  days,
+  base,
+}: {
+  income: number;
+  spent: number;
+  days: number;
+  base: CurrencyCode;
+}) {
   const { t } = useTranslation('dashboard');
   const c = useTheme();
-  const base = summary.base_currency;
 
-  const totalDays = getCycleLengthDays(summary.cycle);
-  const daysElapsed = Math.max(1, totalDays - summary.days_left);
-  const avgPerDay = summary.spent_total / daysElapsed;
-  const netNegative = summary.remaining < 0;
+  const net = income - spent;
+  const netNegative = net < 0;
 
   return (
-    <View style={styles.grid}>
-      <StatCard
-        label={t('summary.income')}
-        value={formatCurrency(summary.income_received, base)}
-      />
-      <StatCard
-        label={t('summary.spent')}
-        value={formatCurrency(summary.spent_total, base)}
-      />
-      <StatCard
-        label={t('summary.net')}
-        value={formatCurrency(summary.remaining, base)}
-        valueColor={netNegative ? c.destructive : undefined}
-      />
-      <StatCard
-        label={t('summary.avgPerDay')}
-        value={formatCurrency(avgPerDay, base)}
-        hint={t('summary.over', { count: daysElapsed })}
-      />
-    </View>
-  );
-}
-
-function StatCard({
-  label,
-  value,
-  hint,
-  valueColor,
-}: {
-  label: string;
-  value: string;
-  hint?: string;
-  valueColor?: string;
-}) {
-  const c = useTheme();
-  return (
-    <Card padding={Spacing.three} style={styles.card}>
-      <Text style={[styles.label, { color: c.mutedForeground }]}>{label}</Text>
-      <Text
-        style={[styles.value, { color: valueColor ?? c.foreground }]}
+    <Card style={styles.card}>
+      <AppText variant='amountSmall' color='mutedForeground'>
+        {t('summary.spent')}
+      </AppText>
+      <AppText
+        variant='hero'
+        style={styles.hero}
         numberOfLines={1}
+        adjustsFontSizeToFit
+        minimumFontScale={0.6}
       >
-        {value}
-      </Text>
-      {hint ? (
-        <Text style={[styles.hint, { color: c.mutedForeground }]}>{hint}</Text>
-      ) : null}
+        {formatCurrency(spent, base)}
+      </AppText>
+      <AppText variant='caption' color='mutedForeground'>
+        {t('summary.over', { count: days })}
+      </AppText>
+
+      <View style={[styles.divider, { backgroundColor: c.border }]} />
+
+      <View style={styles.statsRow}>
+        <Stat label={t('summary.income')} value={formatCurrency(income, base)} />
+        <View style={[styles.statDivider, { backgroundColor: c.border }]} />
+        <Stat
+          label={t('summary.net')}
+          value={formatCurrency(net, base)}
+          valueColor={netNegative ? c.destructive : undefined}
+        />
+      </View>
     </Card>
   );
 }
 
+function Stat({
+  label,
+  value,
+  valueColor,
+}: {
+  label: string;
+  value: string;
+  valueColor?: string;
+}) {
+  return (
+    <View style={styles.stat}>
+      <AppText
+        variant='amount'
+        numberOfLines={1}
+        adjustsFontSizeToFit
+        minimumFontScale={0.7}
+        style={valueColor ? { color: valueColor } : undefined}
+      >
+        {value}
+      </AppText>
+      <AppText variant='caption' color='mutedForeground' numberOfLines={1}>
+        {label}
+      </AppText>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
-  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two },
-  card: {
-    flexGrow: 1,
-    flexBasis: '47%',
-    gap: Spacing.one,
+  card: { gap: Spacing.half },
+  hero: { marginTop: Spacing.one },
+  divider: {
+    height: StyleSheet.hairlineWidth,
+    marginVertical: Spacing.three,
   },
-  label: { fontFamily: Fonts.medium, fontSize: 13 },
-  value: { fontFamily: Fonts.bold, fontSize: 18 },
-  hint: { fontFamily: Fonts.regular, fontSize: 12 },
+  statsRow: { flexDirection: 'row', alignItems: 'center' },
+  stat: { flex: 1, gap: Spacing.half, alignItems: 'flex-start' },
+  statDivider: { width: StyleSheet.hairlineWidth, alignSelf: 'stretch' },
 });
