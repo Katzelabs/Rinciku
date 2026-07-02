@@ -162,6 +162,7 @@ export const CategoriesManager = forwardRef<
         {inlineAdd ? (
           <Pill
             tone='primary'
+            systemImage='plus'
             leading={<Plus size={16} color={c.primaryForeground} />}
             label={t('spending.addTier')}
             onPress={() => setDialog({ kind: 'create-tier' })}
@@ -329,6 +330,7 @@ function TierCard({
         <View style={styles.cardActions}>
           <Pill
             tone='outline'
+            systemImage='plus'
             leading={<Plus size={15} color={c.foreground} />}
             label={t('tier.addCategory')}
             onPress={() => onAddCategory(tier.id)}

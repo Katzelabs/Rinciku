@@ -1,4 +1,6 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Host, Picker, Text as SwiftText } from '@expo/ui/swift-ui';
+import { pickerStyle, tag } from '@expo/ui/swift-ui/modifiers';
 
 import { Fonts, Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
@@ -14,11 +16,39 @@ interface SegmentedProps<T extends string> {
   onChange: (key: T) => void;
 }
 
-// A fully-rounded pill segmented control. The active segment fills with the
-// brand primary (lime/green); inactive segments read as muted labels on the
-// track. Pure RN so it needs no native module — used to switch sub-sections in
-// the Manage tab.
+/**
+ * Adaptive segmented control. iOS renders a real native SwiftUI segmented
+ * `Picker` (via `@expo/ui/swift-ui`) so it matches platform chrome; Android
+ * renders the custom fully-rounded pill track. Both share one option/value/
+ * onChange contract, so callers never branch.
+ */
 export function Segmented<T extends string>({
+  options,
+  value,
+  onChange,
+}: SegmentedProps<T>) {
+  if (Platform.OS === 'ios') {
+    return (
+      <Host matchContents={{ vertical: true }} style={styles.host}>
+        <Picker
+          selection={value}
+          onSelectionChange={(v) => onChange(v as T)}
+          modifiers={[pickerStyle('segmented')]}
+        >
+          {options.map((o) => (
+            <SwiftText key={o.key} modifiers={[tag(o.key)]}>
+              {o.label}
+            </SwiftText>
+          ))}
+        </Picker>
+      </Host>
+    );
+  }
+
+  return <RNSegmented options={options} value={value} onChange={onChange} />;
+}
+
+function RNSegmented<T extends string>({
   options,
   value,
   onChange,
@@ -57,6 +87,7 @@ export function Segmented<T extends string>({
 }
 
 const styles = StyleSheet.create({
+  host: { width: '100%' },
   track: {
     flexDirection: 'row',
     padding: Spacing.half,

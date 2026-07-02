@@ -85,6 +85,7 @@ export const EssentialsManager = forwardRef<
         {inlineAdd ? (
           <Pill
             tone='primary'
+            systemImage='plus'
             label={t('page.addButton')}
             leading={<Plus size={16} color={c.primaryForeground} />}
             onPress={() => setDialog({ kind: 'create' })}

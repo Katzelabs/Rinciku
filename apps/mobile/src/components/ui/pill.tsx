@@ -1,16 +1,30 @@
-import { type ReactNode } from 'react';
+import { type ComponentProps, type ReactNode } from 'react';
 import {
+  Platform,
   Pressable,
   StyleSheet,
   type StyleProp,
   type ViewStyle,
 } from 'react-native';
+import { Button as SwiftButton, Host } from '@expo/ui/swift-ui';
+import {
+  buttonStyle,
+  controlSize,
+  disabled as disabledModifier,
+  labelStyle,
+  tint,
+} from '@expo/ui/swift-ui/modifiers';
+import { isLiquidGlassAvailable } from 'expo-glass-effect';
 
 import { Border, Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { AppText } from './text';
 
 type Tone = 'muted' | 'primary' | 'outline';
+
+/** SF Symbol name (derived from the native Button's prop type — no direct
+ * `sf-symbols-typescript` import, which isn't linked under pnpm). */
+type SystemImage = NonNullable<ComponentProps<typeof SwiftButton>['systemImage']>;
 
 interface PillProps {
   label: string;
@@ -23,16 +37,65 @@ interface PillProps {
   /** Stretch to fill the row (`flex: 1`). */
   fill?: boolean;
   disabled?: boolean;
+  /**
+   * SF Symbol for the label's leading icon. When provided, iOS renders a real
+   * native SwiftUI `Button` (Liquid Glass on iOS 26+); Android/RN uses `leading`.
+   * Omit it (e.g. dropdown pills with a trailing chevron) to force the RN path.
+   */
+  systemImage?: SystemImage;
   accessibilityLabel?: string;
   style?: StyleProp<ViewStyle>;
 }
 
 /**
  * Fully-rounded pill button — the shared shape behind filter dropdowns, the
- * "Add" affordance, and other inline chips. Replaces the hand-rolled `addPill` /
- * `DropdownPill` / muted `shell` / bordered `PillButton` styles.
+ * "Add" affordance, and inline chips. iOS renders a native SwiftUI button when a
+ * `systemImage` is supplied; otherwise (and on Android) it renders the themed RN
+ * pill.
  */
-export function Pill({
+export function Pill(props: PillProps) {
+  if (Platform.OS === 'ios' && props.systemImage) {
+    return <NativePill {...props} systemImage={props.systemImage} />;
+  }
+  return <RNPill {...props} />;
+}
+
+function nativeButtonStyle(tone: Tone, glass: boolean) {
+  const prominent = tone === 'primary';
+  if (glass) return prominent ? 'glassProminent' : 'glass';
+  return prominent ? 'borderedProminent' : 'bordered';
+}
+
+function NativePill({
+  label,
+  onPress,
+  tone = 'muted',
+  fill = false,
+  disabled = false,
+  systemImage,
+  style,
+}: PillProps & { systemImage: SystemImage }) {
+  const c = useTheme();
+  const glass = isLiquidGlassAvailable();
+  const tintColor = tone === 'primary' ? c.primary : c.secondaryForeground;
+  return (
+    <Host matchContents={{ vertical: true }} style={[fill && styles.fill, style]}>
+      <SwiftButton
+        label={label}
+        systemImage={systemImage}
+        onPress={disabled ? undefined : onPress}
+        modifiers={[
+          buttonStyle(nativeButtonStyle(tone, glass)),
+          controlSize('regular'),
+          tint(tintColor),
+          disabledModifier(disabled),
+        ]}
+      />
+    </Host>
+  );
+}
+
+function RNPill({
   label,
   onPress,
   leading,
@@ -46,7 +109,11 @@ export function Pill({
 }: PillProps) {
   const c = useTheme();
   const bg =
-    tone === 'primary' ? c.primary : tone === 'outline' ? 'transparent' : c.muted;
+    tone === 'primary'
+      ? c.primary
+      : tone === 'outline'
+        ? 'transparent'
+        : c.muted;
   const labelColor: 'primaryForeground' | 'foreground' | 'mutedForeground' =
     tone === 'primary'
       ? 'primaryForeground'
@@ -63,7 +130,10 @@ export function Pill({
       style={({ pressed }) => [
         styles.pill,
         fill && styles.fill,
-        tone === 'outline' && { borderColor: c.border, borderWidth: Border.hairline },
+        tone === 'outline' && {
+          borderColor: c.border,
+          borderWidth: Border.hairline,
+        },
         { backgroundColor: bg, opacity: disabled ? 0.5 : pressed ? 0.6 : 1 },
         style,
       ]}
@@ -88,10 +158,46 @@ interface IconButtonProps {
   accessibilityLabel: string;
   size?: number;
   tone?: Tone;
+  /** SF Symbol for the native iOS button; when provided, iOS renders a native
+   * SwiftUI icon button. Android/RN uses `children`. */
+  systemImage?: SystemImage;
 }
 
 /** Square, fully-rounded icon-only button (e.g. the receipt-capture action). */
-export function IconButton({
+export function IconButton(props: IconButtonProps) {
+  if (Platform.OS === 'ios' && props.systemImage) {
+    return <NativeIconButton {...props} systemImage={props.systemImage} />;
+  }
+  return <RNIconButton {...props} />;
+}
+
+function NativeIconButton({
+  onPress,
+  accessibilityLabel,
+  tone = 'muted',
+  systemImage,
+}: IconButtonProps & { systemImage: SystemImage }) {
+  const c = useTheme();
+  const glass = isLiquidGlassAvailable();
+  const tintColor = tone === 'primary' ? c.primary : c.foreground;
+  return (
+    <Host matchContents>
+      <SwiftButton
+        label={accessibilityLabel}
+        systemImage={systemImage}
+        onPress={onPress}
+        modifiers={[
+          buttonStyle(glass ? 'glass' : 'bordered'),
+          labelStyle('iconOnly'),
+          controlSize('regular'),
+          tint(tintColor),
+        ]}
+      />
+    </Host>
+  );
+}
+
+function RNIconButton({
   children,
   onPress,
   accessibilityLabel,
@@ -107,7 +213,12 @@ export function IconButton({
       onPress={onPress}
       style={({ pressed }) => [
         styles.iconButton,
-        { width: size, height: size, backgroundColor: bg, opacity: pressed ? 0.6 : 1 },
+        {
+          width: size,
+          height: size,
+          backgroundColor: bg,
+          opacity: pressed ? 0.6 : 1,
+        },
       ]}
     >
       {children}

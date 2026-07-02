@@ -6,6 +6,11 @@ import { Pressable, StyleSheet, View } from 'react-native';
 
 import { formatDate, getPeriodRange, type CurrencyCode } from '@rinciku/core';
 
+import { EmptyState } from '@/components/empty-state';
+import { PeriodTabs } from '@/components/period-tabs';
+import type { SegmentedOption } from '@/components/segmented';
+import { TransactionRow } from '@/components/transaction-row';
+import { TransactionSummaryHeader } from '@/components/transaction-summary-header';
 import {
   AppText,
   Card,
@@ -13,15 +18,9 @@ import {
   ScreenScroll,
   SectionHeader,
 } from '@/components/ui';
-import { EmptyState } from '@/components/empty-state';
-import { PeriodTabs } from '@/components/period-tabs';
-import type { SegmentedOption } from '@/components/segmented';
-import { TransactionRow } from '@/components/transaction-row';
-import { TransactionSummaryHeader } from '@/components/transaction-summary-header';
 import { Spacing } from '@/constants/theme';
 import { useAuth } from '@/features/auth/hooks/use-auth';
 import type { ListPeriod } from '@/features/expenses/components/expense-filters';
-import { ExpenseHeaderActions } from '@/features/expenses/components/expense-header-actions';
 import { useExpenses } from '@/features/expenses/hooks/use-expenses';
 import { useTheme } from '@/hooks/use-theme';
 
@@ -104,17 +103,26 @@ export default function ExpensesScreen() {
     >
       <Stack.Screen
         options={{
-          headerTransparent: true,
+          headerTitle: t('page.title'),
+          headerLargeTitle: true,
           unstable_headerRightItems: () => [
             {
-              type: 'custom',
-              hidesSharedBackground: true,
-              element: (
-                <ExpenseHeaderActions
-                  onAdd={() => router.push('/(app)/(expenses)/new')}
-                  onCapture={() => router.push('/(app)/(expenses)/capture')}
-                />
-              ),
+              label: `+ ${t('common:actions.add')}`,
+              type: 'button',
+              tintColor: c.primary,
+              variant: 'prominent',
+              sharesBackground: false,
+              onPress: () => router.push('/(app)/(expenses)/new'),
+            },
+            {
+              label: t('common:nav.scanReceipt'),
+              type: 'button',
+              sharesBackground: false,
+              icon: {
+                type: 'sfSymbol',
+                name: 'camera',
+              },
+              onPress: () => router.push('/(app)/(expenses)/new'),
             },
           ],
         }}
