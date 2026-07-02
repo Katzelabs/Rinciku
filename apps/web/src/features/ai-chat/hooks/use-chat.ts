@@ -12,23 +12,16 @@ import {
   fileToBase64,
   getMessages,
   parseProposal,
-  sendChat,
+  runAgentTurn,
   summarizeProposal,
   touchConversation,
   uploadChatImage,
   type ChatMessageRowWithImage,
 } from '../api';
-import {
-  AGENT_TOOLS,
-  applyProposedChange,
-  executeReadTool,
-  isWriteTool,
-  parseChange,
-} from '../agent-tools';
+import { applyProposedChange, parseChange } from '../agent-tools';
 import type { CurrencyCode } from '@rinciku/core';
 import type {
   ChatItem,
-  ChatResponse,
   ImageBlock,
   MessageParam,
   PendingAttachment,
@@ -36,13 +29,7 @@ import type {
   ProposedTransaction,
   TextBlock,
   ToolChoice,
-  ToolResultBlock,
-  ToolUseBlock,
 } from '../types';
-
-// Bounds the read-tool loop so a misbehaving model can't spin forever. Each
-// step is one model round-trip; reads in between are auto-executed.
-const MAX_STEPS = 6;
 
 export type ActiveProposal = {
   proposal: ProposedTransaction;
@@ -214,54 +201,21 @@ export function useChat(options: UseChatOptions = {}): UseChatResult {
         throw ctx.error ?? new Error(i18n.t('aiChat:chat.budgetError'));
       }
 
-      // 4. Agentic loop: the model may call read tools (auto-executed here,
-      //    reusing the RLS-scoped api layer) and reason over the results before
+      // 4. Agentic loop lives in the shared @rinciku/domain/ai-chat slice: the
+      //    model may call read tools (auto-executed there, reusing the
+      //    RLS-scoped api factories) and reason over the results before
       //    answering. Write proposals (propose_*) end the loop with a card —
-      //    they are never executed without user confirmation.
-      const apiMessages: MessageParam[] = [
-        ...history,
-        { role: 'user', content: params.apiContent },
-      ];
-      // First step honors the caller's tool_choice (images force a tool to get
-      // a clean extraction); later steps let the model decide freely.
-      let toolChoice = params.toolChoice;
-      let res: ChatResponse | null = null;
-
-      for (let step = 0; step < MAX_STEPS; step++) {
-        res = await sendChat({
+      //    never executed without user confirmation.
+      const res = await runAgentTurn(
+        {
           system: ctx.data.system,
-          messages: apiMessages,
-          tools: AGENT_TOOLS,
-          tool_choice: toolChoice,
-        });
-        if (res.error) throw new Error(res.error);
-
-        const blocks = res.content ?? [];
-        const hasWrite = blocks.some(
-          (b) => b.type === 'tool_use' && isWriteTool(b.name)
-        );
-        if (hasWrite) break; // terminal: a write proposal needs confirmation
-
-        const readUses = blocks.filter(
-          (b): b is ToolUseBlock =>
-            b.type === 'tool_use' && !isWriteTool(b.name)
-        );
-        if (readUses.length === 0) break; // terminal: plain text answer
-
-        // Execute the requested reads and replay the results to the model.
-        apiMessages.push({ role: 'assistant', content: blocks });
-        const results: ToolResultBlock[] = await Promise.all(
-          readUses.map(async (u) => ({
-            type: 'tool_result' as const,
-            tool_use_id: u.id,
-            content: await executeReadTool(u.name, u.input, profile),
-          }))
-        );
-        apiMessages.push({ role: 'user', content: results });
-        toolChoice = { type: 'auto' };
-      }
-
-      if (!res) throw new Error(i18n.t('aiChat:chat.noResponse'));
+          history,
+          apiContent: params.apiContent,
+          toolChoice: params.toolChoice,
+          profile,
+        },
+        { noResponseMessage: i18n.t('aiChat:chat.noResponse') }
+      );
 
       // 5. Resolve the terminal response: a transaction proposal, a generic
       //    change proposal, or a plain answer. Persist the assistant text.

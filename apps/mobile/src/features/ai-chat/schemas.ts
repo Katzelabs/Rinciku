@@ -1,6 +1,4 @@
-// The ai-chat Zod schemas are portable and live in @rinciku/domain/ai-chat
-// (shared by web + mobile). This file re-exports them so existing `../schemas`
-// imports keep working.
+// Portable Zod schemas live in @rinciku/domain/ai-chat (shared by web + mobile).
 export {
   composerSchema,
   proposalToolInputSchema,

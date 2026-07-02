@@ -1,6 +1,4 @@
-// The ai-chat types are portable and live in @rinciku/domain/ai-chat (shared by
-// web + mobile). This file re-exports them so existing `../types` imports keep
-// working.
+// Portable ai-chat types live in @rinciku/domain/ai-chat (shared by web + mobile).
 export type {
   Conversation,
   ChatMessageRow,

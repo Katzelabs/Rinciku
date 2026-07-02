@@ -4,15 +4,17 @@ import type { CurrencyCode } from '@rinciku/core';
 
 // Portable incomes data layer, shared by web + mobile. The Supabase client is
 // injected so the same code runs against the browser client and the native
-// client. Receipt attachments, CSV bulk import, and signed-URL previews stay in
-// the web-local api.ts for now (they lean on `File`/`crypto` + Storage); this
-// factory covers the CRUD surface both platforms need.
+// client. CSV bulk import stays web-local; receipt attachments live here (they
+// mirror the expenses factory) so the shared ai-chat slice can confirm an
+// image-sourced income on both platforms.
 
 type IncomeRow = Database['public']['Tables']['incomes']['Row'];
 type IncomeUpdate = Database['public']['Tables']['incomes']['Update'];
 type IncomeCategoryRow =
   Database['public']['Tables']['income_categories']['Row'];
 type AttachmentRow = Database['public']['Tables']['income_attachments']['Row'];
+type AttachmentUpdate =
+  Database['public']['Tables']['income_attachments']['Update'];
 
 export type IncomeWithRelations = IncomeRow & {
   // `source_id` joined relation. Named `category` (not `source`) to avoid
@@ -63,6 +65,20 @@ export type CreateIncomeCategoryInput = IncomeCategoryFields & {
 };
 export type UpdateIncomeCategoryPatch = Partial<IncomeCategoryFields>;
 
+// --- income attachments (mirrors expenses/api.ts) --------------------------
+
+export type CreateIncomeAttachmentInput = {
+  user_id: string;
+  storage_path: string;
+  mime_type: string;
+  file_size_bytes: number;
+};
+
+export type UploadIncomeAttachmentOptions = {
+  userId: string;
+  occurredAt: Date;
+};
+
 type Result<T> = {
   data: T | null;
   error: PostgrestError | null;
@@ -74,8 +90,33 @@ type PaginatedResult<T> = {
   error: PostgrestError | null;
 };
 
+type StorageResult<T> = {
+  data: T | null;
+  error: Error | null;
+};
+
 const INCOME_WITH_RELATIONS_SELECT =
   '*, category:income_categories!incomes_source_id_fkey(*), attachment:income_attachments!incomes_attachment_id_fkey(*)';
+
+const ATTACHMENTS_BUCKET = 'income-attachments';
+
+const MIME_TO_EXT: Record<string, string> = {
+  'image/jpeg': 'jpg',
+  'image/png': 'png',
+  'image/webp': 'webp',
+  'image/heic': 'heic',
+  'application/pdf': 'pdf',
+};
+
+const KNOWN_EXTS = new Set(['jpg', 'jpeg', 'png', 'webp', 'heic', 'pdf']);
+
+function resolveExtension(file: File): string {
+  const nameExt = file.name.split('.').pop()?.toLowerCase();
+  if (nameExt && KNOWN_EXTS.has(nameExt)) {
+    return nameExt === 'jpeg' ? 'jpg' : nameExt;
+  }
+  return MIME_TO_EXT[file.type] ?? 'bin';
+}
 
 /**
  * Incomes + income-source data layer. The Supabase client is injected so the
@@ -216,6 +257,87 @@ export function createIncomesApi(db: TypedSupabaseClient) {
     return { data: null, error };
   }
 
+  // --- income attachments --------------------------------------------------
+
+  async function uploadIncomeAttachment(
+    file: File,
+    { userId, occurredAt }: UploadIncomeAttachmentOptions
+  ): Promise<StorageResult<{ storage_path: string }>> {
+    const year = occurredAt.getFullYear();
+    const month = String(occurredAt.getMonth() + 1).padStart(2, '0');
+    const ext = resolveExtension(file);
+    const storage_path = `${userId}/${year}-${month}/${crypto.randomUUID()}.${ext}`;
+
+    const { error } = await db.storage
+      .from(ATTACHMENTS_BUCKET)
+      .upload(storage_path, file, {
+        cacheControl: '3600',
+        upsert: false,
+        contentType: file.type,
+      });
+
+    if (error) return { data: null, error };
+    return { data: { storage_path }, error: null };
+  }
+
+  async function createIncomeAttachment(
+    input: CreateIncomeAttachmentInput
+  ): Promise<Result<AttachmentRow>> {
+    // The ai-chat slice UPDATEs ai_raw_extraction + ai_confidence + doc_type
+    // when a proposal is confirmed; here we just record the file.
+    const { data, error } = await db
+      .from('income_attachments')
+      .insert({
+        user_id: input.user_id,
+        storage_path: input.storage_path,
+        mime_type: input.mime_type,
+        file_size_bytes: input.file_size_bytes,
+        doc_type: 'unknown',
+        confirmed: false,
+        income_id: null,
+        ai_raw_extraction: null,
+      })
+      .select('*')
+      .single();
+    return { data, error };
+  }
+
+  async function updateIncomeAttachment(
+    id: string,
+    patch: AttachmentUpdate
+  ): Promise<Result<AttachmentRow>> {
+    const { data, error } = await db
+      .from('income_attachments')
+      .update(patch)
+      .eq('id', id)
+      .select('*')
+      .single();
+    return { data, error };
+  }
+
+  async function getIncomeAttachmentSignedUrl(
+    storage_path: string,
+    expiresIn = 60
+  ): Promise<StorageResult<{ signedUrl: string }>> {
+    const { data, error } = await db.storage
+      .from(ATTACHMENTS_BUCKET)
+      .createSignedUrl(storage_path, expiresIn);
+    if (error) return { data: null, error };
+    return { data: { signedUrl: data.signedUrl }, error: null };
+  }
+
+  async function deleteIncomeAttachment(id: string): Promise<Result<null>> {
+    const { error } = await db
+      .from('income_attachments')
+      .delete()
+      .eq('id', id);
+    return { data: null, error };
+  }
+
+  async function deleteIncomeAttachmentObject(storage_path: string) {
+    return db.storage.from(ATTACHMENTS_BUCKET).remove([storage_path]);
+  }
+
   return {
     listIncomes,
     sumIncomes,
@@ -227,6 +349,12 @@ export function createIncomesApi(db: TypedSupabaseClient) {
     createIncomeCategory,
     updateIncomeCategory,
     deleteIncomeCategory,
+    uploadIncomeAttachment,
+    createIncomeAttachment,
+    updateIncomeAttachment,
+    getIncomeAttachmentSignedUrl,
+    deleteIncomeAttachment,
+    deleteIncomeAttachmentObject,
   };
 }
 

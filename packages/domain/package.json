@@ -5,6 +5,7 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
+    "./ai-chat": "./src/features/ai-chat/index.ts",
     "./auth": "./src/features/auth/index.ts",
     "./budgets": "./src/features/budgets/index.ts",
     "./categories": "./src/features/categories/index.ts",
