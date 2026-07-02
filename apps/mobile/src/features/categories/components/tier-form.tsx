@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { StyleSheet, Switch, Text, View } from 'react-native';
 
 import { Fonts, Spacing } from '@/constants/theme';
+import { Button } from '@/components/ui';
 import { createTier, updateTier } from '@/features/categories/api';
 import { ColorPicker } from '@/features/categories/components/color-picker';
 import { SubmitButton } from '@/features/categories/components/category-form';
@@ -25,6 +26,9 @@ interface TierFormProps {
   // Where a newly created tier lands in the ordering (append at the end).
   nextSortOrder?: number;
   onSuccess: () => void;
+  /** Edit mode only: renders a destructive Delete button below submit. The
+   * host owns the confirmation + deletion (see CategoriesManager). */
+  onDelete?: () => void;
 }
 
 export function TierForm({
@@ -32,6 +36,7 @@ export function TierForm({
   defaultValues,
   nextSortOrder,
   onSuccess,
+  onDelete,
 }: TierFormProps) {
   const c = useTheme();
   const { user } = useAuth();
@@ -116,6 +121,14 @@ export function TierForm({
       {submitError ? <Notice tone='error'>{submitError}</Notice> : null}
 
       <SubmitButton mode={mode} onPress={submit} which='Tier' />
+
+      {mode === 'edit' && onDelete ? (
+        <Button
+          label={t('tier.delete')}
+          variant='destructive'
+          onPress={onDelete}
+        />
+      ) : null}
     </View>
   );
 }

@@ -142,7 +142,6 @@ export default function ExpensesScreen() {
           labels={{
             total: t('summary.totalSpent'),
             transactions: t('summary.transactions'),
-            avgPerTransaction: t('summary.avgPerTransaction'),
             avgPerDay: t('summary.avgPerDay'),
             overDays: t('summary.overDays', { count: days }),
           }}

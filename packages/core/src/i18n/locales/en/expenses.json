@@ -22,7 +22,10 @@
     "title": "Period",
     "today": "Today",
     "thisWeek": "This Week",
-    "thisMonth": "This Month"
+    "thisMonth": "This Month",
+    "rangeTitle": "Select date range",
+    "from": "From",
+    "to": "To"
   },
   "list": {
     "title": "Transactions",

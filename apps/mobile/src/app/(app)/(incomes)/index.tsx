@@ -121,7 +121,6 @@ export default function IncomesScreen() {
         labels={{
           total: t('summary.totalIncome'),
           transactions: t('summary.transactions'),
-          avgPerTransaction: t('summary.avgPerTransaction'),
           avgPerDay: t('summary.avgPerDay'),
           overDays: t('summary.overDays', { count: days }),
         }}

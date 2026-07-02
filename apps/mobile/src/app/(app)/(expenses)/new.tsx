@@ -1,6 +1,8 @@
 import { useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { ScrollView, StyleSheet } from 'react-native';
 
+import { AppText } from '@/components/ui';
 import { Spacing } from '@/constants/theme';
 import { ExpenseForm } from '@/features/expenses/components/expense-form';
 import { useTheme } from '@/hooks/use-theme';
@@ -10,12 +12,16 @@ import { useTheme } from '@/hooks/use-theme';
 export default function NewExpenseScreen() {
   const c = useTheme();
   const router = useRouter();
+  const { t } = useTranslation('expenses');
   return (
     <ScrollView
       style={{ backgroundColor: c.background }}
       keyboardShouldPersistTaps='handled'
       contentContainerStyle={styles.content}
     >
+      <AppText variant='caption' color='mutedForeground' style={styles.intro}>
+        {t('page.createDescription')}
+      </AppText>
       <ExpenseForm mode='create' onSuccess={() => router.back()} />
     </ScrollView>
   );
@@ -23,4 +29,5 @@ export default function NewExpenseScreen() {
 
 const styles = StyleSheet.create({
   content: { padding: Spacing.four, paddingBottom: Spacing.six },
+  intro: { marginBottom: Spacing.four },
 });

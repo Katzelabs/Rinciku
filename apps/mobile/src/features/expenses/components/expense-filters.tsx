@@ -10,9 +10,14 @@ import {
 import { Calendar, Check, ChevronDown, Search, Shapes } from 'lucide-react-native';
 import type { Tables } from '@rinciku/db';
 
+import { formatDate } from '@rinciku/core';
+
 import { Fonts, Radius, Spacing } from '@/constants/theme';
 import { AppText, Card, Pill, Sheet } from '@/components/ui';
 import { CategoryBadge } from '@/components/category-badge';
+import { DateField } from '@/components/date-field';
+import { Button } from '@/features/auth/components/button';
+import { FieldLabel } from '@/features/auth/components/text-field';
 import { listCategories, listTiers } from '@/features/categories/api';
 import {
   groupByTier,
@@ -23,45 +28,58 @@ import { useTheme } from '@/hooks/use-theme';
 
 type Category = Tables<'categories'>;
 
-/** Quick period presets offered on the transactions list (custom lives on web). */
+/** Quick period presets — still used by the expenses overview tabs. */
 export type ListPeriod = 'today' | 'week' | 'month';
-
-const PERIOD_KEY: Record<ListPeriod, string> = {
-  today: 'period.today',
-  week: 'period.thisWeek',
-  month: 'period.thisMonth',
-};
 
 interface ExpenseFiltersProps {
   search: string;
   onSearchChange: (value: string) => void;
   categoryIds: string[];
   onCategoryIdsChange: (ids: string[]) => void;
-  period: ListPeriod;
-  onPeriodChange: (period: ListPeriod) => void;
+  /** Inclusive date range currently applied (defaults to the monthly cycle). */
+  from: Date;
+  to: Date;
+  onRangeChange: (from: Date, to: Date) => void;
 }
 
-// The transactions-list filter card from the reference design: a full-width
-// search on top, then a row of two dropdown pills (category + period). Each
-// dropdown opens a page-sheet; the category picker is multi-select, the period
-// picker single-select. Sits in a card so it reads as one grouped control.
+// The transactions-list filter card: a full-width search on top, then a row of
+// two dropdown pills (category + date range). Each opens a page-sheet; the
+// category picker is multi-select, the date range picker lets the user pick an
+// arbitrary from–to (default is the monthly cycle). Sits in a card so it reads
+// as one grouped control.
 export function ExpenseFilters({
   search,
   onSearchChange,
   categoryIds,
   onCategoryIdsChange,
-  period,
-  onPeriodChange,
+  from,
+  to,
+  onRangeChange,
 }: ExpenseFiltersProps) {
   const c = useTheme();
   const { t } = useTranslation('expenses');
   const [categoryOpen, setCategoryOpen] = useState(false);
-  const [periodOpen, setPeriodOpen] = useState(false);
+  const [rangeOpen, setRangeOpen] = useState(false);
+  const [draftFrom, setDraftFrom] = useState(from);
+  const [draftTo, setDraftTo] = useState(to);
 
   const categoryLabel =
     categoryIds.length === 0
       ? t('filters.category')
       : t('common:multiSelect.selectedCount', { count: categoryIds.length });
+
+  const rangeLabel = `${formatDate(from, 'MMM d')} – ${formatDate(to, 'MMM d')}`;
+
+  function openRange() {
+    setDraftFrom(from);
+    setDraftTo(to);
+    setRangeOpen(true);
+  }
+
+  function applyRange() {
+    onRangeChange(draftFrom, draftTo);
+    setRangeOpen(false);
+  }
 
   return (
     <Card padding={Spacing.three} style={styles.card}>
@@ -91,9 +109,9 @@ export function ExpenseFilters({
           fill
           leading={<Calendar size={16} color={c.mutedForeground} />}
           trailing={<ChevronDown size={16} color={c.mutedForeground} />}
-          label={t(PERIOD_KEY[period])}
+          label={rangeLabel}
           active
-          onPress={() => setPeriodOpen(true)}
+          onPress={openRange}
         />
       </View>
 
@@ -103,47 +121,34 @@ export function ExpenseFilters({
         selected={categoryIds}
         onChange={onCategoryIdsChange}
       />
-      <PeriodSelect
-        open={periodOpen}
-        value={period}
-        onClose={() => setPeriodOpen(false)}
-        onChange={(p) => {
-          onPeriodChange(p);
-          setPeriodOpen(false);
-        }}
-      />
+      <Sheet
+        visible={rangeOpen}
+        onClose={() => setRangeOpen(false)}
+        title={t('period.rangeTitle')}
+      >
+        <View style={styles.rangeField}>
+          <FieldLabel>{t('period.from')}</FieldLabel>
+          <DateField
+            value={draftFrom}
+            onChange={setDraftFrom}
+            maximumDate={draftTo}
+          />
+        </View>
+        <View style={styles.rangeField}>
+          <FieldLabel>{t('period.to')}</FieldLabel>
+          <DateField
+            value={draftTo}
+            onChange={setDraftTo}
+            minimumDate={draftFrom}
+          />
+        </View>
+        <Button
+          label={t('common:actions.apply')}
+          onPress={applyRange}
+          style={styles.applyButton}
+        />
+      </Sheet>
     </Card>
-  );
-}
-
-function PeriodSelect({
-  open,
-  value,
-  onClose,
-  onChange,
-}: {
-  open: boolean;
-  value: ListPeriod;
-  onClose: () => void;
-  onChange: (period: ListPeriod) => void;
-}) {
-  const c = useTheme();
-  const { t } = useTranslation('expenses');
-  const options: ListPeriod[] = ['today', 'week', 'month'];
-
-  return (
-    <Sheet visible={open} onClose={onClose} title={t('period.title')}>
-      {options.map((o) => (
-        <Pressable
-          key={o}
-          onPress={() => onChange(o)}
-          style={styles.periodOption}
-        >
-          <AppText variant='body'>{t(PERIOD_KEY[o])}</AppText>
-          {o === value ? <Check size={18} color={c.primary} /> : null}
-        </Pressable>
-      ))}
-    </Sheet>
   );
 }
 
@@ -254,12 +259,8 @@ const styles = StyleSheet.create({
   },
   row: { flexDirection: 'row', gap: Spacing.two },
   loader: { marginVertical: Spacing.four },
-  periodOption: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: Spacing.three,
-  },
+  rangeField: { gap: Spacing.two },
+  applyButton: { marginTop: Spacing.two },
   group: { gap: Spacing.one },
   option: {
     flexDirection: 'row',

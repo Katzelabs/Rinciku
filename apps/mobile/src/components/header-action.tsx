@@ -1,5 +1,3 @@
-import type { ComponentProps, ComponentType } from 'react';
-import { Platform, Pressable, StyleSheet } from 'react-native';
 import { Button, Host, Image } from '@expo/ui/swift-ui';
 import {
   accessibilityLabel as a11yLabel,
@@ -7,6 +5,8 @@ import {
   imageScale,
   tint,
 } from '@expo/ui/swift-ui/modifiers';
+import type { ComponentProps, ComponentType } from 'react';
+import { Platform, Pressable, StyleSheet } from 'react-native';
 
 import { useTheme } from '@/hooks/use-theme';
 

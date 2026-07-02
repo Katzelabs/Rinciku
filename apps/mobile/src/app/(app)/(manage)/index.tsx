@@ -1,79 +1,42 @@
-import { useRef, useState } from 'react';
-import { Stack } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
-import { Plus } from 'lucide-react-native';
+import { Repeat, Tags, Target } from 'lucide-react-native';
 
-import { ScreenScroll } from '@/components/ui';
-import { HeaderAction } from '@/components/header-action';
-import { Segmented, type SegmentedOption } from '@/components/segmented';
+import { Card, ScreenScroll } from '@/components/ui';
+import { SettingsRow } from '@/components/settings-row';
 import { Spacing } from '@/constants/theme';
-import { BudgetsManager } from '@/features/budgets/components/budgets-manager';
-import {
-  CategoriesManager,
-  type CategoriesManagerHandle,
-} from '@/features/categories/components/categories-manager';
-import {
-  EssentialsManager,
-  type EssentialsManagerHandle,
-} from '@/features/essentials/components/essentials-manager';
 
-type Segment = 'essentials' | 'budgets' | 'categories';
-
-// The Manage tab merges the three planning surfaces — Essentials, Budgets and
-// Categories — behind a pill segmented control. The header "+" acts on the
-// active segment's manager (create essential / create tier); Budgets edits
-// per-category targets inline, so it has no add action.
+// The Manage tab is a settings list: each row links to a dedicated screen for
+// one planning surface — Essentials, Budgets, Categories. The screens live in
+// the sibling route files and own their own header actions.
 export default function ManageScreen() {
+  const router = useRouter();
   const { t } = useTranslation('common');
-  const { t: tEssentials } = useTranslation('essentials');
-  const { t: tCategories } = useTranslation('categories');
-  const [active, setActive] = useState<Segment>('essentials');
-  const essentialsRef = useRef<EssentialsManagerHandle>(null);
-  const categoriesRef = useRef<CategoriesManagerHandle>(null);
-
-  const options: SegmentedOption<Segment>[] = [
-    { key: 'essentials', label: t('nav.items.essentials') },
-    { key: 'budgets', label: t('nav.items.budgets') },
-    { key: 'categories', label: t('nav.items.categories') },
-  ];
-
-  const headerRight = () => {
-    if (active === 'essentials') {
-      return (
-        <HeaderAction
-          systemImage='plus'
-          icon={Plus}
-          accessibilityLabel={tEssentials('page.addButton')}
-          onPress={() => essentialsRef.current?.openCreate()}
-        />
-      );
-    }
-    if (active === 'categories') {
-      return (
-        <HeaderAction
-          systemImage='plus'
-          icon={Plus}
-          accessibilityLabel={tCategories('spending.addTier')}
-          onPress={() => categoriesRef.current?.openCreate()}
-        />
-      );
-    }
-    return null;
-  };
 
   return (
     <ScreenScroll gap={Spacing.four}>
-      <Stack.Screen options={{ headerRight }} />
-
-      <Segmented options={options} value={active} onChange={setActive} />
-
-      {active === 'essentials' ? (
-        <EssentialsManager ref={essentialsRef} inlineAdd={false} />
-      ) : active === 'budgets' ? (
-        <BudgetsManager />
-      ) : (
-        <CategoriesManager ref={categoriesRef} inlineAdd={false} />
-      )}
+      <Card padding={0}>
+        <SettingsRow
+          icon={Repeat}
+          title={t('nav.items.essentials')}
+          subtitle={t('manage.rows.essentials')}
+          onPress={() => router.push('/(app)/(manage)/essentials')}
+        />
+        <SettingsRow
+          icon={Target}
+          title={t('nav.items.budgets')}
+          subtitle={t('manage.rows.budgets')}
+          onPress={() => router.push('/(app)/(manage)/budgets')}
+          topBorder
+        />
+        <SettingsRow
+          icon={Tags}
+          title={t('nav.items.categories')}
+          subtitle={t('manage.rows.categories')}
+          onPress={() => router.push('/(app)/(manage)/categories')}
+          topBorder
+        />
+      </Card>
     </ScreenScroll>
   );
 }

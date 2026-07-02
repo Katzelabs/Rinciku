@@ -22,7 +22,10 @@
     "title": "Periode",
     "today": "Hari Ini",
     "thisWeek": "Minggu Ini",
-    "thisMonth": "Bulan Ini"
+    "thisMonth": "Bulan Ini",
+    "rangeTitle": "Pilih rentang tanggal",
+    "from": "Dari",
+    "to": "Sampai"
   },
   "list": {
     "title": "Transaksi",

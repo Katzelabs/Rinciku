@@ -20,7 +20,7 @@ export default function ExpensesLayout() {
         options={{
           presentation: 'modal',
           headerLargeTitle: false,
-          title: t('nav.items.expenses'),
+          title: t('expenses:page.addExpense'),
         }}
       />
       <Stack.Screen

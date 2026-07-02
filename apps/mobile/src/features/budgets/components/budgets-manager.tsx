@@ -1,18 +1,11 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import {
-  ActivityIndicator,
-  Alert,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { ActivityIndicator, Alert, Pressable, StyleSheet, View } from 'react-native';
 
 import { getCycleLabel, type CurrencyCode } from '@rinciku/core';
 
-import { Fonts, Radius, Spacing } from '@/constants/theme';
-import { Card, Notice } from '@/components/ui';
+import { Radius, Spacing } from '@/constants/theme';
+import { AppText, Card, Notice } from '@/components/ui';
 import { CategoryBadge } from '@/components/category-badge';
 import { useAuth } from '@/features/auth/hooks/use-auth';
 import { deleteBudget, upsertBudget } from '@/features/budgets/api';
@@ -67,13 +60,13 @@ export function BudgetsManager() {
 
   return (
     <View style={styles.container}>
-      <Text style={[styles.subtitle, { color: c.mutedForeground }]}>
+      <AppText variant='caption' color='mutedForeground'>
         {t('page.subtitle')}
-      </Text>
+      </AppText>
       {data ? (
-        <Text style={[styles.cycle, { color: c.mutedForeground }]}>
+        <AppText variant='label' color='mutedForeground'>
           {t('page.cycle', { label: getCycleLabel(data.cycle) })}
-        </Text>
+        </AppText>
       ) : null}
 
       {error ? <Notice tone='error'>{error}</Notice> : null}
@@ -90,15 +83,19 @@ export function BudgetsManager() {
                   { backgroundColor: section.tier?.color ?? c.mutedForeground },
                 ]}
               />
-              <Text style={[styles.tierName, { color: c.foreground }]}>
+              <AppText variant='heading'>
                 {section.tier ? section.tier.name : t('page.untiered')}
-              </Text>
+              </AppText>
             </View>
 
             {section.categories.length === 0 ? (
-              <Text style={[styles.empty, { color: c.mutedForeground }]}>
+              <AppText
+                variant='caption'
+                color='mutedForeground'
+                style={styles.empty}
+              >
                 {t('page.noCategories')}
-              </Text>
+              </AppText>
             ) : (
               <Card padding={0} style={styles.card}>
                 {section.categories.map((row, i) => (
@@ -121,11 +118,7 @@ export function BudgetsManager() {
                       size={32}
                     />
                     <View style={styles.rowBody}>
-                      <Text
-                        style={[styles.categoryName, { color: c.foreground }]}
-                      >
-                        {row.category.name}
-                      </Text>
+                      <AppText variant='bodyMedium'>{row.category.name}</AppText>
                       <BudgetMeter
                         spent={row.spent}
                         target={row.target}
@@ -161,8 +154,6 @@ export function BudgetsManager() {
 
 const styles = StyleSheet.create({
   container: { gap: Spacing.three },
-  subtitle: { fontFamily: Fonts.regular, fontSize: 14, lineHeight: 20 },
-  cycle: { fontFamily: Fonts.medium, fontSize: 13 },
   loader: { marginVertical: Spacing.four },
   section: { gap: Spacing.two },
   sectionHeader: {
@@ -172,11 +163,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.one,
   },
   dot: { width: 10, height: 10, borderRadius: Radius.pill },
-  tierName: { fontFamily: Fonts.semibold, fontSize: 16 },
   card: { paddingHorizontal: Spacing.three },
   empty: {
-    fontFamily: Fonts.regular,
-    fontSize: 14,
     paddingHorizontal: Spacing.one,
     paddingVertical: Spacing.two,
   },
@@ -187,5 +175,4 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.three,
   },
   rowBody: { flex: 1, gap: Spacing.two },
-  categoryName: { fontFamily: Fonts.medium, fontSize: 15 },
 });

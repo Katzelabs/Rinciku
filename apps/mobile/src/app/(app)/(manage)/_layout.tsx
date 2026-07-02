@@ -11,6 +11,18 @@ export default function ManageLayout() {
       }}
     >
       <Stack.Screen name='index' options={{ title: t('nav.items.manage') }} />
+      <Stack.Screen
+        name='essentials'
+        options={{ title: t('nav.items.essentials') }}
+      />
+      <Stack.Screen
+        name='budgets'
+        options={{ title: t('nav.items.budgets') }}
+      />
+      <Stack.Screen
+        name='categories'
+        options={{ title: t('nav.items.categories') }}
+      />
     </Stack>
   );
 }

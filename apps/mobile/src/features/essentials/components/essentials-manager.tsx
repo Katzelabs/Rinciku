@@ -1,20 +1,14 @@
 import { forwardRef, useImperativeHandle, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import {
-  ActivityIndicator,
-  Alert,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
-import { Pencil, Plus, Trash2 } from 'lucide-react-native';
+import { ActivityIndicator, Alert, StyleSheet, View } from 'react-native';
+import { Plus } from 'lucide-react-native';
 
 import { formatCurrency, type CurrencyCode } from '@rinciku/core';
 
-import { Fonts, Spacing } from '@/constants/theme';
-import { Card, Notice, Pill, Sheet } from '@/components/ui';
+import { Spacing } from '@/constants/theme';
+import { AppText, Card, Notice, Pill, Sheet } from '@/components/ui';
 import { CategoryBadge } from '@/components/category-badge';
+import { SwipeRow } from '@/components/swipe-row';
 import { useAuth } from '@/features/auth/hooks/use-auth';
 import { deleteEssential } from '@/features/essentials/api';
 import { EssentialForm } from '@/features/essentials/components/essential-form';
@@ -37,9 +31,10 @@ interface EssentialsManagerProps {
 }
 
 // Essentials list + baseline summary + create/edit/delete, mirroring the web
-// essentials page. The Stack header supplies the large title; this renders a
-// plain View so the screen owns the scroll container (like CategoriesManager).
-// The standalone screen drives creation from the header via the imperative
+// essentials page. Rows are tap-to-edit / swipe-to-delete (see SwipeRow) so the
+// name + amount aren't crowded by inline action buttons. Renders a plain View so
+// the host screen owns the scroll container (like CategoriesManager). The
+// standalone screen drives creation from the header via the imperative
 // `openCreate` handle; the onboarding wizard uses the inline add pill.
 export const EssentialsManager = forwardRef<
   EssentialsManagerHandle,
@@ -79,9 +74,9 @@ export const EssentialsManager = forwardRef<
   return (
     <View style={styles.wrap}>
       <View style={styles.topRow}>
-        <Text style={[styles.subtitle, { color: c.mutedForeground }]}>
+        <AppText variant='caption' color='mutedForeground' style={styles.flex}>
           {t('page.subtitle')}
-        </Text>
+        </AppText>
         {inlineAdd ? (
           <Pill
             tone='primary'
@@ -98,21 +93,22 @@ export const EssentialsManager = forwardRef<
       {loading ? (
         <ActivityIndicator color={c.primary} style={styles.loader} />
       ) : essentials.length === 0 ? (
-        <Text style={[styles.empty, { color: c.mutedForeground }]}>
+        <AppText
+          variant='label'
+          color='mutedForeground'
+          style={styles.empty}
+        >
           {t('table.empty')}
-        </Text>
+        </AppText>
       ) : (
         <Card padding={0} style={styles.card}>
           {essentials.map((row, i) => (
-            <View
+            <SwipeRow
               key={row.id}
-              style={[
-                styles.row,
-                i > 0 && {
-                  borderTopColor: c.border,
-                  borderTopWidth: StyleSheet.hairlineWidth,
-                },
-              ]}
+              topBorder={i > 0}
+              deleteLabel={t('table.deleteLabel')}
+              onPress={() => setDialog({ kind: 'edit', row })}
+              onDelete={() => confirmDelete(row)}
             >
               <CategoryBadge
                 icon={row.category?.icon}
@@ -120,34 +116,20 @@ export const EssentialsManager = forwardRef<
                 size={32}
               />
               <View style={styles.rowText}>
-                <Text style={[styles.name, { color: c.foreground }]}>
-                  {row.name}
-                </Text>
+                <AppText variant='bodyMedium'>{row.name}</AppText>
                 {row.category ? (
-                  <Text style={[styles.category, { color: c.mutedForeground }]}>
+                  <AppText variant='caption' color='mutedForeground'>
                     {row.category.name}
-                  </Text>
+                  </AppText>
                 ) : null}
               </View>
-              <Text style={[styles.amount, { color: c.foreground }]}>
+              <AppText variant='amount'>
                 {formatCurrency(
                   Number(row.estimated_amount),
                   row.currency as CurrencyCode
                 )}
-              </Text>
-              <IconButton
-                onPress={() => setDialog({ kind: 'edit', row })}
-                accessibilityLabel={t('table.editLabel')}
-              >
-                <Pencil size={16} color={c.mutedForeground} />
-              </IconButton>
-              <IconButton
-                onPress={() => confirmDelete(row)}
-                accessibilityLabel={t('table.deleteLabel')}
-              >
-                <Trash2 size={16} color={c.destructive} />
-              </IconButton>
-            </View>
+              </AppText>
+            </SwipeRow>
           ))}
         </Card>
       )}
@@ -202,67 +184,19 @@ function FormModal({
   );
 }
 
-function IconButton({
-  children,
-  onPress,
-  accessibilityLabel,
-}: {
-  children: React.ReactNode;
-  onPress: () => void;
-  accessibilityLabel: string;
-}) {
-  return (
-    <Pressable
-      onPress={onPress}
-      hitSlop={8}
-      accessibilityRole='button'
-      accessibilityLabel={accessibilityLabel}
-      style={({ pressed }) => [
-        styles.iconButton,
-        { opacity: pressed ? 0.6 : 1 },
-      ]}
-    >
-      {children}
-    </Pressable>
-  );
-}
-
 const styles = StyleSheet.create({
   wrap: { gap: Spacing.three },
+  flex: { flex: 1 },
   topRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: Spacing.two,
   },
-  subtitle: {
-    flex: 1,
-    fontFamily: Fonts.regular,
-    fontSize: 13,
-    lineHeight: 18,
-  },
   loader: { marginVertical: Spacing.four },
-  empty: {
-    fontFamily: Fonts.regular,
-    fontSize: 14,
-    textAlign: 'center',
-    paddingVertical: Spacing.four,
-  },
-  card: { paddingHorizontal: Spacing.three },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.two,
-    paddingVertical: Spacing.three,
-  },
+  empty: { textAlign: 'center', paddingVertical: Spacing.four },
+  // overflow hidden so a swiped row's red delete action is clipped to the
+  // card's rounded corners; rows own their horizontal padding (SwipeRow).
+  card: { overflow: 'hidden' },
   rowText: { flex: 1, gap: 2 },
-  name: { fontFamily: Fonts.medium, fontSize: 15 },
-  category: { fontFamily: Fonts.regular, fontSize: 13 },
-  amount: { fontFamily: Fonts.semibold, fontSize: 15 },
-  iconButton: {
-    width: 36,
-    height: 36,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
 });

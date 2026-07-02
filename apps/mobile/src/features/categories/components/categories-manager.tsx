@@ -1,6 +1,5 @@
 import {
   forwardRef,
-  type ReactNode,
   useEffect,
   useImperativeHandle,
   useState,
@@ -11,15 +10,15 @@ import {
   Alert,
   Pressable,
   StyleSheet,
-  Text,
   View,
 } from 'react-native';
-import { Pencil, Plus, Trash2 } from 'lucide-react-native';
+import { Pencil, Plus } from 'lucide-react-native';
 import type { Tables } from '@rinciku/db';
 
-import { Fonts, Radius, Spacing } from '@/constants/theme';
-import { Card, Notice, Pill, Sheet } from '@/components/ui';
+import { Radius, Spacing } from '@/constants/theme';
+import { AppText, Card, Notice, Pill, Sheet } from '@/components/ui';
 import { CategoryBadge } from '@/components/category-badge';
+import { SwipeRow } from '@/components/swipe-row';
 import {
   deleteCategory,
   deleteTier,
@@ -64,8 +63,9 @@ interface CategoriesManagerProps {
 // Full tiers + categories CRUD, mirroring the web onboarding review step. Reused
 // by the onboarding wizard (inline add pill) and the standalone categories
 // screen (header "+" via the imperative `openCreate` handle → new tier).
-// Tiers/categories already exist (seeded at signup); edits persist immediately
-// via the shared api and a refetch.
+// Category rows are tap-to-edit / swipe-to-delete (see SwipeRow); tiers edit by
+// tapping the card header (Delete lives inside that sheet), and "+ Add category"
+// is a full-width ghost row — replacing the old cramped inline icon buttons.
 export const CategoriesManager = forwardRef<
   CategoriesManagerHandle,
   CategoriesManagerProps
@@ -143,6 +143,7 @@ export const CategoriesManager = forwardRef<
               Alert.alert(t('toast.deleteTierError'));
               return;
             }
+            setDialog(null);
             refetch();
           },
         },
@@ -155,10 +156,10 @@ export const CategoriesManager = forwardRef<
   return (
     <View style={styles.wrap}>
       <View style={styles.topRow}>
-        <Text style={[styles.subtitle, { color: c.mutedForeground }]}>
+        <AppText variant='caption' color='mutedForeground' style={styles.flex}>
           {t('spending.subtitle')}
           {!loading ? `  ${tiers.length}/${MAX_TIERS}` : ''}
-        </Text>
+        </AppText>
         {inlineAdd ? (
           <Pill
             tone='primary'
@@ -184,7 +185,6 @@ export const CategoriesManager = forwardRef<
               setDialog({ kind: 'create-category', tierId })
             }
             onEditTier={(row) => setDialog({ kind: 'edit-tier', row })}
-            onDeleteTier={confirmDeleteTier}
             onEditCategory={(row) => setDialog({ kind: 'edit-category', row })}
             onDeleteCategory={confirmDeleteCategory}
           />
@@ -195,6 +195,7 @@ export const CategoriesManager = forwardRef<
         dialog={dialog}
         tiers={tiers}
         onClose={() => setDialog(null)}
+        onDeleteTier={confirmDeleteTier}
         onSuccess={() => {
           setDialog(null);
           refetch();
@@ -211,11 +212,13 @@ function FormModal({
   tiers,
   onClose,
   onSuccess,
+  onDeleteTier,
 }: {
   dialog: DialogState;
   tiers: Tier[];
   onClose: () => void;
   onSuccess: () => void;
+  onDeleteTier: (row: Tier) => void;
 }) {
   const { t } = useTranslation('categories');
 
@@ -270,6 +273,7 @@ function FormModal({
             is_essential: dialog.row.is_essential,
           }}
           onSuccess={onSuccess}
+          onDelete={() => onDeleteTier(dialog.row)}
         />
       )}
     </Sheet>
@@ -282,7 +286,6 @@ type TierCardProps = {
   group: TierGroup;
   onAddCategory: (tierId: string) => void;
   onEditTier: (row: Tier) => void;
-  onDeleteTier: (row: Tier) => void;
   onEditCategory: (row: Category) => void;
   onDeleteCategory: (row: Category) => void;
 };
@@ -291,7 +294,6 @@ function TierCard({
   group,
   onAddCategory,
   onEditTier,
-  onDeleteTier,
   onEditCategory,
   onDeleteCategory,
 }: TierCardProps) {
@@ -301,172 +303,136 @@ function TierCard({
   const atCategoryLimit = categories.length >= MAX_CATEGORIES_PER_TIER;
 
   return (
-    <Card padding={Spacing.three} style={styles.card}>
-      <View style={styles.cardHeader}>
+    <Card padding={0} style={styles.card}>
+      {/* Header — tapping it edits the tier (Delete lives in that sheet). */}
+      <Pressable
+        accessibilityRole={tier ? 'button' : undefined}
+        onPress={tier ? () => onEditTier(tier) : undefined}
+        disabled={!tier}
+        style={({ pressed }) => [
+          styles.cardHeader,
+          tier && pressed ? styles.pressed : null,
+        ]}
+      >
         <View
           style={[
             styles.dot,
             { backgroundColor: tier?.color ?? c.mutedForeground },
           ]}
         />
-        <Text style={[styles.tierName, { color: c.foreground }]}>
+        <AppText variant='heading'>
           {tier ? tier.name : t('tier.untiered')}
-        </Text>
+        </AppText>
         {tier?.is_essential ? (
           <View style={[styles.badge, { backgroundColor: c.muted }]}>
-            <Text style={[styles.badgeText, { color: c.mutedForeground }]}>
+            <AppText variant='overline' color='mutedForeground'>
               {t('tier.essentialBadge')}
-            </Text>
+            </AppText>
           </View>
         ) : null}
         {tier ? (
-          <Text style={[styles.count, { color: c.mutedForeground }]}>
-            {categories.length}/{MAX_CATEGORIES_PER_TIER}
-          </Text>
+          <View style={styles.headerEnd}>
+            <AppText variant='caption' color='mutedForeground'>
+              {categories.length}/{MAX_CATEGORIES_PER_TIER}
+            </AppText>
+            <Pencil size={16} color={c.mutedForeground} />
+          </View>
         ) : null}
-      </View>
-
-      {tier ? (
-        <View style={styles.cardActions}>
-          <Pill
-            tone='outline'
-            systemImage='plus'
-            leading={<Plus size={15} color={c.foreground} />}
-            label={t('tier.addCategory')}
-            onPress={() => onAddCategory(tier.id)}
-            disabled={atCategoryLimit}
-          />
-          <IconButton
-            onPress={() => onEditTier(tier)}
-            accessibilityLabel={t('tier.edit')}
-          >
-            <Pencil size={17} color={c.mutedForeground} />
-          </IconButton>
-          <IconButton
-            onPress={() => onDeleteTier(tier)}
-            accessibilityLabel={t('tier.delete')}
-          >
-            <Trash2 size={17} color={c.destructive} />
-          </IconButton>
-        </View>
-      ) : null}
+      </Pressable>
 
       {categories.length > 0 ? (
-        <View>
-          {categories.map((category, i) => (
-            <View
-              key={category.id}
-              style={[
-                styles.categoryRow,
-                i > 0 && {
-                  borderTopColor: c.border,
-                  borderTopWidth: StyleSheet.hairlineWidth,
-                },
-              ]}
-            >
-              <CategoryBadge
-                icon={category.icon}
-                color={category.color}
-                size={32}
-              />
-              <Text style={[styles.categoryName, { color: c.foreground }]}>
-                {category.name}
-              </Text>
-              <IconButton
-                onPress={() => onEditCategory(category)}
-                accessibilityLabel={t('category.edit')}
-              >
-                <Pencil size={16} color={c.mutedForeground} />
-              </IconButton>
-              <IconButton
-                onPress={() => onDeleteCategory(category)}
-                accessibilityLabel={t('category.delete')}
-              >
-                <Trash2 size={16} color={c.destructive} />
-              </IconButton>
-            </View>
-          ))}
-        </View>
+        categories.map((category) => (
+          <SwipeRow
+            key={category.id}
+            topBorder
+            deleteLabel={t('category.delete')}
+            onPress={() => onEditCategory(category)}
+            onDelete={() => onDeleteCategory(category)}
+          >
+            <CategoryBadge
+              icon={category.icon}
+              color={category.color}
+              size={32}
+            />
+            <AppText variant='bodyMedium' style={styles.flex}>
+              {category.name}
+            </AppText>
+          </SwipeRow>
+        ))
       ) : (
-        <Text style={[styles.empty, { color: c.mutedForeground }]}>
+        <AppText variant='label' color='mutedForeground' style={styles.empty}>
           {t('tier.empty')}
-        </Text>
+        </AppText>
       )}
+
+      {/* Add-category ghost row (tiered groups only). */}
+      {tier ? (
+        <Pressable
+          accessibilityRole='button'
+          accessibilityLabel={t('tier.addCategory')}
+          disabled={atCategoryLimit}
+          onPress={() => onAddCategory(tier.id)}
+          style={({ pressed }) => [
+            styles.addRow,
+            { borderTopColor: c.border },
+            atCategoryLimit && styles.disabled,
+            !atCategoryLimit && pressed ? styles.pressed : null,
+          ]}
+        >
+          <Plus size={16} color={c.primary} />
+          <AppText variant='bodyMedium' color='primary'>
+            {t('tier.addCategory')}
+          </AppText>
+        </Pressable>
+      ) : null}
     </Card>
-  );
-}
-
-// --- small building blocks -------------------------------------------------
-
-function IconButton({
-  children,
-  onPress,
-  accessibilityLabel,
-}: {
-  children: ReactNode;
-  onPress: () => void;
-  accessibilityLabel: string;
-}) {
-  return (
-    <Pressable
-      onPress={onPress}
-      hitSlop={8}
-      accessibilityRole='button'
-      accessibilityLabel={accessibilityLabel}
-      style={({ pressed }) => [
-        styles.iconButton,
-        { opacity: pressed ? 0.6 : 1 },
-      ]}
-    >
-      {children}
-    </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
   wrap: { gap: Spacing.three },
+  flex: { flex: 1 },
   topRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: Spacing.two,
   },
-  subtitle: {
-    flex: 1,
-    fontFamily: Fonts.regular,
-    fontSize: 13,
-    lineHeight: 18,
-  },
   loader: { marginVertical: Spacing.four },
-  card: { gap: Spacing.two },
-  cardHeader: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
+  // overflow hidden so a swiped category row's delete action is clipped to the
+  // card's rounded corners; sections own their padding.
+  card: { overflow: 'hidden' },
+  pressed: { opacity: 0.6 },
+  cardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.two,
+    padding: Spacing.three,
+  },
   dot: { width: 10, height: 10, borderRadius: Radius.pill },
-  tierName: { fontFamily: Fonts.semibold, fontSize: 16 },
   badge: {
     paddingHorizontal: Spacing.two,
     paddingVertical: 2,
     borderRadius: Radius.pill,
   },
-  badgeText: { fontFamily: Fonts.medium, fontSize: 11 },
-  count: { marginLeft: 'auto', fontFamily: Fonts.regular, fontSize: 13 },
-  cardActions: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
-  categoryRow: {
+  headerEnd: {
+    marginLeft: 'auto',
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.two,
-    paddingVertical: Spacing.two,
   },
-  categoryName: { flex: 1, fontFamily: Fonts.medium, fontSize: 15 },
   empty: {
-    fontFamily: Fonts.regular,
-    fontSize: 14,
     textAlign: 'center',
     paddingVertical: Spacing.three,
+    paddingHorizontal: Spacing.three,
   },
-  iconButton: {
-    width: 36,
-    height: 36,
+  addRow: {
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    gap: Spacing.two,
+    paddingVertical: Spacing.three,
+    borderTopWidth: StyleSheet.hairlineWidth,
   },
+  disabled: { opacity: 0.4 },
 });

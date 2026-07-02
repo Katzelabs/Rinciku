@@ -10,14 +10,13 @@ export type SummaryLabels = {
   /** Hero label, e.g. "Total spent" / "Total income". */
   total: string;
   transactions: string;
-  avgPerTransaction: string;
   avgPerDay: string;
   /** Pluralized "over N days" hint shown under the hero. */
   overDays: string;
 };
 
 // Shared summary header for the expenses + incomes lists: one prominent hero
-// total plus a compact row of secondary stats (count · avg/txn · avg/day).
+// total plus a compact row of two secondary stats (count · avg/day).
 // Income tints the hero with the primary (green); expenses stay neutral.
 export function TransactionSummaryHeader({
   total,
@@ -35,7 +34,6 @@ export function TransactionSummaryHeader({
   labels: SummaryLabels;
 }) {
   const c = useTheme();
-  const avgPerTransaction = count > 0 ? total / count : 0;
   const avgPerDay = days > 0 ? total / days : 0;
 
   return (
@@ -62,11 +60,6 @@ export function TransactionSummaryHeader({
 
       <View style={styles.statsRow}>
         <Stat label={labels.transactions} value={String(count)} />
-        <View style={[styles.statDivider, { backgroundColor: c.border }]} />
-        <Stat
-          label={labels.avgPerTransaction}
-          value={formatCurrency(avgPerTransaction, base)}
-        />
         <View style={[styles.statDivider, { backgroundColor: c.border }]} />
         <Stat
           label={labels.avgPerDay}

@@ -27,6 +27,13 @@
     "addExpense": "Add expense",
     "scanReceipt": "Scan receipt"
   },
+  "manage": {
+    "rows": {
+      "essentials": "Recurring monthly baseline",
+      "budgets": "Set monthly spending targets",
+      "categories": "Organize tiers and categories"
+    }
+  },
   "settings": {
     "title": "Settings",
     "subtitle": "Manage your profile, preferences, and account."
@@ -58,6 +65,7 @@
     "delete": "Delete",
     "close": "Close",
     "apply": "Apply",
+    "done": "Done",
     "clearFilters": "Clear filters"
   },
   "time": {

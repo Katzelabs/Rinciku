@@ -27,6 +27,13 @@
     "addExpense": "Tambah pengeluaran",
     "scanReceipt": "Pindai struk"
   },
+  "manage": {
+    "rows": {
+      "essentials": "Baseline bulanan berulang",
+      "budgets": "Atur target pengeluaran bulanan",
+      "categories": "Kelola tingkatan dan kategori"
+    }
+  },
   "settings": {
     "title": "Pengaturan",
     "subtitle": "Kelola profil, preferensi, dan akun Anda."
@@ -58,6 +65,7 @@
     "delete": "Hapus",
     "close": "Tutup",
     "apply": "Terapkan",
+    "done": "Selesai",
     "clearFilters": "Hapus filter"
   },
   "time": {

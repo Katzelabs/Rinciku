@@ -2,29 +2,21 @@ import { Stack, useFocusEffect, useRouter } from 'expo-router';
 import { Receipt, SearchX } from 'lucide-react-native';
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Alert } from 'react-native';
 
-import {
-  convertToBase,
-  formatDate,
-  getPeriodRange,
-  type CurrencyCode,
-} from '@rinciku/core';
+import { convertToBase, formatDate, type CurrencyCode } from '@rinciku/core';
 
 import { EmptyState } from '@/components/empty-state';
 import { TransactionDayGroups } from '@/components/transaction-day-groups';
 import { AppText, Notice, ScreenScroll } from '@/components/ui';
-import { useAuth } from '@/features/auth/hooks/use-auth';
-import {
-  ExpenseFilters,
-  type ListPeriod,
-} from '@/features/expenses/components/expense-filters';
+import { deleteExpense } from '@/features/expenses/api';
+import { ExpenseFilters } from '@/features/expenses/components/expense-filters';
 import { useExpenses } from '@/features/expenses/hooks/use-expenses';
 import { groupByDay } from '@/lib/transaction-groups';
 
 export default function ExpensesListScreen() {
   const { t } = useTranslation('expenses');
   const router = useRouter();
-  const { profile } = useAuth();
   const {
     expenses,
     base,
@@ -38,19 +30,7 @@ export default function ExpensesListScreen() {
     refetch,
   } = useExpenses();
 
-  const [period, setPeriod] = useState<ListPeriod>('month');
   const [refreshing, setRefreshing] = useState(false);
-
-  const onPeriodChange = useCallback(
-    (next: ListPeriod) => {
-      setPeriod(next);
-      const range = getPeriodRange(next, {
-        month_start_day: profile?.month_start_day ?? 1,
-      });
-      setDateRange(range.start, range.end);
-    },
-    [profile?.month_start_day, setDateRange]
-  );
 
   useFocusEffect(
     useCallback(() => {
@@ -75,6 +55,27 @@ export default function ExpensesListScreen() {
     setSearch('');
     setCategoryIds([]);
   }, [setSearch, setCategoryIds]);
+
+  const confirmDelete = useCallback(
+    (id: string) => {
+      Alert.alert(t('page.deleteTitle'), t('page.deleteDescription'), [
+        { text: t('common:actions.cancel'), style: 'cancel' },
+        {
+          text: t('common:actions.delete'),
+          style: 'destructive',
+          onPress: async () => {
+            const { error: delError } = await deleteExpense(id);
+            if (delError) {
+              Alert.alert(t('toast.deleteError'));
+              return;
+            }
+            refetch();
+          },
+        },
+      ]);
+    },
+    [t, refetch]
+  );
 
   const groups = groupByDay(
     expenses,
@@ -108,8 +109,9 @@ export default function ExpensesListScreen() {
         onSearchChange={setSearch}
         categoryIds={filters.categoryIds}
         onCategoryIdsChange={setCategoryIds}
-        period={period}
-        onPeriodChange={onPeriodChange}
+        from={filters.from}
+        to={filters.to}
+        onRangeChange={setDateRange}
       />
 
       {error ? <Notice tone='error'>{error}</Notice> : null}
@@ -153,6 +155,8 @@ export default function ExpensesListScreen() {
                   pathname: '/(app)/(expenses)/[id]',
                   params: { id: expense.id },
                 }),
+              onDelete: () => confirmDelete(expense.id),
+              deleteLabel: t('common:actions.delete'),
             };
           }}
         />
