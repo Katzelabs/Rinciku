@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useState } from 'react';
 import { Stack, useFocusEffect, useRouter } from 'expo-router';
+import { Receipt, SearchX } from 'lucide-react-native';
+import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Plus, Receipt, SearchX } from 'lucide-react-native';
 
 import {
   convertToBase,
@@ -10,17 +10,16 @@ import {
   type CurrencyCode,
 } from '@rinciku/core';
 
-import { AppText, Notice, ScreenScroll } from '@/components/ui';
 import { EmptyState } from '@/components/empty-state';
-import { HeaderAction } from '@/components/header-action';
 import { TransactionDayGroups } from '@/components/transaction-day-groups';
-import { groupByDay } from '@/lib/transaction-groups';
+import { AppText, Notice, ScreenScroll } from '@/components/ui';
 import { useAuth } from '@/features/auth/hooks/use-auth';
 import {
   ExpenseFilters,
   type ListPeriod,
 } from '@/features/expenses/components/expense-filters';
 import { useExpenses } from '@/features/expenses/hooks/use-expenses';
+import { groupByDay } from '@/lib/transaction-groups';
 
 export default function ExpensesListScreen() {
   const { t } = useTranslation('expenses');
@@ -97,14 +96,6 @@ export default function ExpensesListScreen() {
       <Stack.Screen
         options={{
           title: t('list.title'),
-          headerRight: () => (
-            <HeaderAction
-              systemImage='plus'
-              icon={Plus}
-              accessibilityLabel={t('common:nav.addExpense')}
-              onPress={() => router.push('/(app)/(expenses)/new')}
-            />
-          ),
         }}
       />
 
@@ -136,8 +127,6 @@ export default function ExpensesListScreen() {
             icon={Receipt}
             title={t('table.empty')}
             subtitle={t('page.subtitle')}
-            actionLabel={t('page.addExpense')}
-            onAction={() => router.push('/(app)/(expenses)/new')}
           />
         )
       ) : (

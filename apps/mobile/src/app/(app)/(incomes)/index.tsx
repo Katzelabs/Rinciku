@@ -152,8 +152,6 @@ export default function IncomesScreen() {
             icon={Wallet}
             title={t('table.empty')}
             subtitle={t('page.subtitle')}
-            actionLabel={t('page.addIncome')}
-            onAction={() => router.push('/(app)/(incomes)/new')}
           />
         )
       ) : (

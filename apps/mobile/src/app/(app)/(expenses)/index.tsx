@@ -103,8 +103,6 @@ export default function ExpensesScreen() {
     >
       <Stack.Screen
         options={{
-          headerTitle: t('page.title'),
-          headerLargeTitle: true,
           unstable_headerRightItems: () => [
             {
               label: `+ ${t('common:actions.add')}`,
@@ -135,7 +133,6 @@ export default function ExpensesScreen() {
       />
 
       <View style={styles.block}>
-        <SectionHeader variant='title' title={t('section.summary')} />
         <TransactionSummaryHeader
           total={total}
           count={count}
@@ -181,8 +178,6 @@ export default function ExpensesScreen() {
             icon={Receipt}
             title={t('table.empty')}
             subtitle={t('page.subtitle')}
-            actionLabel={t('page.addExpense')}
-            onAction={() => router.push('/(app)/(expenses)/new')}
           />
         ) : (
           <Card padding={0} style={styles.card}>

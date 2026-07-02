@@ -4,15 +4,17 @@ import { useTranslation } from 'react-i18next';
 export default function ExpensesLayout() {
   const { t } = useTranslation('common');
   return (
-    <Stack screenOptions={{ headerLargeTitle: true }}>
+    <Stack
+      screenOptions={{
+        headerLargeTitle: true,
+        headerBackButtonDisplayMode: 'minimal',
+      }}
+    >
       <Stack.Screen
         name='index'
-        options={{ headerLargeTitle: false, headerTitle: '' }}
+        options={{ headerTitle: t('expenses:page.title') }}
       />
-      <Stack.Screen
-        name='list'
-        options={{ title: t('expenses:list.title') }}
-      />
+      <Stack.Screen name='list' options={{ title: t('expenses:list.title') }} />
       <Stack.Screen
         name='new'
         options={{

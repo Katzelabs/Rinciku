@@ -4,7 +4,12 @@ import { useTranslation } from 'react-i18next';
 export default function IncomesLayout() {
   const { t } = useTranslation('common');
   return (
-    <Stack screenOptions={{ headerLargeTitle: true }}>
+    <Stack
+      screenOptions={{
+        headerLargeTitle: true,
+        headerBackButtonDisplayMode: 'minimal',
+      }}
+    >
       <Stack.Screen name='index' options={{ title: t('nav.items.incomes') }} />
       <Stack.Screen
         name='new'
