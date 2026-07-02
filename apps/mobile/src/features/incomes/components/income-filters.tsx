@@ -1,22 +1,16 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import {
-  ActivityIndicator,
-  Modal,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Check, ChevronDown, Search, X } from 'lucide-react-native';
+import { ActivityIndicator, Pressable, StyleSheet, TextInput, View } from 'react-native';
+import { Calendar, Check, ChevronDown, Search, Wallet } from 'lucide-react-native';
+
+import { formatDate } from '@rinciku/core';
 
 import { Fonts, Radius, Spacing } from '@/constants/theme';
+import { AppText, Card, Pill, Sheet } from '@/components/ui';
+import { CategoryBadge } from '@/components/category-badge';
 import { DateField } from '@/components/date-field';
-import { CategoryIcon } from '@/features/categories/components/category-icon';
-import { InputShell } from '@/features/auth/components/text-field';
+import { Button } from '@/features/auth/components/button';
+import { FieldLabel } from '@/features/auth/components/text-field';
 import { useIncomeSources } from '@/features/incomes/hooks/use-income-sources';
 import { useTheme } from '@/hooks/use-theme';
 
@@ -25,11 +19,17 @@ interface IncomeFiltersProps {
   onSearchChange: (value: string) => void;
   sourceIds: string[];
   onSourceIdsChange: (ids: string[]) => void;
+  /** Inclusive date range currently applied (defaults to the monthly cycle). */
   from: Date;
   to: Date;
   onDateRangeChange: (from: Date, to: Date) => void;
 }
 
+// The transactions-list filter card: a full-width search on top, then a row of
+// two dropdown pills (source + date range). Each opens a page-sheet; the source
+// picker is multi-select, the date range picker lets the user pick an arbitrary
+// from–to (default is the monthly cycle). Mirrors ExpenseFilters so both
+// transaction lists read identically.
 export function IncomeFilters({
   search,
   onSearchChange,
@@ -41,71 +41,97 @@ export function IncomeFilters({
 }: IncomeFiltersProps) {
   const c = useTheme();
   const { t } = useTranslation('incomes');
-  const [pickerOpen, setPickerOpen] = useState(false);
+  const [sourceOpen, setSourceOpen] = useState(false);
+  const [rangeOpen, setRangeOpen] = useState(false);
+  const [draftFrom, setDraftFrom] = useState(from);
+  const [draftTo, setDraftTo] = useState(to);
 
-  const label =
+  const sourceLabel =
     sourceIds.length === 0
-      ? t('filters.allSources')
+      ? t('filters.source')
       : t('common:multiSelect.selectedCount', { count: sourceIds.length });
 
+  const rangeLabel = `${formatDate(from, 'MMM d')} – ${formatDate(to, 'MMM d')}`;
+
+  function openRange() {
+    setDraftFrom(from);
+    setDraftTo(to);
+    setRangeOpen(true);
+  }
+
+  function applyRange() {
+    onDateRangeChange(draftFrom, draftTo);
+    setRangeOpen(false);
+  }
+
   return (
-    <View style={styles.wrap}>
-      <InputShell leading={<Search size={16} color={c.mutedForeground} />}>
+    <Card padding={Spacing.three} style={styles.card}>
+      <View style={[styles.shell, { backgroundColor: c.muted }]}>
+        <Search size={16} color={c.mutedForeground} />
         <TextInput
           style={[styles.searchInput, { color: c.foreground }]}
-          placeholder={t('filters.searchPlaceholder')}
+          placeholder={t('filters.searchTransactions')}
           placeholderTextColor={c.mutedForeground}
           value={search}
           onChangeText={onSearchChange}
-          accessibilityLabel={t('filters.searchPlaceholder')}
           autoCapitalize='none'
           returnKeyType='search'
         />
-      </InputShell>
-
-      <View style={styles.dateRow}>
-        <View style={styles.dateItem}>
-          <DateField
-            value={from}
-            onChange={(d) => onDateRangeChange(d, to)}
-            maximumDate={to}
-          />
-        </View>
-        <Text style={[styles.dash, { color: c.mutedForeground }]}>–</Text>
-        <View style={styles.dateItem}>
-          <DateField
-            value={to}
-            onChange={(d) => onDateRangeChange(from, d)}
-            minimumDate={from}
-          />
-        </View>
       </View>
 
-      <Pressable
-        accessibilityRole='button'
-        accessibilityLabel={label}
-        onPress={() => setPickerOpen(true)}
-      >
-        <InputShell>
-          <Text
-            style={[
-              styles.pickerLabel,
-              { color: sourceIds.length ? c.foreground : c.mutedForeground },
-            ]}
-          >
-            {label}
-          </Text>
-          <ChevronDown size={18} color={c.mutedForeground} />
-        </InputShell>
-      </Pressable>
+      <View style={styles.row}>
+        <Pill
+          fill
+          leading={<Wallet size={16} color={c.mutedForeground} />}
+          trailing={<ChevronDown size={16} color={c.mutedForeground} />}
+          label={sourceLabel}
+          active={sourceIds.length > 0}
+          onPress={() => setSourceOpen(true)}
+        />
+        <Pill
+          fill
+          leading={<Calendar size={16} color={c.mutedForeground} />}
+          trailing={<ChevronDown size={16} color={c.mutedForeground} />}
+          label={rangeLabel}
+          active
+          onPress={openRange}
+        />
+      </View>
 
       <SourceMultiSelect
-        open={pickerOpen}
-        onClose={() => setPickerOpen(false)}
+        open={sourceOpen}
+        onClose={() => setSourceOpen(false)}
         selected={sourceIds}
         onChange={onSourceIdsChange}
       />
-    </View>
+      <Sheet
+        visible={rangeOpen}
+        onClose={() => setRangeOpen(false)}
+        title={t('period.rangeTitle')}
+      >
+        <View style={styles.rangeField}>
+          <FieldLabel>{t('period.from')}</FieldLabel>
+          <DateField
+            value={draftFrom}
+            onChange={setDraftFrom}
+            maximumDate={draftTo}
+          />
+        </View>
+        <View style={styles.rangeField}>
+          <FieldLabel>{t('period.to')}</FieldLabel>
+          <DateField
+            value={draftTo}
+            onChange={setDraftTo}
+            minimumDate={draftFrom}
+          />
+        </View>
+        <Button
+          label={t('common:actions.apply')}
+          onPress={applyRange}
+          style={styles.applyButton}
+        />
+      </Sheet>
+    </Card>
   );
 }
 
@@ -122,7 +148,6 @@ function SourceMultiSelect({
 }) {
   const c = useTheme();
   const { t } = useTranslation('incomes');
-  const insets = useSafeAreaInsets();
   const { sources, loading } = useIncomeSources();
 
   const selectedSet = new Set(selected);
@@ -135,138 +160,74 @@ function SourceMultiSelect({
   }
 
   return (
-    <Modal
+    <Sheet
       visible={open}
-      animationType='slide'
-      presentationStyle='pageSheet'
-      onRequestClose={onClose}
+      onClose={onClose}
+      title={t('filters.allSources')}
+      headerRight={
+        selected.length > 0 ? (
+          <Pressable hitSlop={8} onPress={() => onChange([])}>
+            <AppText variant='bodyMedium' color='primary'>
+              {t('common:multiSelect.clear')}
+            </AppText>
+          </Pressable>
+        ) : undefined
+      }
     >
-      <View style={[styles.sheet, { backgroundColor: c.background }]}>
-        <View style={styles.sheetHeader}>
-          <Text style={[styles.sheetTitle, { color: c.foreground }]}>
-            {t('filters.allSources')}
-          </Text>
-          <View style={styles.headerActions}>
-            {selected.length > 0 ? (
-              <Pressable hitSlop={8} onPress={() => onChange([])}>
-                <Text style={[styles.clear, { color: c.primary }]}>
-                  {t('common:multiSelect.clear')}
-                </Text>
-              </Pressable>
-            ) : null}
+      {loading ? (
+        <ActivityIndicator color={c.primary} style={styles.loader} />
+      ) : sources.length === 0 ? (
+        <AppText variant='body' color='mutedForeground' style={styles.empty}>
+          {t('filters.noSources')}
+        </AppText>
+      ) : (
+        sources.map((source) => {
+          const checked = selectedSet.has(source.id);
+          return (
             <Pressable
-              hitSlop={8}
-              accessibilityRole='button'
-              accessibilityLabel={t('common:actions.close')}
-              onPress={onClose}
+              key={source.id}
+              onPress={() => toggle(source.id)}
+              style={styles.option}
             >
-              <X size={22} color={c.mutedForeground} />
+              <CategoryBadge icon={source.icon} color={source.color} size={32} />
+              <AppText variant='bodyMedium' style={styles.optionText}>
+                {source.name}
+              </AppText>
+              {checked ? <Check size={18} color={c.primary} /> : null}
             </Pressable>
-          </View>
-        </View>
-        <ScrollView
-          contentContainerStyle={[
-            styles.sheetBody,
-            { paddingBottom: insets.bottom + Spacing.five },
-          ]}
-        >
-          {loading ? (
-            <ActivityIndicator color={c.primary} style={styles.loader} />
-          ) : sources.length === 0 ? (
-            <Text style={[styles.emptyText, { color: c.mutedForeground }]}>
-              {t('filters.noSources')}
-            </Text>
-          ) : (
-            sources.map((source) => {
-              const checked = selectedSet.has(source.id);
-              return (
-                <Pressable
-                  key={source.id}
-                  onPress={() => toggle(source.id)}
-                  style={styles.option}
-                >
-                  <View
-                    style={[
-                      styles.iconBadge,
-                      { backgroundColor: `${source.color ?? '#8d8d8d'}22` },
-                    ]}
-                  >
-                    <CategoryIcon
-                      name={source.icon}
-                      size={16}
-                      color={source.color ?? c.foreground}
-                    />
-                  </View>
-                  <Text style={[styles.optionText, { color: c.foreground }]}>
-                    {source.name}
-                  </Text>
-                  {checked ? <Check size={18} color={c.primary} /> : null}
-                </Pressable>
-              );
-            })
-          )}
-        </ScrollView>
-      </View>
-    </Modal>
+          );
+        })
+      )}
+    </Sheet>
   );
 }
 
 const styles = StyleSheet.create({
-  wrap: { gap: Spacing.two },
+  card: { gap: Spacing.two },
+  shell: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.two,
+    borderRadius: Radius.pill,
+    borderCurve: 'continuous',
+    paddingHorizontal: Spacing.three,
+  },
   searchInput: {
     flex: 1,
     fontFamily: Fonts.regular,
     fontSize: 16,
     paddingVertical: Spacing.three,
   },
-  dateRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
-  dateItem: { flex: 1 },
-  dash: { fontFamily: Fonts.regular, fontSize: 16 },
-  pickerLabel: {
-    flex: 1,
-    fontFamily: Fonts.regular,
-    fontSize: 16,
-    paddingVertical: Spacing.three,
-  },
-  sheet: { flex: 1 },
-  sheetHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: Spacing.four,
-    paddingVertical: Spacing.three,
-  },
-  headerActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.three,
-  },
-  clear: { fontFamily: Fonts.semibold, fontSize: 15 },
-  sheetTitle: { fontFamily: Fonts.bold, fontSize: 20 },
-  sheetBody: {
-    paddingHorizontal: Spacing.four,
-    paddingTop: Spacing.two,
-    gap: Spacing.one,
-  },
+  row: { flexDirection: 'row', gap: Spacing.two },
   loader: { marginVertical: Spacing.four },
-  emptyText: {
-    fontFamily: Fonts.regular,
-    fontSize: 14,
-    textAlign: 'center',
-    paddingVertical: Spacing.four,
-  },
+  empty: { textAlign: 'center', paddingVertical: Spacing.four },
+  rangeField: { gap: Spacing.two },
+  applyButton: { marginTop: Spacing.two },
   option: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.two,
     paddingVertical: Spacing.two,
   },
-  iconBadge: {
-    width: 32,
-    height: 32,
-    borderRadius: Radius.pill,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  optionText: { flex: 1, fontFamily: Fonts.medium, fontSize: 15 },
+  optionText: { flex: 1 },
 });

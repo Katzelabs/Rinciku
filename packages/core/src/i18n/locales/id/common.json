@@ -31,12 +31,24 @@
     "rows": {
       "essentials": "Baseline bulanan berulang",
       "budgets": "Atur target pengeluaran bulanan",
-      "categories": "Kelola tingkatan dan kategori"
+      "categories": "Kelola tingkatan dan kategori",
+      "incomeCategories": "Beri label asal pemasukan"
     }
   },
   "settings": {
     "title": "Pengaturan",
-    "subtitle": "Kelola profil, preferensi, dan akun Anda."
+    "subtitle": "Kelola profil, preferensi, dan akun Anda.",
+    "pages": {
+      "profile": "Profil",
+      "finances": "Keuangan",
+      "preferences": "Preferensi",
+      "security": "Keamanan"
+    },
+    "rows": {
+      "finances": "Mata uang, pemasukan, dan siklus",
+      "preferences": "Bahasa dan tampilan",
+      "security": "Kata sandi dan keamanan akun"
+    }
   },
   "appearance": {
     "title": "Tampilan",

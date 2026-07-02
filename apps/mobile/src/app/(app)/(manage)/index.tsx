@@ -1,6 +1,6 @@
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
-import { Repeat, Tags, Target } from 'lucide-react-native';
+import { Coins, Repeat, Tags, Target } from 'lucide-react-native';
 
 import { Card, ScreenScroll } from '@/components/ui';
 import { SettingsRow } from '@/components/settings-row';
@@ -34,6 +34,13 @@ export default function ManageScreen() {
           title={t('nav.items.categories')}
           subtitle={t('manage.rows.categories')}
           onPress={() => router.push('/(app)/(manage)/categories')}
+          topBorder
+        />
+        <SettingsRow
+          icon={Coins}
+          title={t('incomes:categories.title')}
+          subtitle={t('manage.rows.incomeCategories')}
+          onPress={() => router.push('/(app)/(manage)/income-categories')}
           topBorder
         />
       </Card>

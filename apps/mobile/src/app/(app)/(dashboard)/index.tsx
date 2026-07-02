@@ -1,5 +1,5 @@
-import { useCallback, useState } from 'react';
 import { Stack, useFocusEffect, useRouter } from 'expo-router';
+import { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 
@@ -9,9 +9,9 @@ import {
   type PeriodPreset,
 } from '@rinciku/core';
 
-import { Spacing } from '@/constants/theme';
-import { AppText, Notice, ScreenScroll } from '@/components/ui';
 import { ProfileAvatar } from '@/components/profile-avatar';
+import { AppText, Notice, ScreenScroll } from '@/components/ui';
+import { Spacing } from '@/constants/theme';
 import { useAuth } from '@/features/auth/hooks/use-auth';
 import { HealthBadge } from '@/features/dashboard/components/health-badge';
 import { PeriodPicker } from '@/features/dashboard/components/period-picker';
@@ -78,12 +78,18 @@ export default function DashboardScreen() {
     >
       <Stack.Screen
         options={{
-          headerLeft: () => (
-            <ProfileAvatar
-              accessibilityLabel={t('common:nav.openSettings')}
-              onPress={() => router.push('/(app)/(dashboard)/settings')}
-            />
-          ),
+          unstable_headerLeftItems: () => [
+            {
+              type: 'custom',
+              hidesSharedBackground: true,
+              element: (
+                <ProfileAvatar
+                  accessibilityLabel={t('common:nav.openSettings')}
+                  onPress={() => router.push('/(app)/(dashboard)/settings')}
+                />
+              ),
+            },
+          ],
           headerRight: () => (
             <PeriodPicker
               period={period}

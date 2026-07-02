@@ -1,5 +1,5 @@
 import { Stack, useFocusEffect, useRouter } from 'expo-router';
-import { Receipt, SearchX } from 'lucide-react-native';
+import { SearchX, Wallet } from 'lucide-react-native';
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Alert } from 'react-native';
@@ -10,19 +10,19 @@ import { EmptyState } from '@/components/empty-state';
 import { Pagination } from '@/components/pagination';
 import { TransactionDayGroups } from '@/components/transaction-day-groups';
 import { AppText, Notice, ScreenScroll } from '@/components/ui';
-import { deleteExpense } from '@/features/expenses/api';
-import { ExpenseFilters } from '@/features/expenses/components/expense-filters';
-import { useExpenses } from '@/features/expenses/hooks/use-expenses';
+import { deleteIncome } from '@/features/incomes/api';
+import { IncomeFilters } from '@/features/incomes/components/income-filters';
+import { useIncomes } from '@/features/incomes/hooks/use-incomes';
 import { groupByDay } from '@/lib/transaction-groups';
 
 // The transactions list pages the current cycle 12 rows at a time.
 const PAGE_SIZE = 12;
 
-export default function ExpensesListScreen() {
-  const { t } = useTranslation('expenses');
+export default function IncomesListScreen() {
+  const { t } = useTranslation('incomes');
   const router = useRouter();
   const {
-    expenses,
+    incomes,
     base,
     loading,
     error,
@@ -30,12 +30,12 @@ export default function ExpensesListScreen() {
     search,
     setSearch,
     setDateRange,
-    setCategoryIds,
+    setSourceIds,
     page,
     pageCount,
     setPage,
     refetch,
-  } = useExpenses({ pageSize: PAGE_SIZE });
+  } = useIncomes({ pageSize: PAGE_SIZE });
 
   const [refreshing, setRefreshing] = useState(false);
 
@@ -56,12 +56,12 @@ export default function ExpensesListScreen() {
   }, [refetch]);
 
   const filtersActive =
-    search.trim().length > 0 || filters.categoryIds.length > 0;
+    search.trim().length > 0 || filters.sourceIds.length > 0;
 
   const clearFilters = useCallback(() => {
     setSearch('');
-    setCategoryIds([]);
-  }, [setSearch, setCategoryIds]);
+    setSourceIds([]);
+  }, [setSearch, setSourceIds]);
 
   const confirmDelete = useCallback(
     (id: string) => {
@@ -71,7 +71,7 @@ export default function ExpensesListScreen() {
           text: t('common:actions.delete'),
           style: 'destructive',
           onPress: async () => {
-            const { error: delError } = await deleteExpense(id);
+            const { error: delError } = await deleteIncome(id);
             if (delError) {
               Alert.alert(t('toast.deleteError'));
               return;
@@ -85,7 +85,7 @@ export default function ExpensesListScreen() {
   );
 
   const groups = groupByDay(
-    expenses,
+    incomes,
     (row) => new Date(row.occurred_at),
     (row) =>
       convertToBase(Number(row.amount), row.currency as CurrencyCode, base)
@@ -97,33 +97,29 @@ export default function ExpensesListScreen() {
     }
   );
 
-  const initialLoading = loading && expenses.length === 0;
+  const initialLoading = loading && incomes.length === 0;
 
   return (
     <ScreenScroll onRefresh={onRefresh} refreshing={refreshing}>
-      <Stack.Screen
-        options={{
-          title: t('list.title'),
-        }}
-      />
+      <Stack.Screen options={{ title: t('list.title') }} />
 
       <AppText variant='body' color='mutedForeground'>
         {t('list.subtitle')}
       </AppText>
 
-      <ExpenseFilters
+      <IncomeFilters
         search={search}
         onSearchChange={setSearch}
-        categoryIds={filters.categoryIds}
-        onCategoryIdsChange={setCategoryIds}
+        sourceIds={filters.sourceIds}
+        onSourceIdsChange={setSourceIds}
         from={filters.from}
         to={filters.to}
-        onRangeChange={setDateRange}
+        onDateRangeChange={setDateRange}
       />
 
       {error ? <Notice tone='error'>{error}</Notice> : null}
 
-      {initialLoading ? null : expenses.length === 0 ? (
+      {initialLoading ? null : incomes.length === 0 ? (
         filtersActive ? (
           <EmptyState
             icon={SearchX}
@@ -133,7 +129,7 @@ export default function ExpensesListScreen() {
           />
         ) : (
           <EmptyState
-            icon={Receipt}
+            icon={Wallet}
             title={t('table.empty')}
             subtitle={t('page.subtitle')}
           />
@@ -142,27 +138,27 @@ export default function ExpensesListScreen() {
         <TransactionDayGroups
           groups={groups}
           base={base}
-          tone='expense'
-          getRow={(expense) => {
-            const name = expense.category?.name;
-            const note = expense.note?.trim();
+          tone='income'
+          getRow={(income) => {
+            const name = income.category?.name;
+            const note = income.note?.trim();
             return {
-              id: expense.id,
-              icon: expense.category?.icon,
-              color: expense.category?.color,
-              title: name ?? (note || t('common:categoryTag.uncategorized')),
+              id: income.id,
+              icon: income.category?.icon,
+              color: income.category?.color,
+              title: name ?? (note || t('form.uncategorized')),
               subtitle:
                 name && note
                   ? note
-                  : formatDate(new Date(expense.occurred_at), 'p'),
-              amount: Number(expense.amount),
-              currency: expense.currency as CurrencyCode,
+                  : formatDate(new Date(income.occurred_at), 'p'),
+              amount: Number(income.amount),
+              currency: income.currency as CurrencyCode,
               onPress: () =>
                 router.push({
-                  pathname: '/(app)/(expenses)/[id]',
-                  params: { id: expense.id },
+                  pathname: '/(app)/(incomes)/[id]',
+                  params: { id: income.id },
                 }),
-              onDelete: () => confirmDelete(expense.id),
+              onDelete: () => confirmDelete(income.id),
               deleteLabel: t('common:actions.delete'),
             };
           }}

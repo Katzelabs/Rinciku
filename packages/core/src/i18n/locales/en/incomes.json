@@ -17,6 +17,23 @@
     "deleteTitle": "Delete income?",
     "deleteDescription": "This permanently removes the income and any attached proof."
   },
+  "section": {
+    "recentActivity": "Recent Activity",
+    "seeAll": "See all"
+  },
+  "period": {
+    "title": "Period",
+    "today": "Today",
+    "thisWeek": "This Week",
+    "thisMonth": "This Month",
+    "rangeTitle": "Select date range",
+    "from": "From",
+    "to": "To"
+  },
+  "list": {
+    "title": "Transactions",
+    "subtitle": "Review and manage your received income."
+  },
   "summary": {
     "totalIncome": "Total income",
     "transactions": "Transactions",
@@ -27,6 +44,8 @@
   },
   "filters": {
     "searchPlaceholder": "Search notes…",
+    "searchTransactions": "Search transactions…",
+    "source": "Source",
     "allSources": "All sources",
     "searchSources": "Search sources…",
     "noSources": "No income sources."
@@ -143,6 +162,7 @@
     "editTitle": "Edit income category",
     "createDescription": "Create a new income source label.",
     "editDescription": "Update the details of this income category.",
+    "delete": "Delete category",
     "deleteTitle": "Delete income category?",
     "deleteDescriptionSuffix": " will be removed. Incomes tagged with it stay, but become uncategorized."
   },

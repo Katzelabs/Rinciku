@@ -11,7 +11,8 @@ export default function DashboardLayout() {
       }}
     >
       <Stack.Screen name='index' options={{ title: t('nav.items.dashboard') }} />
-      <Stack.Screen name='settings' options={{ title: t('settings.title') }} />
+      {/* settings is a nested Stack (hub + pages); it owns its own headers. */}
+      <Stack.Screen name='settings' options={{ headerShown: false }} />
       <Stack.Screen name='fx' options={{ title: t('nav.items.rates') }} />
     </Stack>
   );

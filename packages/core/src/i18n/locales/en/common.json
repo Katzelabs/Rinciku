@@ -31,12 +31,24 @@
     "rows": {
       "essentials": "Recurring monthly baseline",
       "budgets": "Set monthly spending targets",
-      "categories": "Organize tiers and categories"
+      "categories": "Organize tiers and categories",
+      "incomeCategories": "Label where income comes from"
     }
   },
   "settings": {
     "title": "Settings",
-    "subtitle": "Manage your profile, preferences, and account."
+    "subtitle": "Manage your profile, preferences, and account.",
+    "pages": {
+      "profile": "Profile",
+      "finances": "Finances",
+      "preferences": "Preferences",
+      "security": "Security"
+    },
+    "rows": {
+      "finances": "Currency, income, and cycle",
+      "preferences": "Language and appearance",
+      "security": "Password and account safety"
+    }
   },
   "appearance": {
     "title": "Appearance",

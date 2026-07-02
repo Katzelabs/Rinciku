@@ -11,6 +11,7 @@ export default function IncomesLayout() {
       }}
     >
       <Stack.Screen name='index' options={{ title: t('nav.items.incomes') }} />
+      <Stack.Screen name='list' options={{ title: t('incomes:list.title') }} />
       <Stack.Screen
         name='new'
         options={{
@@ -22,13 +23,6 @@ export default function IncomesLayout() {
       <Stack.Screen
         name='[id]'
         options={{ headerLargeTitle: false, title: t('incomes:detail.title') }}
-      />
-      <Stack.Screen
-        name='sources'
-        options={{
-          headerLargeTitle: false,
-          title: t('incomes:categories.title'),
-        }}
       />
     </Stack>
   );

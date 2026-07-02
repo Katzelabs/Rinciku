@@ -43,7 +43,7 @@ export default function ExpensesScreen() {
     filters,
     setDateRange,
     refetch,
-  } = useExpenses();
+  } = useExpenses({ pageSize: PREVIEW_COUNT });
 
   const [period, setPeriod] = useState<ListPeriod>('month');
   const [refreshing, setRefreshing] = useState(false);

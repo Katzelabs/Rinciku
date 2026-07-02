@@ -1,25 +1,32 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { Fonts, Radius } from '@/constants/theme';
 import { Icon } from '@/components/icon';
+import { Fonts, Radius } from '@/constants/theme';
 import { useAuth } from '@/features/auth/hooks/use-auth';
-import { useTheme } from '@/hooks/use-theme';
 
-const SIZE = 30;
+const DEFAULT_SIZE = 36;
+
+// Brown medallion for the avatar — a warm accent against the olive palette.
+// Light glyphs sit on top, so it reads the same in light and dark mode.
+const AVATAR_BG = '#6F4E37';
+const AVATAR_FG = '#FBFBF9';
 
 interface ProfileAvatarProps {
   onPress: () => void;
   accessibilityLabel: string;
+  /** Diameter in px. Defaults to 30 (the dashboard header size). */
+  size?: number;
 }
 
-// Circular header avatar. There is no avatar image column, so we render the
-// initials from the display name and fall back to a person symbol when it's
-// empty. Used as the dashboard header's left action (opens Settings).
+// Circular avatar. There is no avatar image column, so we render the initials
+// from the display name and fall back to a person symbol when it's empty. Used
+// as the dashboard header's left action (opens Settings) and, at a larger size,
+// in the settings hub summary header.
 export function ProfileAvatar({
   onPress,
   accessibilityLabel,
+  size = DEFAULT_SIZE,
 }: ProfileAvatarProps) {
-  const c = useTheme();
   const { profile } = useAuth();
   const initials = getInitials(profile?.display_name);
 
@@ -31,17 +38,23 @@ export function ProfileAvatar({
       hitSlop={8}
       style={({ pressed }) => [{ opacity: pressed ? 0.7 : 1 }]}
     >
-      <View style={[styles.avatar, { backgroundColor: c.card }]}>
+      <View
+        style={[
+          styles.avatar,
+          { width: size, height: size, backgroundColor: AVATAR_BG },
+        ]}
+      >
         {initials ? (
-          <Text style={[styles.initials, { color: c.foreground }]}>
+          <Text
+            style={[
+              styles.initials,
+              { fontSize: Math.round(size * 0.42), color: AVATAR_FG },
+            ]}
+          >
             {initials}
           </Text>
         ) : (
-          <Icon
-            name='person.crop.circle'
-            size={SIZE}
-            color={c.mutedForeground}
-          />
+          <Icon name='person.crop.circle' size={size} color={AVATAR_FG} />
         )}
       </View>
     </Pressable>
@@ -59,12 +72,10 @@ function getInitials(name: string | null | undefined): string {
 
 const styles = StyleSheet.create({
   avatar: {
-    width: SIZE,
-    height: SIZE,
     borderRadius: Radius.pill,
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
   },
-  initials: { fontFamily: Fonts.semibold, fontSize: 13 },
+  initials: { fontFamily: Fonts.semibold },
 });

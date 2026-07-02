@@ -17,6 +17,23 @@
     "deleteTitle": "Hapus pemasukan?",
     "deleteDescription": "Tindakan ini menghapus pemasukan dan bukti yang terlampir secara permanen."
   },
+  "section": {
+    "recentActivity": "Aktivitas Terbaru",
+    "seeAll": "Lihat semua"
+  },
+  "period": {
+    "title": "Periode",
+    "today": "Hari Ini",
+    "thisWeek": "Minggu Ini",
+    "thisMonth": "Bulan Ini",
+    "rangeTitle": "Pilih rentang tanggal",
+    "from": "Dari",
+    "to": "Sampai"
+  },
+  "list": {
+    "title": "Transaksi",
+    "subtitle": "Tinjau dan kelola pemasukan yang Anda terima."
+  },
   "summary": {
     "totalIncome": "Total pemasukan",
     "transactions": "Transaksi",
@@ -27,6 +44,8 @@
   },
   "filters": {
     "searchPlaceholder": "Cari catatan…",
+    "searchTransactions": "Cari transaksi…",
+    "source": "Sumber",
     "allSources": "Semua sumber",
     "searchSources": "Cari sumber…",
     "noSources": "Tidak ada sumber pemasukan."
@@ -143,6 +162,7 @@
     "editTitle": "Ubah kategori pemasukan",
     "createDescription": "Buat label sumber pemasukan baru.",
     "editDescription": "Perbarui detail kategori pemasukan ini.",
+    "delete": "Hapus kategori",
     "deleteTitle": "Hapus kategori pemasukan?",
     "deleteDescriptionSuffix": " akan dihapus. Pemasukan yang ditandai dengannya tetap ada, tetapi menjadi tanpa kategori."
   },

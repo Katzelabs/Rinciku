@@ -1,31 +1,38 @@
-import { useCallback, useEffect, useState } from 'react';
 import { Stack, useFocusEffect, useRouter } from 'expo-router';
+import { ChevronRight, Wallet } from 'lucide-react-native';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Pressable } from 'react-native';
-import { Plus, SearchX, SlidersHorizontal, Wallet } from 'lucide-react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 
-import {
-  convertToBase,
-  formatDate,
-  type CurrencyCode,
-} from '@rinciku/core';
+import { formatDate, getPeriodRange, type CurrencyCode } from '@rinciku/core';
 
-import { Notice, ScreenScroll } from '@/components/ui';
 import { EmptyState } from '@/components/empty-state';
-import { HeaderAction } from '@/components/header-action';
-import { TransactionDayGroups } from '@/components/transaction-day-groups';
+import { PeriodTabs } from '@/components/period-tabs';
+import type { SegmentedOption } from '@/components/segmented';
+import { TransactionRow } from '@/components/transaction-row';
 import { TransactionSummaryHeader } from '@/components/transaction-summary-header';
-import { groupByDay } from '@/lib/transaction-groups';
-import { IncomeFilters } from '@/features/incomes/components/income-filters';
+import {
+  AppText,
+  Card,
+  Notice,
+  ScreenScroll,
+  SectionHeader,
+} from '@/components/ui';
+import { Spacing } from '@/constants/theme';
+import { useAuth } from '@/features/auth/hooks/use-auth';
+import type { ListPeriod } from '@/features/expenses/components/expense-filters';
 import { useIncomes } from '@/features/incomes/hooks/use-incomes';
 import { useTheme } from '@/hooks/use-theme';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
+// How many recent incomes to preview on the overview before "See all".
+const PREVIEW_COUNT = 6;
 
 export default function IncomesScreen() {
   const c = useTheme();
   const { t } = useTranslation('incomes');
   const router = useRouter();
+  const { profile } = useAuth();
   const {
     incomes,
     count,
@@ -34,15 +41,35 @@ export default function IncomesScreen() {
     loading,
     error,
     filters,
-    search,
-    setSearch,
     setDateRange,
-    setSourceIds,
     refetch,
-  } = useIncomes();
+  } = useIncomes({ pageSize: PREVIEW_COUNT });
 
+  const [period, setPeriod] = useState<ListPeriod>('month');
   const [refreshing, setRefreshing] = useState(false);
 
+  const periodOptions = useMemo<SegmentedOption<ListPeriod>[]>(
+    () => [
+      { key: 'today', label: t('period.today') },
+      { key: 'week', label: t('period.thisWeek') },
+      { key: 'month', label: t('period.thisMonth') },
+    ],
+    [t]
+  );
+
+  const onPeriodChange = useCallback(
+    (next: ListPeriod) => {
+      setPeriod(next);
+      const range = getPeriodRange(next, {
+        month_start_day: profile?.month_start_day ?? 1,
+      });
+      setDateRange(range.start, range.end);
+    },
+    [profile?.month_start_day, setDateRange]
+  );
+
+  // Refetch when returning from the new/detail/list/sources screens so a
+  // just-created or edited income shows up.
   useFocusEffect(
     useCallback(() => {
       refetch();
@@ -65,122 +92,114 @@ export default function IncomesScreen() {
     Math.round((filters.to.getTime() - filters.from.getTime()) / DAY_MS) + 1
   );
 
-  const filtersActive =
-    search.trim().length > 0 || filters.sourceIds.length > 0;
-
-  const clearFilters = useCallback(() => {
-    setSearch('');
-    setSourceIds([]);
-  }, [setSearch, setSourceIds]);
-
-  const groups = groupByDay(
-    incomes,
-    (row) => new Date(row.occurred_at),
-    (row) =>
-      convertToBase(Number(row.amount), row.currency as CurrencyCode, base)
-        .amount_base,
-    {
-      today: t('common:time.today'),
-      yesterday: t('common:time.yesterday'),
-      format: (d) => formatDate(d, 'PP'),
-    }
-  );
+  const preview = incomes.slice(0, PREVIEW_COUNT);
+  const initialLoading = loading && incomes.length === 0;
 
   return (
-    <ScreenScroll onRefresh={onRefresh} refreshing={refreshing}>
+    <ScreenScroll gap={Spacing.four} refreshing={refreshing} onRefresh={onRefresh}>
       <Stack.Screen
         options={{
-          headerLeft: () => (
+          unstable_headerRightItems: () => [
+            {
+              label: `+ ${t('common:actions.add')}`,
+              type: 'button',
+              tintColor: c.primary,
+              variant: 'prominent',
+              sharesBackground: false,
+              onPress: () => router.push('/(app)/(incomes)/new'),
+            },
+          ],
+        }}
+      />
+
+      <PeriodTabs
+        options={periodOptions}
+        value={period}
+        onChange={onPeriodChange}
+      />
+
+      <View style={styles.block}>
+        <TransactionSummaryHeader
+          total={total}
+          count={count}
+          days={days}
+          base={base}
+          tone='income'
+          labels={{
+            total: t('summary.totalIncome'),
+            transactions: t('summary.transactions'),
+            avgPerDay: t('summary.avgPerDay'),
+            overDays: t('summary.overDays', { count: days }),
+          }}
+        />
+      </View>
+
+      <View style={styles.block}>
+        <SectionHeader
+          variant='title'
+          title={t('section.recentActivity')}
+          right={
             <Pressable
               accessibilityRole='button'
-              accessibilityLabel={t('page.manageSources')}
-              onPress={() => router.push('/(app)/(incomes)/sources')}
               hitSlop={8}
-              style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
+              onPress={() => router.push('/(app)/(incomes)/list')}
+              style={({ pressed }) => [
+                styles.seeAll,
+                { opacity: pressed ? 0.6 : 1 },
+              ]}
             >
-              <SlidersHorizontal size={22} color={c.primary} />
+              <AppText variant='label' color='primary'>
+                {t('section.seeAll')}
+              </AppText>
+              <ChevronRight size={16} color={c.primary} />
             </Pressable>
-          ),
-          headerRight: () => (
-            <HeaderAction
-              systemImage='plus'
-              icon={Plus}
-              accessibilityLabel={t('page.addIncome')}
-              onPress={() => router.push('/(app)/(incomes)/new')}
-            />
-          ),
-        }}
-      />
+          }
+        />
 
-      <TransactionSummaryHeader
-        total={total}
-        count={count}
-        days={days}
-        base={base}
-        tone='income'
-        labels={{
-          total: t('summary.totalIncome'),
-          transactions: t('summary.transactions'),
-          avgPerDay: t('summary.avgPerDay'),
-          overDays: t('summary.overDays', { count: days }),
-        }}
-      />
+        {error ? <Notice tone='error'>{error}</Notice> : null}
 
-      <IncomeFilters
-        search={search}
-        onSearchChange={setSearch}
-        sourceIds={filters.sourceIds}
-        onSourceIdsChange={setSourceIds}
-        from={filters.from}
-        to={filters.to}
-        onDateRangeChange={setDateRange}
-      />
-
-      {error ? <Notice tone='error'>{error}</Notice> : null}
-
-      {loading && incomes.length === 0 ? null : incomes.length === 0 ? (
-        filtersActive ? (
-          <EmptyState
-            icon={SearchX}
-            title={t('table.noResults')}
-            actionLabel={t('common:actions.clearFilters')}
-            onAction={clearFilters}
-          />
-        ) : (
+        {initialLoading ? null : incomes.length === 0 ? (
           <EmptyState
             icon={Wallet}
             title={t('table.empty')}
             subtitle={t('page.subtitle')}
           />
-        )
-      ) : (
-        <TransactionDayGroups
-          groups={groups}
-          base={base}
-          tone='income'
-          getRow={(income) => {
-            const name = income.category?.name;
-            const note = income.note?.trim();
-            return {
-              id: income.id,
-              icon: income.category?.icon,
-              color: income.category?.color,
-              title: name ?? (note || t('form.uncategorized')),
-              subtitle:
-                name && note
-                  ? note
-                  : formatDate(new Date(income.occurred_at), 'p'),
-              amount: Number(income.amount),
-              currency: income.currency as CurrencyCode,
-              onPress: () =>
-                router.push({
-                  pathname: '/(app)/(incomes)/[id]',
-                  params: { id: income.id },
-                }),
-            };
-          }}
-        />
-      )}
+        ) : (
+          <Card padding={0} style={styles.card}>
+            {preview.map((income, i) => {
+              const name = income.category?.name;
+              const note = income.note?.trim();
+              const dateStr = formatDate(new Date(income.occurred_at), 'MMM d');
+              const title = note || name || t('form.uncategorized');
+              const subtitle = note && name ? `${name} • ${dateStr}` : dateStr;
+              return (
+                <TransactionRow
+                  key={income.id}
+                  icon={income.category?.icon}
+                  color={income.category?.color}
+                  title={title}
+                  subtitle={subtitle}
+                  amount={Number(income.amount)}
+                  currency={income.currency as CurrencyCode}
+                  topBorder={i > 0}
+                  onPress={() =>
+                    router.push({
+                      pathname: '/(app)/(incomes)/[id]',
+                      params: { id: income.id },
+                    })
+                  }
+                />
+              );
+            })}
+          </Card>
+        )}
+      </View>
     </ScreenScroll>
   );
 }
+
+const styles = StyleSheet.create({
+  block: { gap: Spacing.two },
+  seeAll: { flexDirection: 'row', alignItems: 'center', gap: 2 },
+  card: { paddingHorizontal: Spacing.three },
+});

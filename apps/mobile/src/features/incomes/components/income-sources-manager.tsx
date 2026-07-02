@@ -1,19 +1,12 @@
 import { forwardRef, useImperativeHandle, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import {
-  ActivityIndicator,
-  Alert,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
-import { Pencil, Trash2 } from 'lucide-react-native';
+import { ActivityIndicator, Alert, StyleSheet, Text, View } from 'react-native';
 import type { Tables } from '@rinciku/db';
 
 import { Fonts, Spacing } from '@/constants/theme';
 import { Card, Notice, Sheet } from '@/components/ui';
 import { CategoryBadge } from '@/components/category-badge';
+import { SwipeRow } from '@/components/swipe-row';
 import { deleteIncomeCategory } from '@/features/incomes/api';
 import { IncomeSourceForm } from '@/features/incomes/components/income-source-form';
 import { useIncomeSources } from '@/features/incomes/hooks/use-income-sources';
@@ -34,7 +27,9 @@ export type IncomeSourcesManagerHandle = { openCreate: () => void };
 
 // Flat income-source CRUD, mirroring CategoriesManager but without tiers. Reused
 // by the standalone sources screen (header "+" via the imperative `openCreate`
-// handle). Sources are seeded at signup; edits persist immediately + refetch.
+// handle). Rows swipe-left-to-delete and tap-to-edit (same affordance as the
+// expense categories list). Sources are seeded at signup; edits persist
+// immediately + refetch.
 export const IncomeSourcesManager = forwardRef<IncomeSourcesManagerHandle>(
   function IncomeSourcesManager(_props, ref) {
     const c = useTheme();
@@ -86,15 +81,12 @@ export const IncomeSourcesManager = forwardRef<IncomeSourcesManagerHandle>(
         ) : (
           <Card padding={0} style={styles.card}>
             {sources.map((source, i) => (
-              <View
+              <SwipeRow
                 key={source.id}
-                style={[
-                  styles.row,
-                  i > 0 && {
-                    borderTopColor: c.border,
-                    borderTopWidth: StyleSheet.hairlineWidth,
-                  },
-                ]}
+                topBorder={i > 0}
+                deleteLabel={t('categories.delete')}
+                onPress={() => setDialog({ kind: 'edit', row: source })}
+                onDelete={() => confirmDelete(source)}
               >
                 <CategoryBadge
                   icon={source.icon}
@@ -104,19 +96,7 @@ export const IncomeSourcesManager = forwardRef<IncomeSourcesManagerHandle>(
                 <Text style={[styles.name, { color: c.foreground }]}>
                   {source.name}
                 </Text>
-                <IconButton
-                  onPress={() => setDialog({ kind: 'edit', row: source })}
-                  accessibilityLabel={t('actions.edit')}
-                >
-                  <Pencil size={16} color={c.mutedForeground} />
-                </IconButton>
-                <IconButton
-                  onPress={() => confirmDelete(source)}
-                  accessibilityLabel={t('table.deleteIncome')}
-                >
-                  <Trash2 size={16} color={c.destructive} />
-                </IconButton>
-              </View>
+              </SwipeRow>
             ))}
           </Card>
         )}
@@ -179,31 +159,6 @@ function FormModal({
   );
 }
 
-function IconButton({
-  children,
-  onPress,
-  accessibilityLabel,
-}: {
-  children: React.ReactNode;
-  onPress: () => void;
-  accessibilityLabel: string;
-}) {
-  return (
-    <Pressable
-      onPress={onPress}
-      hitSlop={8}
-      accessibilityRole='button'
-      accessibilityLabel={accessibilityLabel}
-      style={({ pressed }) => [
-        styles.iconButton,
-        { opacity: pressed ? 0.6 : 1 },
-      ]}
-    >
-      {children}
-    </Pressable>
-  );
-}
-
 const styles = StyleSheet.create({
   wrap: { gap: Spacing.three },
   subtitle: { fontFamily: Fonts.regular, fontSize: 13, lineHeight: 18 },
@@ -214,18 +169,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     paddingVertical: Spacing.four,
   },
-  card: { paddingHorizontal: Spacing.three },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.two,
-    paddingVertical: Spacing.three,
-  },
+  card: { overflow: 'hidden' },
   name: { flex: 1, fontFamily: Fonts.medium, fontSize: 15 },
-  iconButton: {
-    width: 36,
-    height: 36,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
 });

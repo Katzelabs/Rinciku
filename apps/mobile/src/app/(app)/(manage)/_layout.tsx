@@ -23,6 +23,10 @@ export default function ManageLayout() {
         name='categories'
         options={{ title: t('nav.items.categories') }}
       />
+      <Stack.Screen
+        name='income-categories'
+        options={{ title: t('incomes:categories.title') }}
+      />
     </Stack>
   );
 }
