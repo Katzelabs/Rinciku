@@ -3,20 +3,17 @@ import { useTranslation } from 'react-i18next';
 import {
   ActivityIndicator,
   Alert,
-  Modal,
   Pressable,
-  ScrollView,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Pencil, Trash2, X } from 'lucide-react-native';
+import { Pencil, Trash2 } from 'lucide-react-native';
 import type { Tables } from '@rinciku/db';
 
-import { Fonts, Radius, Spacing } from '@/constants/theme';
-import { CategoryIcon } from '@/features/categories/components/category-icon';
-import { Notice } from '@/features/auth/components/notice';
+import { Fonts, Spacing } from '@/constants/theme';
+import { Card, Notice, Sheet } from '@/components/ui';
+import { CategoryBadge } from '@/components/category-badge';
 import { deleteIncomeCategory } from '@/features/incomes/api';
 import { IncomeSourceForm } from '@/features/incomes/components/income-source-form';
 import { useIncomeSources } from '@/features/incomes/hooks/use-income-sources';
@@ -87,12 +84,7 @@ export const IncomeSourcesManager = forwardRef<IncomeSourcesManagerHandle>(
             {t('categories.empty')}
           </Text>
         ) : (
-          <View
-            style={[
-              styles.card,
-              { backgroundColor: c.card, borderColor: c.border },
-            ]}
-          >
+          <Card padding={0} style={styles.card}>
             {sources.map((source, i) => (
               <View
                 key={source.id}
@@ -104,18 +96,11 @@ export const IncomeSourcesManager = forwardRef<IncomeSourcesManagerHandle>(
                   },
                 ]}
               >
-                <View
-                  style={[
-                    styles.iconBadge,
-                    { backgroundColor: `${source.color ?? '#8d8d8d'}22` },
-                  ]}
-                >
-                  <CategoryIcon
-                    name={source.icon}
-                    size={16}
-                    color={source.color ?? c.foreground}
-                  />
-                </View>
+                <CategoryBadge
+                  icon={source.icon}
+                  color={source.color}
+                  size={32}
+                />
                 <Text style={[styles.name, { color: c.foreground }]}>
                   {source.name}
                 </Text>
@@ -133,7 +118,7 @@ export const IncomeSourcesManager = forwardRef<IncomeSourcesManagerHandle>(
                 </IconButton>
               </View>
             ))}
-          </View>
+          </Card>
         )}
 
         <FormModal
@@ -161,10 +146,7 @@ function FormModal({
   onClose: () => void;
   onSuccess: () => void;
 }) {
-  const c = useTheme();
   const { t } = useTranslation('incomes');
-  const insets = useSafeAreaInsets();
-  const visible = dialog !== null;
 
   const title = !dialog
     ? ''
@@ -173,56 +155,27 @@ function FormModal({
       : t('categories.editTitle');
 
   return (
-    <Modal
-      visible={visible}
-      animationType='slide'
-      presentationStyle='pageSheet'
-      onRequestClose={onClose}
-    >
-      <View style={[styles.sheet, { backgroundColor: c.background }]}>
-        <View style={styles.sheetHeader}>
-          <Text style={[styles.sheetTitle, { color: c.foreground }]}>
-            {title}
-          </Text>
-          <Pressable
-            hitSlop={8}
-            accessibilityRole='button'
-            accessibilityLabel={t('common:actions.close')}
-            onPress={onClose}
-          >
-            <X size={22} color={c.mutedForeground} />
-          </Pressable>
-        </View>
-        <ScrollView
-          keyboardShouldPersistTaps='handled'
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={[
-            styles.sheetBody,
-            { paddingBottom: insets.bottom + Spacing.five },
-          ]}
-        >
-          {dialog?.kind === 'create' && (
-            <IncomeSourceForm
-              mode='create'
-              nextSortOrder={nextSortOrder}
-              onSuccess={onSuccess}
-            />
-          )}
-          {dialog?.kind === 'edit' && (
-            <IncomeSourceForm
-              mode='edit'
-              defaultValues={{
-                id: dialog.row.id,
-                name: dialog.row.name,
-                icon: dialog.row.icon ?? '',
-                color: dialog.row.color ?? '',
-              }}
-              onSuccess={onSuccess}
-            />
-          )}
-        </ScrollView>
-      </View>
-    </Modal>
+    <Sheet visible={dialog !== null} onClose={onClose} title={title}>
+      {dialog?.kind === 'create' && (
+        <IncomeSourceForm
+          mode='create'
+          nextSortOrder={nextSortOrder}
+          onSuccess={onSuccess}
+        />
+      )}
+      {dialog?.kind === 'edit' && (
+        <IncomeSourceForm
+          mode='edit'
+          defaultValues={{
+            id: dialog.row.id,
+            name: dialog.row.name,
+            icon: dialog.row.icon ?? '',
+            color: dialog.row.color ?? '',
+          }}
+          onSuccess={onSuccess}
+        />
+      )}
+    </Sheet>
   );
 }
 
@@ -261,24 +214,12 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     paddingVertical: Spacing.four,
   },
-  card: {
-    borderWidth: StyleSheet.hairlineWidth * 2,
-    borderRadius: Radius['2xl'],
-    borderCurve: 'continuous',
-    paddingHorizontal: Spacing.three,
-  },
+  card: { paddingHorizontal: Spacing.three },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.two,
     paddingVertical: Spacing.three,
-  },
-  iconBadge: {
-    width: 32,
-    height: 32,
-    borderRadius: Radius.pill,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   name: { flex: 1, fontFamily: Fonts.medium, fontSize: 15 },
   iconButton: {
@@ -287,14 +228,4 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  sheet: { flex: 1 },
-  sheetHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: Spacing.four,
-    paddingVertical: Spacing.three,
-  },
-  sheetTitle: { fontFamily: Fonts.bold, fontSize: 20 },
-  sheetBody: { paddingHorizontal: Spacing.four, paddingTop: Spacing.two },
 });

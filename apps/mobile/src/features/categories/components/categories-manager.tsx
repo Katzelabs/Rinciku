@@ -9,18 +9,17 @@ import { useTranslation } from 'react-i18next';
 import {
   ActivityIndicator,
   Alert,
-  Modal,
   Pressable,
-  ScrollView,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Pencil, Plus, Trash2, X } from 'lucide-react-native';
+import { Pencil, Plus, Trash2 } from 'lucide-react-native';
 import type { Tables } from '@rinciku/db';
 
 import { Fonts, Radius, Spacing } from '@/constants/theme';
+import { Card, Notice, Pill, Sheet } from '@/components/ui';
+import { CategoryBadge } from '@/components/category-badge';
 import {
   deleteCategory,
   deleteTier,
@@ -28,7 +27,6 @@ import {
   listTiers,
 } from '@/features/categories/api';
 import { CategoryForm } from '@/features/categories/components/category-form';
-import { CategoryIcon } from '@/features/categories/components/category-icon';
 import { TierForm } from '@/features/categories/components/tier-form';
 import {
   groupByTier,
@@ -37,7 +35,6 @@ import {
   type Tier,
   type TierGroup,
 } from '@/features/categories/types';
-import { Notice } from '@/features/auth/components/notice';
 import { useTheme } from '@/hooks/use-theme';
 
 type Category = Tables<'categories'>;
@@ -163,12 +160,12 @@ export const CategoriesManager = forwardRef<
           {!loading ? `  ${tiers.length}/${MAX_TIERS}` : ''}
         </Text>
         {inlineAdd ? (
-          <PillButton
-            icon={<Plus size={16} color={c.primaryForeground} />}
+          <Pill
+            tone='primary'
+            leading={<Plus size={16} color={c.primaryForeground} />}
             label={t('spending.addTier')}
             onPress={() => setDialog({ kind: 'create-tier' })}
             disabled={loading || atTierLimit}
-            tone='primary'
           />
         ) : null}
       </View>
@@ -219,10 +216,7 @@ function FormModal({
   onClose: () => void;
   onSuccess: () => void;
 }) {
-  const c = useTheme();
   const { t } = useTranslation('categories');
-  const insets = useSafeAreaInsets();
-  const visible = dialog !== null;
 
   const title = !dialog
     ? ''
@@ -235,78 +229,49 @@ function FormModal({
           : t('dialog.tier.editTitle');
 
   return (
-    <Modal
-      visible={visible}
-      animationType='slide'
-      presentationStyle='pageSheet'
-      onRequestClose={onClose}
-    >
-      <View style={[styles.sheet, { backgroundColor: c.background }]}>
-        <View style={styles.sheetHeader}>
-          <Text style={[styles.sheetTitle, { color: c.foreground }]}>
-            {title}
-          </Text>
-          <Pressable
-            hitSlop={8}
-            accessibilityRole='button'
-            accessibilityLabel={t('common:actions.close')}
-            onPress={onClose}
-          >
-            <X size={22} color={c.mutedForeground} />
-          </Pressable>
-        </View>
-        <ScrollView
-          keyboardShouldPersistTaps='handled'
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={[
-            styles.sheetBody,
-            { paddingBottom: insets.bottom + Spacing.five },
-          ]}
-        >
-          {dialog?.kind === 'create-category' && (
-            <CategoryForm
-              mode='create'
-              tiers={tiers}
-              defaultValues={{ tier_id: dialog.tierId }}
-              onSuccess={onSuccess}
-            />
-          )}
-          {dialog?.kind === 'edit-category' && (
-            <CategoryForm
-              mode='edit'
-              tiers={tiers}
-              defaultValues={{
-                id: dialog.row.id,
-                name: dialog.row.name,
-                tier_id: dialog.row.tier_id ?? tiers[0]?.id ?? '',
-                icon: dialog.row.icon ?? '',
-                color: dialog.row.color ?? '',
-              }}
-              onSuccess={onSuccess}
-            />
-          )}
-          {dialog?.kind === 'create-tier' && (
-            <TierForm
-              mode='create'
-              nextSortOrder={tiers.length}
-              onSuccess={onSuccess}
-            />
-          )}
-          {dialog?.kind === 'edit-tier' && (
-            <TierForm
-              mode='edit'
-              defaultValues={{
-                id: dialog.row.id,
-                name: dialog.row.name,
-                color: dialog.row.color ?? '',
-                is_essential: dialog.row.is_essential,
-              }}
-              onSuccess={onSuccess}
-            />
-          )}
-        </ScrollView>
-      </View>
-    </Modal>
+    <Sheet visible={dialog !== null} onClose={onClose} title={title}>
+      {dialog?.kind === 'create-category' && (
+        <CategoryForm
+          mode='create'
+          tiers={tiers}
+          defaultValues={{ tier_id: dialog.tierId }}
+          onSuccess={onSuccess}
+        />
+      )}
+      {dialog?.kind === 'edit-category' && (
+        <CategoryForm
+          mode='edit'
+          tiers={tiers}
+          defaultValues={{
+            id: dialog.row.id,
+            name: dialog.row.name,
+            tier_id: dialog.row.tier_id ?? tiers[0]?.id ?? '',
+            icon: dialog.row.icon ?? '',
+            color: dialog.row.color ?? '',
+          }}
+          onSuccess={onSuccess}
+        />
+      )}
+      {dialog?.kind === 'create-tier' && (
+        <TierForm
+          mode='create'
+          nextSortOrder={tiers.length}
+          onSuccess={onSuccess}
+        />
+      )}
+      {dialog?.kind === 'edit-tier' && (
+        <TierForm
+          mode='edit'
+          defaultValues={{
+            id: dialog.row.id,
+            name: dialog.row.name,
+            color: dialog.row.color ?? '',
+            is_essential: dialog.row.is_essential,
+          }}
+          onSuccess={onSuccess}
+        />
+      )}
+    </Sheet>
   );
 }
 
@@ -335,9 +300,7 @@ function TierCard({
   const atCategoryLimit = categories.length >= MAX_CATEGORIES_PER_TIER;
 
   return (
-    <View
-      style={[styles.card, { backgroundColor: c.card, borderColor: c.border }]}
-    >
+    <Card padding={Spacing.three} style={styles.card}>
       <View style={styles.cardHeader}>
         <View
           style={[
@@ -364,12 +327,12 @@ function TierCard({
 
       {tier ? (
         <View style={styles.cardActions}>
-          <PillButton
-            icon={<Plus size={15} color={c.foreground} />}
+          <Pill
+            tone='outline'
+            leading={<Plus size={15} color={c.foreground} />}
             label={t('tier.addCategory')}
             onPress={() => onAddCategory(tier.id)}
             disabled={atCategoryLimit}
-            tone='outline'
           />
           <IconButton
             onPress={() => onEditTier(tier)}
@@ -399,18 +362,11 @@ function TierCard({
                 },
               ]}
             >
-              <View
-                style={[
-                  styles.iconBadge,
-                  { backgroundColor: `${category.color ?? '#8d8d8d'}22` },
-                ]}
-              >
-                <CategoryIcon
-                  name={category.icon}
-                  size={16}
-                  color={category.color ?? c.foreground}
-                />
-              </View>
+              <CategoryBadge
+                icon={category.icon}
+                color={category.color}
+                size={32}
+              />
               <Text style={[styles.categoryName, { color: c.foreground }]}>
                 {category.name}
               </Text>
@@ -434,55 +390,11 @@ function TierCard({
           {t('tier.empty')}
         </Text>
       )}
-    </View>
+    </Card>
   );
 }
 
 // --- small building blocks -------------------------------------------------
-
-function PillButton({
-  icon,
-  label,
-  onPress,
-  disabled,
-  tone,
-}: {
-  icon: ReactNode;
-  label: string;
-  onPress: () => void;
-  disabled?: boolean;
-  tone: 'primary' | 'outline';
-}) {
-  const c = useTheme();
-  const primary = tone === 'primary';
-  return (
-    <Pressable
-      onPress={onPress}
-      disabled={disabled}
-      accessibilityRole='button'
-      style={({ pressed }) => [
-        styles.pill,
-        primary
-          ? { backgroundColor: c.primary }
-          : {
-              borderColor: c.border,
-              borderWidth: StyleSheet.hairlineWidth * 2,
-            },
-        { opacity: disabled ? 0.5 : pressed ? 0.85 : 1 },
-      ]}
-    >
-      {icon}
-      <Text
-        style={[
-          styles.pillLabel,
-          { color: primary ? c.primaryForeground : c.foreground },
-        ]}
-      >
-        {label}
-      </Text>
-    </Pressable>
-  );
-}
 
 function IconButton({
   children,
@@ -524,13 +436,7 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
   loader: { marginVertical: Spacing.four },
-  card: {
-    borderWidth: StyleSheet.hairlineWidth * 2,
-    borderRadius: Radius['2xl'],
-    borderCurve: 'continuous',
-    padding: Spacing.three,
-    gap: Spacing.two,
-  },
+  card: { gap: Spacing.two },
   cardHeader: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
   dot: { width: 10, height: 10, borderRadius: Radius.pill },
   tierName: { fontFamily: Fonts.semibold, fontSize: 16 },
@@ -548,13 +454,6 @@ const styles = StyleSheet.create({
     gap: Spacing.two,
     paddingVertical: Spacing.two,
   },
-  iconBadge: {
-    width: 32,
-    height: 32,
-    borderRadius: Radius.pill,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   categoryName: { flex: 1, fontFamily: Fonts.medium, fontSize: 15 },
   empty: {
     fontFamily: Fonts.regular,
@@ -562,30 +461,10 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     paddingVertical: Spacing.three,
   },
-  pill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.one,
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.two,
-    borderRadius: Radius.pill,
-    borderCurve: 'continuous',
-  },
-  pillLabel: { fontFamily: Fonts.semibold, fontSize: 14 },
   iconButton: {
     width: 36,
     height: 36,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  sheet: { flex: 1 },
-  sheetHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: Spacing.four,
-    paddingVertical: Spacing.three,
-  },
-  sheetTitle: { fontFamily: Fonts.bold, fontSize: 20 },
-  sheetBody: { paddingHorizontal: Spacing.four, paddingTop: Spacing.two },
 });

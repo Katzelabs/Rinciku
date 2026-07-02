@@ -1,8 +1,9 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
 import { formatCurrency, type CurrencyCode } from '@rinciku/core';
 
-import { Fonts, Radius, Spacing } from '@/constants/theme';
+import { Spacing } from '@/constants/theme';
+import { AppText, Card } from '@/components/ui';
 import { useTheme } from '@/hooks/use-theme';
 
 export type SummaryLabels = {
@@ -36,27 +37,26 @@ export function TransactionSummaryHeader({
   const c = useTheme();
   const avgPerTransaction = count > 0 ? total / count : 0;
   const avgPerDay = days > 0 ? total / days : 0;
-  const heroColor = tone === 'income' ? c.primary : c.foreground;
 
   return (
-    <View
-      style={[styles.card, { backgroundColor: c.card, borderColor: c.border }]}
-    >
-      <Text style={[styles.heroLabel, { color: c.mutedForeground }]}>
+    <Card style={styles.card}>
+      <AppText variant='amountSmall' color='mutedForeground'>
         {labels.total}
-      </Text>
-      <Text
-        style={[styles.hero, { color: heroColor }]}
+      </AppText>
+      <AppText
+        variant='hero'
+        color={tone === 'income' ? 'primary' : 'foreground'}
+        style={styles.hero}
         numberOfLines={1}
         adjustsFontSizeToFit
         minimumFontScale={0.6}
       >
         {tone === 'income' && total > 0 ? '+' : ''}
         {formatCurrency(total, base)}
-      </Text>
-      <Text style={[styles.heroHint, { color: c.mutedForeground }]}>
+      </AppText>
+      <AppText variant='caption' color='mutedForeground'>
         {labels.overDays}
-      </Text>
+      </AppText>
 
       <View style={[styles.divider, { backgroundColor: c.border }]} />
 
@@ -73,43 +73,31 @@ export function TransactionSummaryHeader({
           value={formatCurrency(avgPerDay, base)}
         />
       </View>
-    </View>
+    </Card>
   );
 }
 
 function Stat({ label, value }: { label: string; value: string }) {
-  const c = useTheme();
   return (
     <View style={styles.stat}>
-      <Text
-        style={[styles.statValue, { color: c.foreground }]}
+      <AppText
+        variant='amount'
         numberOfLines={1}
         adjustsFontSizeToFit
         minimumFontScale={0.7}
       >
         {value}
-      </Text>
-      <Text
-        style={[styles.statLabel, { color: c.mutedForeground }]}
-        numberOfLines={1}
-      >
+      </AppText>
+      <AppText variant='caption' color='mutedForeground' numberOfLines={1}>
         {label}
-      </Text>
+      </AppText>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  card: {
-    borderWidth: StyleSheet.hairlineWidth * 2,
-    borderRadius: Radius['2xl'],
-    borderCurve: 'continuous',
-    padding: Spacing.four,
-    gap: Spacing.half,
-  },
-  heroLabel: { fontFamily: Fonts.medium, fontSize: 13 },
-  hero: { fontFamily: Fonts.bold, fontSize: 32, marginTop: Spacing.one },
-  heroHint: { fontFamily: Fonts.regular, fontSize: 12 },
+  card: { gap: Spacing.half },
+  hero: { marginTop: Spacing.one },
   divider: {
     height: StyleSheet.hairlineWidth,
     marginVertical: Spacing.three,
@@ -117,6 +105,4 @@ const styles = StyleSheet.create({
   statsRow: { flexDirection: 'row', alignItems: 'center' },
   stat: { flex: 1, gap: Spacing.half, alignItems: 'flex-start' },
   statDivider: { width: StyleSheet.hairlineWidth, alignSelf: 'stretch' },
-  statValue: { fontFamily: Fonts.semibold, fontSize: 15 },
-  statLabel: { fontFamily: Fonts.regular, fontSize: 12 },
 });

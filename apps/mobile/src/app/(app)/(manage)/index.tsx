@@ -1,9 +1,10 @@
 import { useRef, useState } from 'react';
 import { Stack } from 'expo-router';
 import { useTranslation } from 'react-i18next';
-import { ScrollView, StyleSheet } from 'react-native';
+import { Plus } from 'lucide-react-native';
 
-import { HeaderAddButton } from '@/components/header-add-button';
+import { ScreenScroll } from '@/components/ui';
+import { HeaderAction } from '@/components/header-action';
 import { Segmented, type SegmentedOption } from '@/components/segmented';
 import { Spacing } from '@/constants/theme';
 import { BudgetsManager } from '@/features/budgets/components/budgets-manager';
@@ -15,7 +16,6 @@ import {
   EssentialsManager,
   type EssentialsManagerHandle,
 } from '@/features/essentials/components/essentials-manager';
-import { useTheme } from '@/hooks/use-theme';
 
 type Segment = 'essentials' | 'budgets' | 'categories';
 
@@ -24,7 +24,6 @@ type Segment = 'essentials' | 'budgets' | 'categories';
 // active segment's manager (create essential / create tier); Budgets edits
 // per-category targets inline, so it has no add action.
 export default function ManageScreen() {
-  const c = useTheme();
   const { t } = useTranslation('common');
   const { t: tEssentials } = useTranslation('essentials');
   const { t: tCategories } = useTranslation('categories');
@@ -41,7 +40,9 @@ export default function ManageScreen() {
   const headerRight = () => {
     if (active === 'essentials') {
       return (
-        <HeaderAddButton
+        <HeaderAction
+          systemImage='plus'
+          icon={Plus}
           accessibilityLabel={tEssentials('page.addButton')}
           onPress={() => essentialsRef.current?.openCreate()}
         />
@@ -49,7 +50,9 @@ export default function ManageScreen() {
     }
     if (active === 'categories') {
       return (
-        <HeaderAddButton
+        <HeaderAction
+          systemImage='plus'
+          icon={Plus}
           accessibilityLabel={tCategories('spending.addTier')}
           onPress={() => categoriesRef.current?.openCreate()}
         />
@@ -59,12 +62,7 @@ export default function ManageScreen() {
   };
 
   return (
-    <ScrollView
-      style={{ backgroundColor: c.background }}
-      contentInsetAdjustmentBehavior='automatic'
-      keyboardShouldPersistTaps='handled'
-      contentContainerStyle={styles.content}
-    >
+    <ScreenScroll gap={Spacing.four}>
       <Stack.Screen options={{ headerRight }} />
 
       <Segmented options={options} value={active} onChange={setActive} />
@@ -76,14 +74,6 @@ export default function ManageScreen() {
       ) : (
         <CategoriesManager ref={categoriesRef} inlineAdd={false} />
       )}
-    </ScrollView>
+    </ScreenScroll>
   );
 }
-
-const styles = StyleSheet.create({
-  content: {
-    padding: Spacing.four,
-    paddingBottom: Spacing.six,
-    gap: Spacing.four,
-  },
-});

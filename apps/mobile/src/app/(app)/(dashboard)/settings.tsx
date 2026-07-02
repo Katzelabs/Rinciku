@@ -5,7 +5,6 @@ import { useTranslation } from 'react-i18next';
 import {
   Alert,
   Pressable,
-  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -22,19 +21,22 @@ import { SUPPORTED_LANGUAGES, type Language } from '@rinciku/core/i18n/init';
 
 import { Fonts, Radius, Spacing } from '@/constants/theme';
 import {
+  Button,
+  Card,
+  FieldError,
+  FieldLabel,
+  InputShell,
+  PasswordField,
+  ScreenScroll,
+} from '@/components/ui';
+import { Segmented } from '@/components/segmented';
+import {
   deleteAccount,
   updateLanguage,
   updatePassword,
   updateProfile,
 } from '@/features/auth/api';
-import { Button } from '@/features/auth/components/button';
-import { PasswordField } from '@/features/auth/components/password-field';
 import { PasswordRules } from '@/features/auth/components/password-rules';
-import {
-  FieldError,
-  FieldLabel,
-  InputShell,
-} from '@/features/auth/components/text-field';
 import { useAuth } from '@/features/auth/hooks/use-auth';
 import {
   makeChangePasswordSchema,
@@ -44,21 +46,15 @@ import { useTheme } from '@/hooks/use-theme';
 import { supabase } from '@/lib/supabase';
 
 export default function SettingsScreen() {
-  const c = useTheme();
   return (
-    <ScrollView
-      style={{ backgroundColor: c.background }}
-      contentInsetAdjustmentBehavior='automatic'
-      keyboardShouldPersistTaps='handled'
-      contentContainerStyle={styles.content}
-    >
+    <ScreenScroll gap={Spacing.five}>
       <ProfileSection />
       <AppearanceSection />
       <FinancialSection />
       <ChangePasswordSection />
       <DangerZoneSection />
       <SignOutButton />
-    </ScrollView>
+    </ScreenScroll>
   );
 }
 
@@ -82,9 +78,7 @@ function Section({
           </Text>
         ) : null}
       </View>
-      <View style={[styles.card, { backgroundColor: c.card, borderColor: c.border }]}>
-        {children}
-      </View>
+      <Card style={styles.card}>{children}</Card>
     </View>
   );
 }
@@ -127,10 +121,9 @@ function ProfileSection() {
 }
 
 function AppearanceSection() {
-  const c = useTheme();
   const { t, i18n } = useTranslation('common');
   const { user, refreshProfile } = useAuth();
-  const current = (i18n.resolvedLanguage ?? 'en') as string;
+  const current = (i18n.resolvedLanguage ?? 'en') as Language;
 
   async function choose(lng: Language) {
     if (lng === current) return;
@@ -147,31 +140,14 @@ function AppearanceSection() {
   return (
     <Section title={t('appearance.title')} description={t('appearance.description')}>
       <FieldLabel>{t('appearance.language.label')}</FieldLabel>
-      <View style={styles.segment}>
-        {SUPPORTED_LANGUAGES.map((lng) => {
-          const selected = lng === current;
-          return (
-            <Pressable
-              key={lng}
-              onPress={() => void choose(lng)}
-              style={[
-                styles.segmentItem,
-                { borderColor: c.border },
-                selected && { backgroundColor: c.primary },
-              ]}
-            >
-              <Text
-                style={[
-                  styles.segmentText,
-                  { color: selected ? c.primaryForeground : c.foreground },
-                ]}
-              >
-                {lng.toUpperCase()}
-              </Text>
-            </Pressable>
-          );
-        })}
-      </View>
+      <Segmented
+        options={SUPPORTED_LANGUAGES.map((lng) => ({
+          key: lng,
+          label: lng.toUpperCase(),
+        }))}
+        value={current}
+        onChange={(lng) => void choose(lng)}
+      />
     </Section>
   );
 }
@@ -389,33 +365,17 @@ function SignOutButton() {
 }
 
 const styles = StyleSheet.create({
-  content: { padding: Spacing.four, gap: Spacing.five, paddingBottom: Spacing.six },
   section: { gap: Spacing.three },
   sectionHeader: { gap: Spacing.one },
   sectionTitle: { fontFamily: Fonts.bold, fontSize: 18 },
   sectionDesc: { fontFamily: Fonts.regular, fontSize: 14, lineHeight: 20 },
-  card: {
-    borderWidth: StyleSheet.hairlineWidth * 2,
-    borderRadius: Radius.xl,
-    borderCurve: 'continuous',
-    padding: Spacing.four,
-    gap: Spacing.three,
-  },
+  card: { gap: Spacing.three },
   input: {
     flex: 1,
     fontFamily: Fonts.regular,
     fontSize: 16,
     paddingVertical: Spacing.three,
   },
-  segment: { flexDirection: 'row', gap: Spacing.two },
-  segmentItem: {
-    paddingHorizontal: Spacing.four,
-    paddingVertical: Spacing.two,
-    borderWidth: StyleSheet.hairlineWidth * 2,
-    borderRadius: Radius.lg,
-    borderCurve: 'continuous',
-  },
-  segmentText: { fontFamily: Fonts.semibold, fontSize: 14 },
   select: {
     flexDirection: 'row',
     alignItems: 'center',

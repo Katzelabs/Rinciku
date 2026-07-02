@@ -2,21 +2,17 @@ import { useEffect, useMemo, useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Controller, useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
-import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { X } from 'lucide-react-native';
+import { StyleSheet, View } from 'react-native';
 
 import type { CurrencyCode } from '@rinciku/core';
 
 import { CurrencyAmountInput } from '@/components/currency-amount-input';
-import { Fonts, Spacing } from '@/constants/theme';
-import { Button } from '@/features/auth/components/button';
-import { FieldError, FieldLabel } from '@/features/auth/components/text-field';
+import { Spacing } from '@/constants/theme';
+import { Button, FieldError, FieldLabel, Sheet } from '@/components/ui';
 import {
   makeBudgetTargetSchema,
   type BudgetTargetInput,
 } from '@/features/budgets/schemas';
-import { useTheme } from '@/hooks/use-theme';
 
 type TargetModalProps = {
   visible: boolean;
@@ -41,9 +37,7 @@ export function TargetModal({
   onSave,
   onRemove,
 }: TargetModalProps) {
-  const c = useTheme();
   const { t } = useTranslation('budgets');
-  const insets = useSafeAreaInsets();
   const [removing, setRemoving] = useState(false);
   const schema = useMemo(() => makeBudgetTargetSchema(t), [t]);
 
@@ -87,85 +81,44 @@ export function TargetModal({
   const busy = isSubmitting || removing;
 
   return (
-    <Modal
-      visible={visible}
-      animationType='slide'
-      presentationStyle='pageSheet'
-      onRequestClose={onClose}
-    >
-      <View style={[styles.sheet, { backgroundColor: c.background }]}>
-        <View style={styles.header}>
-          <Text style={[styles.title, { color: c.foreground }]}>{title}</Text>
-          <Pressable
-            hitSlop={8}
-            accessibilityRole='button'
-            accessibilityLabel={t('common:actions.close')}
-            onPress={onClose}
-          >
-            <X size={22} color={c.mutedForeground} />
-          </Pressable>
-        </View>
-        <ScrollView
-          keyboardShouldPersistTaps='handled'
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={[
-            styles.body,
-            { paddingBottom: insets.bottom + Spacing.five },
-          ]}
-        >
-          <Controller
-            control={control}
-            name='amount'
-            render={({ field, fieldState }) => (
-              <View style={styles.field}>
-                <FieldLabel>{t('dialog.monthlyTarget')}</FieldLabel>
-                <CurrencyAmountInput
-                  currency={currency}
-                  value={field.value}
-                  onChange={field.onChange}
-                  onBlur={field.onBlur}
-                  invalid={fieldState.invalid}
-                />
-                <FieldError message={fieldState.error?.message} />
-              </View>
-            )}
-          />
-
-          <Button
-            label={isSubmitting ? t('dialog.saving') : t('dialog.saveTarget')}
-            loading={isSubmitting}
-            disabled={busy}
-            onPress={submit}
-          />
-          {onRemove ? (
-            <Button
-              variant='ghost'
-              label={removing ? t('dialog.removing') : t('dialog.removeTarget')}
-              loading={removing}
-              disabled={busy}
-              onPress={handleRemove}
+    <Sheet visible={visible} onClose={onClose} title={title}>
+      <Controller
+        control={control}
+        name='amount'
+        render={({ field, fieldState }) => (
+          <View style={styles.field}>
+            <FieldLabel>{t('dialog.monthlyTarget')}</FieldLabel>
+            <CurrencyAmountInput
+              currency={currency}
+              value={field.value}
+              onChange={field.onChange}
+              onBlur={field.onBlur}
+              invalid={fieldState.invalid}
             />
-          ) : null}
-        </ScrollView>
-      </View>
-    </Modal>
+            <FieldError message={fieldState.error?.message} />
+          </View>
+        )}
+      />
+
+      <Button
+        label={isSubmitting ? t('dialog.saving') : t('dialog.saveTarget')}
+        loading={isSubmitting}
+        disabled={busy}
+        onPress={submit}
+      />
+      {onRemove ? (
+        <Button
+          variant='ghost'
+          label={removing ? t('dialog.removing') : t('dialog.removeTarget')}
+          loading={removing}
+          disabled={busy}
+          onPress={handleRemove}
+        />
+      ) : null}
+    </Sheet>
   );
 }
 
 const styles = StyleSheet.create({
-  sheet: { flex: 1 },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: Spacing.four,
-    paddingVertical: Spacing.three,
-  },
-  title: { fontFamily: Fonts.bold, fontSize: 20 },
-  body: {
-    paddingHorizontal: Spacing.four,
-    paddingTop: Spacing.two,
-    gap: Spacing.three,
-  },
   field: { gap: Spacing.two },
 });

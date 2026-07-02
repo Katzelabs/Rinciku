@@ -1,14 +1,7 @@
 import { useCallback, useState } from 'react';
 import { Stack, useFocusEffect, useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
-import {
-  ActivityIndicator,
-  RefreshControl,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { ActivityIndicator, StyleSheet, View } from 'react-native';
 
 import {
   getCycleLabel,
@@ -16,9 +9,9 @@ import {
   type PeriodPreset,
 } from '@rinciku/core';
 
-import { Fonts, Spacing } from '@/constants/theme';
+import { Spacing } from '@/constants/theme';
+import { AppText, Notice, ScreenScroll } from '@/components/ui';
 import { ProfileAvatar } from '@/components/profile-avatar';
-import { Notice } from '@/features/auth/components/notice';
 import { useAuth } from '@/features/auth/hooks/use-auth';
 import { HealthBadge } from '@/features/dashboard/components/health-badge';
 import { PeriodPicker } from '@/features/dashboard/components/period-picker';
@@ -76,20 +69,12 @@ export default function DashboardScreen() {
   );
 
   return (
-    <ScrollView
-      style={{ backgroundColor: c.background }}
-      contentInsetAdjustmentBehavior='automatic'
-      contentContainerStyle={styles.content}
-      refreshControl={
-        <RefreshControl
-          refreshing={loading && summary !== null}
-          onRefresh={() => {
-            refetch();
-            periodSpend.refetch();
-          }}
-          tintColor={c.primary}
-        />
-      }
+    <ScreenScroll
+      refreshing={loading && summary !== null}
+      onRefresh={() => {
+        refetch();
+        periodSpend.refetch();
+      }}
     >
       <Stack.Screen
         options={{
@@ -120,9 +105,9 @@ export default function DashboardScreen() {
         <Notice tone='error'>{error}</Notice>
       ) : summary ? (
         <>
-          <Text style={[styles.cycle, { color: c.mutedForeground }]}>
+          <AppText variant='label' color='mutedForeground'>
             {getCycleLabel(summary.cycle)}
-          </Text>
+          </AppText>
           <SummaryCards summary={summary} />
           <HealthBadge summary={summary} />
           <TierBreakdown
@@ -141,16 +126,10 @@ export default function DashboardScreen() {
       ) : (
         <View />
       )}
-    </ScrollView>
+    </ScreenScroll>
   );
 }
 
 const styles = StyleSheet.create({
-  content: {
-    padding: Spacing.four,
-    paddingBottom: Spacing.six,
-    gap: Spacing.three,
-  },
   loader: { marginVertical: Spacing.five },
-  cycle: { fontFamily: Fonts.medium, fontSize: 14 },
 });

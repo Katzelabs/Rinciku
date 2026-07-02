@@ -1,39 +1,28 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Stack, useFocusEffect, useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
-import {
-  RefreshControl,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
-import { Receipt, SearchX } from 'lucide-react-native';
+import { Plus, Receipt, SearchX } from 'lucide-react-native';
 
 import {
   convertToBase,
-  formatCurrency,
   formatDate,
   getPeriodRange,
   type CurrencyCode,
 } from '@rinciku/core';
 
-import { Fonts, Radius, Spacing } from '@/constants/theme';
+import { AppText, Notice, ScreenScroll } from '@/components/ui';
 import { EmptyState } from '@/components/empty-state';
-import { HeaderAddButton } from '@/components/header-add-button';
-import { TransactionRow } from '@/components/transaction-row';
+import { HeaderAction } from '@/components/header-action';
+import { TransactionDayGroups } from '@/components/transaction-day-groups';
 import { groupByDay } from '@/lib/transaction-groups';
 import { useAuth } from '@/features/auth/hooks/use-auth';
-import { Notice } from '@/features/auth/components/notice';
 import {
   ExpenseFilters,
   type ListPeriod,
 } from '@/features/expenses/components/expense-filters';
 import { useExpenses } from '@/features/expenses/hooks/use-expenses';
-import { useTheme } from '@/hooks/use-theme';
 
 export default function ExpensesListScreen() {
-  const c = useTheme();
   const { t } = useTranslation('expenses');
   const router = useRouter();
   const { profile } = useAuth();
@@ -104,24 +93,14 @@ export default function ExpensesListScreen() {
   const initialLoading = loading && expenses.length === 0;
 
   return (
-    <ScrollView
-      style={{ backgroundColor: c.background }}
-      contentInsetAdjustmentBehavior='automatic'
-      keyboardShouldPersistTaps='handled'
-      contentContainerStyle={styles.content}
-      refreshControl={
-        <RefreshControl
-          refreshing={refreshing}
-          onRefresh={onRefresh}
-          tintColor={c.mutedForeground}
-        />
-      }
-    >
+    <ScreenScroll onRefresh={onRefresh} refreshing={refreshing}>
       <Stack.Screen
         options={{
           title: t('list.title'),
           headerRight: () => (
-            <HeaderAddButton
+            <HeaderAction
+              systemImage='plus'
+              icon={Plus}
               accessibilityLabel={t('common:nav.addExpense')}
               onPress={() => router.push('/(app)/(expenses)/new')}
             />
@@ -129,9 +108,9 @@ export default function ExpensesListScreen() {
         }}
       />
 
-      <Text style={[styles.subtitle, { color: c.mutedForeground }]}>
+      <AppText variant='body' color='mutedForeground'>
         {t('list.subtitle')}
-      </Text>
+      </AppText>
 
       <ExpenseFilters
         search={search}
@@ -162,87 +141,33 @@ export default function ExpensesListScreen() {
           />
         )
       ) : (
-        groups.map((group) => (
-          <View key={group.key} style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <Text style={[styles.sectionLabel, { color: c.mutedForeground }]}>
-                {group.label}
-              </Text>
-              <Text style={[styles.sectionSubtotal, { color: c.foreground }]}>
-                {formatCurrency(group.subtotal, base)}
-              </Text>
-            </View>
-            <View
-              style={[
-                styles.card,
-                { backgroundColor: c.card, borderColor: c.border },
-              ]}
-            >
-              {group.rows.map((expense, i) => {
-                const name = expense.category?.name;
-                const note = expense.note?.trim();
-                const title =
-                  name ?? (note || t('common:categoryTag.uncategorized'));
-                const subtitle =
-                  name && note
-                    ? note
-                    : formatDate(new Date(expense.occurred_at), 'p');
-                return (
-                  <TransactionRow
-                    key={expense.id}
-                    icon={expense.category?.icon}
-                    color={expense.category?.color}
-                    title={title}
-                    subtitle={subtitle}
-                    amount={Number(expense.amount)}
-                    currency={expense.currency as CurrencyCode}
-                    topBorder={i > 0}
-                    onPress={() =>
-                      router.push({
-                        pathname: '/(app)/(expenses)/[id]',
-                        params: { id: expense.id },
-                      })
-                    }
-                  />
-                );
-              })}
-            </View>
-          </View>
-        ))
+        <TransactionDayGroups
+          groups={groups}
+          base={base}
+          tone='expense'
+          getRow={(expense) => {
+            const name = expense.category?.name;
+            const note = expense.note?.trim();
+            return {
+              id: expense.id,
+              icon: expense.category?.icon,
+              color: expense.category?.color,
+              title: name ?? (note || t('common:categoryTag.uncategorized')),
+              subtitle:
+                name && note
+                  ? note
+                  : formatDate(new Date(expense.occurred_at), 'p'),
+              amount: Number(expense.amount),
+              currency: expense.currency as CurrencyCode,
+              onPress: () =>
+                router.push({
+                  pathname: '/(app)/(expenses)/[id]',
+                  params: { id: expense.id },
+                }),
+            };
+          }}
+        />
       )}
-    </ScrollView>
+    </ScreenScroll>
   );
 }
-
-const styles = StyleSheet.create({
-  content: {
-    padding: Spacing.four,
-    paddingBottom: Spacing.six,
-    gap: Spacing.three,
-  },
-  subtitle: {
-    fontFamily: Fonts.regular,
-    fontSize: 15,
-    marginTop: -Spacing.one,
-  },
-  section: { gap: Spacing.one },
-  sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: Spacing.one,
-  },
-  sectionLabel: {
-    fontFamily: Fonts.medium,
-    fontSize: 12,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  sectionSubtotal: { fontFamily: Fonts.semibold, fontSize: 13 },
-  card: {
-    borderWidth: StyleSheet.hairlineWidth * 2,
-    borderRadius: Radius['2xl'],
-    borderCurve: 'continuous',
-    paddingHorizontal: Spacing.three,
-  },
-});

@@ -1,11 +1,12 @@
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
 import { formatCurrency, getCycleLengthDays } from '@rinciku/core';
 import { computeHealth, type HealthStatus } from '@rinciku/domain/dashboard';
 
-import { Fonts, Radius, Spacing } from '@/constants/theme';
+import { Radius, Spacing } from '@/constants/theme';
+import { AppText, Card } from '@/components/ui';
 import type { MonthlySummary } from '@/features/dashboard/types';
 import { useTheme } from '@/hooks/use-theme';
 
@@ -34,8 +35,8 @@ export function HealthBadge({ summary }: { summary: MonthlySummary }) {
         label: t('health.status.onTrack'),
       },
       watch: {
-        bg: '#F59E0B22',
-        fg: '#B45309',
+        bg: `${c.warning}22`,
+        fg: c.warningForeground,
         label: t('health.status.watch'),
       },
       over: {
@@ -48,12 +49,16 @@ export function HealthBadge({ summary }: { summary: MonthlySummary }) {
   const message = explain(t, status, summary, daysElapsed);
 
   return (
-    <View style={[styles.card, { backgroundColor: c.card, borderColor: c.border }]}>
+    <Card style={styles.card}>
       <View style={[styles.badge, { backgroundColor: bg }]}>
-        <Text style={[styles.badgeText, { color: fg }]}>{label}</Text>
+        <AppText variant='amountSmall' style={{ color: fg }}>
+          {label}
+        </AppText>
       </View>
-      <Text style={[styles.message, { color: c.mutedForeground }]}>{message}</Text>
-    </View>
+      <AppText variant='caption' color='mutedForeground'>
+        {message}
+      </AppText>
+    </Card>
   );
 }
 
@@ -85,9 +90,6 @@ function explain(
 
 const styles = StyleSheet.create({
   card: {
-    borderWidth: StyleSheet.hairlineWidth * 2,
-    borderRadius: Radius['2xl'],
-    borderCurve: 'continuous',
     padding: Spacing.three,
     gap: Spacing.two,
     alignItems: 'flex-start',
@@ -97,6 +99,4 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.one,
     borderRadius: Radius.pill,
   },
-  badgeText: { fontFamily: Fonts.semibold, fontSize: 13 },
-  message: { fontFamily: Fonts.regular, fontSize: 14, lineHeight: 20 },
 });

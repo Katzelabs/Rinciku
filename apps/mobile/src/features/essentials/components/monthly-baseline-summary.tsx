@@ -6,6 +6,7 @@ import type { Baseline } from '@rinciku/domain/essentials';
 import type { Tables } from '@rinciku/db';
 
 import { Fonts, Radius, Spacing } from '@/constants/theme';
+import { Card } from '@/components/ui';
 import { useTheme } from '@/hooks/use-theme';
 
 type Tier = Tables<'tiers'>;
@@ -29,7 +30,7 @@ export function MonthlyBaselineSummary({
     .filter((r) => r.amount > 0);
 
   return (
-    <View style={[styles.card, { backgroundColor: c.card, borderColor: c.border }]}>
+    <Card padding={Spacing.three} style={styles.card}>
       <View style={styles.totalRow}>
         <Text style={[styles.label, { color: c.mutedForeground }]}>
           {t('summary.label')}
@@ -58,18 +59,12 @@ export function MonthlyBaselineSummary({
           ))}
         </View>
       ) : null}
-    </View>
+    </Card>
   );
 }
 
 const styles = StyleSheet.create({
-  card: {
-    borderWidth: StyleSheet.hairlineWidth * 2,
-    borderRadius: Radius['2xl'],
-    borderCurve: 'continuous',
-    padding: Spacing.three,
-    gap: Spacing.three,
-  },
+  card: { gap: Spacing.three },
   totalRow: {
     flexDirection: 'row',
     alignItems: 'center',

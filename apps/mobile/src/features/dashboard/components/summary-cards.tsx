@@ -3,7 +3,8 @@ import { StyleSheet, Text, View } from 'react-native';
 
 import { formatCurrency, getCycleLengthDays } from '@rinciku/core';
 
-import { Fonts, Radius, Spacing } from '@/constants/theme';
+import { Fonts, Spacing } from '@/constants/theme';
+import { Card } from '@/components/ui';
 import type { MonthlySummary } from '@/features/dashboard/types';
 import { useTheme } from '@/hooks/use-theme';
 
@@ -21,20 +22,20 @@ export function SummaryCards({ summary }: { summary: MonthlySummary }) {
 
   return (
     <View style={styles.grid}>
-      <Card
+      <StatCard
         label={t('summary.income')}
         value={formatCurrency(summary.income_received, base)}
       />
-      <Card
+      <StatCard
         label={t('summary.spent')}
         value={formatCurrency(summary.spent_total, base)}
       />
-      <Card
+      <StatCard
         label={t('summary.net')}
         value={formatCurrency(summary.remaining, base)}
         valueColor={netNegative ? c.destructive : undefined}
       />
-      <Card
+      <StatCard
         label={t('summary.avgPerDay')}
         value={formatCurrency(avgPerDay, base)}
         hint={t('summary.over', { count: daysElapsed })}
@@ -43,7 +44,7 @@ export function SummaryCards({ summary }: { summary: MonthlySummary }) {
   );
 }
 
-function Card({
+function StatCard({
   label,
   value,
   hint,
@@ -56,7 +57,7 @@ function Card({
 }) {
   const c = useTheme();
   return (
-    <View style={[styles.card, { backgroundColor: c.card, borderColor: c.border }]}>
+    <Card padding={Spacing.three} style={styles.card}>
       <Text style={[styles.label, { color: c.mutedForeground }]}>{label}</Text>
       <Text
         style={[styles.value, { color: valueColor ?? c.foreground }]}
@@ -67,7 +68,7 @@ function Card({
       {hint ? (
         <Text style={[styles.hint, { color: c.mutedForeground }]}>{hint}</Text>
       ) : null}
-    </View>
+    </Card>
   );
 }
 
@@ -76,10 +77,6 @@ const styles = StyleSheet.create({
   card: {
     flexGrow: 1,
     flexBasis: '47%',
-    borderWidth: StyleSheet.hairlineWidth * 2,
-    borderRadius: Radius['2xl'],
-    borderCurve: 'continuous',
-    padding: Spacing.three,
     gap: Spacing.one,
   },
   label: { fontFamily: Fonts.medium, fontSize: 13 },

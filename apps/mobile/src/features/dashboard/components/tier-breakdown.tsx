@@ -4,6 +4,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { formatCurrency, type CurrencyCode } from '@rinciku/core';
 
 import { Fonts, Radius, Spacing } from '@/constants/theme';
+import { Card } from '@/components/ui';
 import type { Tier } from '@/features/categories/types';
 import type { TierTotals } from '@/features/dashboard/types';
 import { useTheme } from '@/hooks/use-theme';
@@ -55,9 +56,7 @@ export function TierBreakdown({
   const total = rows.reduce((acc, r) => acc + r.amount, 0);
 
   return (
-    <View
-      style={[styles.card, { backgroundColor: c.card, borderColor: c.border }]}
-    >
+    <Card padding={Spacing.three} style={styles.card}>
       <View style={styles.header}>
         <Text style={[styles.title, { color: c.foreground }]}>
           {t('tier.ariaLabel')}
@@ -101,16 +100,12 @@ export function TierBreakdown({
           </View>
         </>
       )}
-    </View>
+    </Card>
   );
 }
 
 const styles = StyleSheet.create({
   card: {
-    borderWidth: StyleSheet.hairlineWidth * 2,
-    borderRadius: Radius['2xl'],
-    borderCurve: 'continuous',
-    padding: Spacing.three,
     gap: Spacing.three,
   },
   header: {

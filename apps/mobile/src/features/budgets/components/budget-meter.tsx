@@ -7,10 +7,6 @@ import { Fonts, Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import type { BudgetStatus } from '@/features/budgets/types';
 
-// Amber for the "approaching" state — the mobile theme has no warning token, so
-// this mirrors the web meter's amber-500.
-const APPROACHING_COLOR = '#f59e0b';
-
 type BudgetMeterProps = {
   spent: number;
   target: number | null;
@@ -37,7 +33,7 @@ export function BudgetMeter({
     status === 'over'
       ? c.destructive
       : status === 'approaching'
-        ? APPROACHING_COLOR
+        ? c.warning
         : status === 'ok'
           ? c.primary
           : c.mutedForeground;

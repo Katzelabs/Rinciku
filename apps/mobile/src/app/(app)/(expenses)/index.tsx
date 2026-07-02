@@ -2,24 +2,23 @@ import { Stack, useFocusEffect, useRouter } from 'expo-router';
 import { ChevronRight, Receipt } from 'lucide-react-native';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import {
-  Pressable,
-  RefreshControl,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 
 import { formatDate, getPeriodRange, type CurrencyCode } from '@rinciku/core';
 
+import {
+  AppText,
+  Card,
+  Notice,
+  ScreenScroll,
+  SectionHeader,
+} from '@/components/ui';
 import { EmptyState } from '@/components/empty-state';
 import { PeriodTabs } from '@/components/period-tabs';
 import type { SegmentedOption } from '@/components/segmented';
 import { TransactionRow } from '@/components/transaction-row';
 import { TransactionSummaryHeader } from '@/components/transaction-summary-header';
-import { Fonts, Radius, Spacing } from '@/constants/theme';
-import { Notice } from '@/features/auth/components/notice';
+import { Spacing } from '@/constants/theme';
 import { useAuth } from '@/features/auth/hooks/use-auth';
 import type { ListPeriod } from '@/features/expenses/components/expense-filters';
 import { ExpenseHeaderActions } from '@/features/expenses/components/expense-header-actions';
@@ -98,17 +97,10 @@ export default function ExpensesScreen() {
   const initialLoading = loading && expenses.length === 0;
 
   return (
-    <ScrollView
-      style={{ backgroundColor: c.background }}
-      contentInsetAdjustmentBehavior='automatic'
-      contentContainerStyle={styles.content}
-      refreshControl={
-        <RefreshControl
-          refreshing={refreshing}
-          onRefresh={onRefresh}
-          tintColor={c.mutedForeground}
-        />
-      }
+    <ScreenScroll
+      gap={Spacing.four}
+      refreshing={refreshing}
+      onRefresh={onRefresh}
     >
       <Stack.Screen
         options={{
@@ -135,9 +127,7 @@ export default function ExpensesScreen() {
       />
 
       <View style={styles.block}>
-        <Text style={[styles.heading, { color: c.foreground }]}>
-          {t('section.summary')}
-        </Text>
+        <SectionHeader variant='title' title={t('section.summary')} />
         <TransactionSummaryHeader
           total={total}
           count={count}
@@ -155,25 +145,26 @@ export default function ExpensesScreen() {
       </View>
 
       <View style={styles.block}>
-        <View style={styles.headingRow}>
-          <Text style={[styles.heading, { color: c.foreground }]}>
-            {t('section.recentActivity')}
-          </Text>
-          <Pressable
-            accessibilityRole='button'
-            hitSlop={8}
-            onPress={() => router.push('/(app)/(expenses)/list')}
-            style={({ pressed }) => [
-              styles.seeAll,
-              { opacity: pressed ? 0.6 : 1 },
-            ]}
-          >
-            <Text style={[styles.seeAllText, { color: c.primary }]}>
-              {t('section.seeAll')}
-            </Text>
-            <ChevronRight size={16} color={c.primary} />
-          </Pressable>
-        </View>
+        <SectionHeader
+          variant='title'
+          title={t('section.recentActivity')}
+          right={
+            <Pressable
+              accessibilityRole='button'
+              hitSlop={8}
+              onPress={() => router.push('/(app)/(expenses)/list')}
+              style={({ pressed }) => [
+                styles.seeAll,
+                { opacity: pressed ? 0.6 : 1 },
+              ]}
+            >
+              <AppText variant='label' color='primary'>
+                {t('section.seeAll')}
+              </AppText>
+              <ChevronRight size={16} color={c.primary} />
+            </Pressable>
+          }
+        />
 
         {error ? <Notice tone='error'>{error}</Notice> : null}
 
@@ -186,12 +177,7 @@ export default function ExpensesScreen() {
             onAction={() => router.push('/(app)/(expenses)/new')}
           />
         ) : (
-          <View
-            style={[
-              styles.card,
-              { backgroundColor: c.card, borderColor: c.border },
-            ]}
-          >
+          <Card padding={0} style={styles.card}>
             {preview.map((expense, i) => {
               const name = expense.category?.name;
               const note = expense.note?.trim();
@@ -221,32 +207,15 @@ export default function ExpensesScreen() {
                 />
               );
             })}
-          </View>
+          </Card>
         )}
       </View>
-    </ScrollView>
+    </ScreenScroll>
   );
 }
 
 const styles = StyleSheet.create({
-  content: {
-    padding: Spacing.four,
-    paddingBottom: Spacing.six,
-    gap: Spacing.four,
-  },
   block: { gap: Spacing.two },
-  headingRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  heading: { fontFamily: Fonts.bold, fontSize: 22 },
   seeAll: { flexDirection: 'row', alignItems: 'center', gap: 2 },
-  seeAllText: { fontFamily: Fonts.semibold, fontSize: 14 },
-  card: {
-    borderWidth: StyleSheet.hairlineWidth * 2,
-    borderRadius: Radius['2xl'],
-    borderCurve: 'continuous',
-    paddingHorizontal: Spacing.three,
-  },
+  card: { paddingHorizontal: Spacing.three },
 });

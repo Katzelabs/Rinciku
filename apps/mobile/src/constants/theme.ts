@@ -10,7 +10,7 @@
  * tokens drive solid content surfaces and the glass tint.
  */
 
-import { Platform } from 'react-native';
+import { Platform, StyleSheet } from 'react-native';
 
 export const Colors = {
   light: {
@@ -30,10 +30,16 @@ export const Colors = {
     accentForeground: '#1D1D16',
     destructive: '#E7000B',
     destructiveForeground: '#FFFFFF',
+    // Amber "warning" status (ported from the web meter's amber-500/700). Used
+    // by budget meters / health badges for the "approaching / watch" state.
+    // Soft surfaces are derived at call time via `withAlpha(warning, '22')`.
+    warning: '#F59E0B',
+    warningForeground: '#B45309',
     border: '#E8E8E3',
     input: '#E8E8E3',
     ring: '#ABAB9C',
-    // Legacy aliases kept so existing demo components keep compiling.
+    // @deprecated Legacy aliases — prefer foreground / mutedForeground / muted /
+    // border. Kept only until the last demo components are migrated.
     text: '#0C0C09',
     textSecondary: '#7C7C67',
     backgroundElement: '#F4F4F0',
@@ -56,10 +62,13 @@ export const Colors = {
     accentForeground: '#FBFBF9',
     destructive: '#FF6467',
     destructiveForeground: '#0A0A08',
+    // Amber-400 reads better than amber-500 on the dark surfaces.
+    warning: '#FBBF24',
+    warningForeground: '#FBBF24',
     border: 'rgba(255,255,255,0.10)',
     input: 'rgba(255,255,255,0.15)',
     ring: '#7C7C67',
-    // Legacy aliases.
+    // @deprecated Legacy aliases — see the light scheme note above.
     text: '#FBFBF9',
     textSecondary: '#ABAB9C',
     backgroundElement: '#2B2B22',
@@ -80,12 +89,54 @@ export const Fonts = {
   medium: 'Figtree_500Medium',
   semibold: 'Figtree_600SemiBold',
   bold: 'Figtree_700Bold',
-  // Legacy aliases.
+  // @deprecated Legacy aliases — prefer regular/medium/semibold/bold.
   sans: 'Figtree_400Regular',
   serif: Platform.select({ ios: 'ui-serif', default: 'serif' }),
   rounded: Platform.select({ ios: 'ui-rounded', default: 'normal' }),
   mono: Platform.select({ ios: 'ui-monospace', default: 'monospace' }),
 };
+
+/**
+ * Type scale. Every text style in the app should come from here instead of
+ * hand-pairing `fontFamily: Fonts.*` with a literal `fontSize` — that pairing
+ * was previously copy-pasted across ~49 StyleSheets with drifting sizes.
+ * Consume via the `<AppText variant>` primitive, or spread directly
+ * (`...Type.overline`) inside a StyleSheet when composing.
+ *
+ * Names map to the sizes already in use (12–32). Color is NOT baked in — set it
+ * at the call site from a theme token so light/dark both work.
+ */
+export const Type = {
+  /** Summary hero total / detail amount. */
+  hero: { fontFamily: Fonts.bold, fontSize: 32 },
+  /** Screen section heading (e.g. "Recent activity"). */
+  title: { fontFamily: Fonts.bold, fontSize: 22 },
+  /** Page-sheet title. */
+  sheetTitle: { fontFamily: Fonts.bold, fontSize: 20 },
+  /** Card / empty-state title. */
+  heading: { fontFamily: Fonts.semibold, fontSize: 17 },
+  /** Default body copy. */
+  body: { fontFamily: Fonts.regular, fontSize: 16, lineHeight: 22 },
+  /** Emphasized body / row title. */
+  bodyMedium: { fontFamily: Fonts.medium, fontSize: 15 },
+  /** Field labels, secondary actions. */
+  label: { fontFamily: Fonts.medium, fontSize: 14 },
+  /** Right-aligned money amounts in rows. */
+  amount: { fontFamily: Fonts.semibold, fontSize: 15 },
+  /** Small emphasized figures/labels — group subtotals, status badges. */
+  amountSmall: { fontFamily: Fonts.semibold, fontSize: 13 },
+  /** Subtitles, helper text. */
+  caption: { fontFamily: Fonts.regular, fontSize: 13, lineHeight: 18 },
+  /** Uppercase group/section labels. */
+  overline: {
+    fontFamily: Fonts.medium,
+    fontSize: 12,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+} as const;
+
+export type TypeVariant = keyof typeof Type;
 
 /** Spacing scale (px). */
 export const Spacing = {
@@ -107,6 +158,26 @@ export const Radius = {
   '2xl': 18,
   /** Fully rounded — for pills / circular chrome. */
   pill: 999,
+} as const;
+
+/**
+ * Border widths. `hairline` is the standard card/input stroke — a crisp 2×
+ * device hairline. Named here so the `StyleSheet.hairlineWidth * 2` idiom
+ * (previously repeated in ~25 files) has one source.
+ */
+export const Border = {
+  hairline: StyleSheet.hairlineWidth * 2,
+} as const;
+
+/**
+ * Default card geometry, shared by the `<Card>` primitive and any surface that
+ * needs to match it. One radius (`2xl`) + one padding (`four`) kills the
+ * Settings-vs-everything-else corner/padding drift.
+ */
+export const CardStyle = {
+  radius: Radius['2xl'],
+  padding: Spacing.four,
+  borderWidth: Border.hairline,
 } as const;
 
 /**

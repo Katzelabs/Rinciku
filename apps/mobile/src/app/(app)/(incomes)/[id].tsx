@@ -1,25 +1,20 @@
 import { useCallback, useState } from 'react';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
-import {
-  ActivityIndicator,
-  Alert,
-  Modal,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { X } from 'lucide-react-native';
+import { ActivityIndicator, Alert, StyleSheet, Text, View } from 'react-native';
 
 import { formatCurrency, formatDate, type CurrencyCode } from '@rinciku/core';
 
-import { Fonts, Radius, Spacing } from '@/constants/theme';
+import { Fonts, Spacing } from '@/constants/theme';
+import {
+  AppText,
+  Button,
+  Card,
+  Notice,
+  ScreenScroll,
+  Sheet,
+} from '@/components/ui';
 import { CategoryIcon } from '@/features/categories/components/category-icon';
-import { Button } from '@/features/auth/components/button';
-import { Notice } from '@/features/auth/components/notice';
 import { deleteIncome, getIncome } from '@/features/incomes/api';
 import { IncomeForm } from '@/features/incomes/components/income-form';
 import type { IncomeWithRelations } from '@/features/incomes/types';
@@ -29,7 +24,6 @@ export default function IncomeDetailScreen() {
   const c = useTheme();
   const { t } = useTranslation('incomes');
   const router = useRouter();
-  const insets = useSafeAreaInsets();
   const { id } = useLocalSearchParams<{ id: string }>();
 
   const [income, setIncome] = useState<IncomeWithRelations | null>(null);
@@ -74,11 +68,7 @@ export default function IncomeDetailScreen() {
   }
 
   return (
-    <ScrollView
-      style={{ backgroundColor: c.background }}
-      contentInsetAdjustmentBehavior='automatic'
-      contentContainerStyle={styles.content}
-    >
+    <ScreenScroll gap={Spacing.four}>
       {loading ? (
         <ActivityIndicator color={c.primary} style={styles.loader} />
       ) : error || !income ? (
@@ -88,8 +78,9 @@ export default function IncomeDetailScreen() {
       ) : (
         <>
           <View style={styles.amountBlock}>
-            <Text
-              style={[styles.amount, { color: c.primary }]}
+            <AppText
+              variant='hero'
+              color='primary'
               numberOfLines={1}
               adjustsFontSizeToFit
               minimumFontScale={0.6}
@@ -99,18 +90,13 @@ export default function IncomeDetailScreen() {
                 Number(income.amount),
                 income.currency as CurrencyCode
               )}
-            </Text>
-            <Text style={[styles.date, { color: c.mutedForeground }]}>
+            </AppText>
+            <AppText variant='body' color='mutedForeground'>
               {formatDate(new Date(income.occurred_at), 'PPP')}
-            </Text>
+            </AppText>
           </View>
 
-          <View
-            style={[
-              styles.card,
-              { backgroundColor: c.card, borderColor: c.border },
-            ]}
-          >
+          <Card padding={0} style={styles.card}>
             <DetailRow label={t('detail.source')}>
               {income.category ? (
                 <View style={styles.sourceValue}>
@@ -139,7 +125,7 @@ export default function IncomeDetailScreen() {
                 {income.note?.trim() ? income.note.trim() : t('detail.noNote')}
               </Text>
             </DetailRow>
-          </View>
+          </Card>
 
           <View style={styles.actions}>
             <Button
@@ -158,53 +144,29 @@ export default function IncomeDetailScreen() {
         </>
       )}
 
-      <Modal
+      <Sheet
         visible={editOpen}
-        animationType='slide'
-        presentationStyle='pageSheet'
-        onRequestClose={() => setEditOpen(false)}
+        onClose={() => setEditOpen(false)}
+        title={t('detail.editTitle')}
       >
-        <View style={[styles.sheet, { backgroundColor: c.background }]}>
-          <View style={styles.sheetHeader}>
-            <Text style={[styles.sheetTitle, { color: c.foreground }]}>
-              {t('detail.editTitle')}
-            </Text>
-            <Pressable
-              hitSlop={8}
-              accessibilityRole='button'
-              accessibilityLabel={t('common:actions.close')}
-              onPress={() => setEditOpen(false)}
-            >
-              <X size={22} color={c.mutedForeground} />
-            </Pressable>
-          </View>
-          <ScrollView
-            keyboardShouldPersistTaps='handled'
-            contentContainerStyle={[
-              styles.sheetBody,
-              { paddingBottom: insets.bottom + Spacing.five },
-            ]}
-          >
-            {income ? (
-              <IncomeForm
-                mode='edit'
-                defaultValues={{
-                  id: income.id,
-                  amount: Number(income.amount),
-                  source_id: income.source_id ?? '',
-                  occurred_at: new Date(income.occurred_at),
-                  note: income.note ?? '',
-                }}
-                onSuccess={() => {
-                  setEditOpen(false);
-                  load();
-                }}
-              />
-            ) : null}
-          </ScrollView>
-        </View>
-      </Modal>
-    </ScrollView>
+        {income ? (
+          <IncomeForm
+            mode='edit'
+            defaultValues={{
+              id: income.id,
+              amount: Number(income.amount),
+              source_id: income.source_id ?? '',
+              occurred_at: new Date(income.occurred_at),
+              note: income.note ?? '',
+            }}
+            onSuccess={() => {
+              setEditOpen(false);
+              load();
+            }}
+          />
+        ) : null}
+      </Sheet>
+    </ScreenScroll>
   );
 }
 
@@ -235,21 +197,9 @@ function DetailRow({
 }
 
 const styles = StyleSheet.create({
-  content: {
-    padding: Spacing.four,
-    paddingBottom: Spacing.six,
-    gap: Spacing.four,
-  },
   loader: { marginVertical: Spacing.five },
   amountBlock: { alignItems: 'center', gap: Spacing.one },
-  amount: { fontFamily: Fonts.bold, fontSize: 34 },
-  date: { fontFamily: Fonts.regular, fontSize: 15 },
-  card: {
-    borderWidth: StyleSheet.hairlineWidth * 2,
-    borderRadius: Radius['2xl'],
-    borderCurve: 'continuous',
-    paddingHorizontal: Spacing.three,
-  },
+  card: { paddingHorizontal: Spacing.three },
   detailRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -263,14 +213,4 @@ const styles = StyleSheet.create({
   value: { fontFamily: Fonts.medium, fontSize: 15, textAlign: 'right' },
   actions: { flexDirection: 'row', gap: Spacing.three },
   actionButton: { flex: 1 },
-  sheet: { flex: 1 },
-  sheetHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: Spacing.four,
-    paddingVertical: Spacing.three,
-  },
-  sheetTitle: { fontFamily: Fonts.bold, fontSize: 20 },
-  sheetBody: { paddingHorizontal: Spacing.four, paddingTop: Spacing.two },
 });

@@ -3,21 +3,18 @@ import { useTranslation } from 'react-i18next';
 import {
   ActivityIndicator,
   Alert,
-  Modal,
   Pressable,
-  ScrollView,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Pencil, Plus, Trash2, X } from 'lucide-react-native';
+import { Pencil, Plus, Trash2 } from 'lucide-react-native';
 
 import { formatCurrency, type CurrencyCode } from '@rinciku/core';
 
-import { Fonts, Radius, Spacing } from '@/constants/theme';
-import { CategoryIcon } from '@/features/categories/components/category-icon';
-import { Notice } from '@/features/auth/components/notice';
+import { Fonts, Spacing } from '@/constants/theme';
+import { Card, Notice, Pill, Sheet } from '@/components/ui';
+import { CategoryBadge } from '@/components/category-badge';
 import { useAuth } from '@/features/auth/hooks/use-auth';
 import { deleteEssential } from '@/features/essentials/api';
 import { EssentialForm } from '@/features/essentials/components/essential-form';
@@ -86,19 +83,12 @@ export const EssentialsManager = forwardRef<
           {t('page.subtitle')}
         </Text>
         {inlineAdd ? (
-          <Pressable
-            accessibilityRole='button'
+          <Pill
+            tone='primary'
+            label={t('page.addButton')}
+            leading={<Plus size={16} color={c.primaryForeground} />}
             onPress={() => setDialog({ kind: 'create' })}
-            style={({ pressed }) => [
-              styles.addPill,
-              { backgroundColor: c.primary, opacity: pressed ? 0.85 : 1 },
-            ]}
-          >
-            <Plus size={16} color={c.primaryForeground} />
-            <Text style={[styles.addLabel, { color: c.primaryForeground }]}>
-              {t('page.addButton')}
-            </Text>
-          </Pressable>
+          />
         ) : null}
       </View>
 
@@ -111,12 +101,7 @@ export const EssentialsManager = forwardRef<
           {t('table.empty')}
         </Text>
       ) : (
-        <View
-          style={[
-            styles.card,
-            { backgroundColor: c.card, borderColor: c.border },
-          ]}
-        >
+        <Card padding={0} style={styles.card}>
           {essentials.map((row, i) => (
             <View
               key={row.id}
@@ -128,18 +113,11 @@ export const EssentialsManager = forwardRef<
                 },
               ]}
             >
-              <View
-                style={[
-                  styles.iconBadge,
-                  { backgroundColor: `${row.category?.color ?? '#8d8d8d'}22` },
-                ]}
-              >
-                <CategoryIcon
-                  name={row.category?.icon}
-                  size={16}
-                  color={row.category?.color ?? c.foreground}
-                />
-              </View>
+              <CategoryBadge
+                icon={row.category?.icon}
+                color={row.category?.color}
+                size={32}
+              />
               <View style={styles.rowText}>
                 <Text style={[styles.name, { color: c.foreground }]}>
                   {row.name}
@@ -170,7 +148,7 @@ export const EssentialsManager = forwardRef<
               </IconButton>
             </View>
           ))}
-        </View>
+        </Card>
       )}
 
       {!loading && essentials.length > 0 ? (
@@ -198,60 +176,28 @@ function FormModal({
   onClose: () => void;
   onSuccess: () => void;
 }) {
-  const c = useTheme();
   const { t } = useTranslation('essentials');
-  const insets = useSafeAreaInsets();
-  const visible = dialog !== null;
   const title =
     dialog?.kind === 'edit' ? t('dialog.edit.title') : t('dialog.create.title');
 
   return (
-    <Modal
-      visible={visible}
-      animationType='slide'
-      presentationStyle='pageSheet'
-      onRequestClose={onClose}
-    >
-      <View style={[styles.sheet, { backgroundColor: c.background }]}>
-        <View style={styles.sheetHeader}>
-          <Text style={[styles.sheetTitle, { color: c.foreground }]}>
-            {title}
-          </Text>
-          <Pressable
-            hitSlop={8}
-            accessibilityRole='button'
-            accessibilityLabel={t('common:actions.close')}
-            onPress={onClose}
-          >
-            <X size={22} color={c.mutedForeground} />
-          </Pressable>
-        </View>
-        <ScrollView
-          keyboardShouldPersistTaps='handled'
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={[
-            styles.sheetBody,
-            { paddingBottom: insets.bottom + Spacing.five },
-          ]}
-        >
-          {dialog?.kind === 'edit' ? (
-            <EssentialForm
-              mode='edit'
-              defaultValues={{
-                id: dialog.row.id,
-                name: dialog.row.name,
-                estimated_amount: Number(dialog.row.estimated_amount),
-                currency: dialog.row.currency as CurrencyCode,
-                category_id: dialog.row.category_id ?? '',
-              }}
-              onSuccess={onSuccess}
-            />
-          ) : dialog?.kind === 'create' ? (
-            <EssentialForm mode='create' onSuccess={onSuccess} />
-          ) : null}
-        </ScrollView>
-      </View>
-    </Modal>
+    <Sheet visible={dialog !== null} onClose={onClose} title={title}>
+      {dialog?.kind === 'edit' ? (
+        <EssentialForm
+          mode='edit'
+          defaultValues={{
+            id: dialog.row.id,
+            name: dialog.row.name,
+            estimated_amount: Number(dialog.row.estimated_amount),
+            currency: dialog.row.currency as CurrencyCode,
+            category_id: dialog.row.category_id ?? '',
+          }}
+          onSuccess={onSuccess}
+        />
+      ) : dialog?.kind === 'create' ? (
+        <EssentialForm mode='create' onSuccess={onSuccess} />
+      ) : null}
+    </Sheet>
   );
 }
 
@@ -294,16 +240,6 @@ const styles = StyleSheet.create({
     fontSize: 13,
     lineHeight: 18,
   },
-  addPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.one,
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.two,
-    borderRadius: Radius.pill,
-    borderCurve: 'continuous',
-  },
-  addLabel: { fontFamily: Fonts.semibold, fontSize: 14 },
   loader: { marginVertical: Spacing.four },
   empty: {
     fontFamily: Fonts.regular,
@@ -311,24 +247,12 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     paddingVertical: Spacing.four,
   },
-  card: {
-    borderWidth: StyleSheet.hairlineWidth * 2,
-    borderRadius: Radius['2xl'],
-    borderCurve: 'continuous',
-    paddingHorizontal: Spacing.three,
-  },
+  card: { paddingHorizontal: Spacing.three },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.two,
     paddingVertical: Spacing.three,
-  },
-  iconBadge: {
-    width: 32,
-    height: 32,
-    borderRadius: Radius.pill,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   rowText: { flex: 1, gap: 2 },
   name: { fontFamily: Fonts.medium, fontSize: 15 },
@@ -340,14 +264,4 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  sheet: { flex: 1 },
-  sheetHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: Spacing.four,
-    paddingVertical: Spacing.three,
-  },
-  sheetTitle: { fontFamily: Fonts.bold, fontSize: 20 },
-  sheetBody: { paddingHorizontal: Spacing.four, paddingTop: Spacing.two },
 });

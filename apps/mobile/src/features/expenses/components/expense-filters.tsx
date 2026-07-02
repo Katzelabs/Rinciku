@@ -2,28 +2,18 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   ActivityIndicator,
-  Modal,
   Pressable,
-  ScrollView,
   StyleSheet,
-  Text,
   TextInput,
   View,
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import {
-  Calendar,
-  Check,
-  ChevronDown,
-  Search,
-  Shapes,
-  X,
-} from 'lucide-react-native';
+import { Calendar, Check, ChevronDown, Search, Shapes } from 'lucide-react-native';
 import type { Tables } from '@rinciku/db';
 
 import { Fonts, Radius, Spacing } from '@/constants/theme';
+import { AppText, Card, Pill, Sheet } from '@/components/ui';
+import { CategoryBadge } from '@/components/category-badge';
 import { listCategories, listTiers } from '@/features/categories/api';
-import { CategoryIcon } from '@/features/categories/components/category-icon';
 import {
   groupByTier,
   type Tier,
@@ -74,9 +64,7 @@ export function ExpenseFilters({
       : t('common:multiSelect.selectedCount', { count: categoryIds.length });
 
   return (
-    <View
-      style={[styles.card, { backgroundColor: c.card, borderColor: c.border }]}
-    >
+    <Card padding={Spacing.three} style={styles.card}>
       <View style={[styles.shell, { backgroundColor: c.muted }]}>
         <Search size={16} color={c.mutedForeground} />
         <TextInput
@@ -91,14 +79,18 @@ export function ExpenseFilters({
       </View>
 
       <View style={styles.row}>
-        <DropdownPill
-          icon={<Shapes size={16} color={c.mutedForeground} />}
+        <Pill
+          fill
+          leading={<Shapes size={16} color={c.mutedForeground} />}
+          trailing={<ChevronDown size={16} color={c.mutedForeground} />}
           label={categoryLabel}
           active={categoryIds.length > 0}
           onPress={() => setCategoryOpen(true)}
         />
-        <DropdownPill
-          icon={<Calendar size={16} color={c.mutedForeground} />}
+        <Pill
+          fill
+          leading={<Calendar size={16} color={c.mutedForeground} />}
+          trailing={<ChevronDown size={16} color={c.mutedForeground} />}
           label={t(PERIOD_KEY[period])}
           active
           onPress={() => setPeriodOpen(true)}
@@ -120,43 +112,7 @@ export function ExpenseFilters({
           setPeriodOpen(false);
         }}
       />
-    </View>
-  );
-}
-
-function DropdownPill({
-  icon,
-  label,
-  active,
-  onPress,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  active?: boolean;
-  onPress: () => void;
-}) {
-  const c = useTheme();
-  return (
-    <Pressable
-      accessibilityRole='button'
-      onPress={onPress}
-      style={({ pressed }) => [
-        styles.pill,
-        { backgroundColor: c.muted, opacity: pressed ? 0.6 : 1 },
-      ]}
-    >
-      {icon}
-      <Text
-        numberOfLines={1}
-        style={[
-          styles.pillLabel,
-          { color: active ? c.foreground : c.mutedForeground },
-        ]}
-      >
-        {label}
-      </Text>
-      <ChevronDown size={16} color={c.mutedForeground} />
-    </Pressable>
+    </Card>
   );
 }
 
@@ -173,51 +129,21 @@ function PeriodSelect({
 }) {
   const c = useTheme();
   const { t } = useTranslation('expenses');
-  const insets = useSafeAreaInsets();
   const options: ListPeriod[] = ['today', 'week', 'month'];
 
   return (
-    <Modal
-      visible={open}
-      animationType='slide'
-      presentationStyle='pageSheet'
-      onRequestClose={onClose}
-    >
-      <View style={[styles.sheet, { backgroundColor: c.background }]}>
-        <View style={styles.sheetHeader}>
-          <Text style={[styles.sheetTitle, { color: c.foreground }]}>
-            {t('period.title')}
-          </Text>
-          <Pressable
-            hitSlop={8}
-            accessibilityRole='button'
-            accessibilityLabel={t('common:actions.close')}
-            onPress={onClose}
-          >
-            <X size={22} color={c.mutedForeground} />
-          </Pressable>
-        </View>
-        <ScrollView
-          contentContainerStyle={[
-            styles.sheetBody,
-            { paddingBottom: insets.bottom + Spacing.five },
-          ]}
+    <Sheet visible={open} onClose={onClose} title={t('period.title')}>
+      {options.map((o) => (
+        <Pressable
+          key={o}
+          onPress={() => onChange(o)}
+          style={styles.periodOption}
         >
-          {options.map((o) => (
-            <Pressable
-              key={o}
-              onPress={() => onChange(o)}
-              style={styles.periodOption}
-            >
-              <Text style={[styles.periodText, { color: c.foreground }]}>
-                {t(PERIOD_KEY[o])}
-              </Text>
-              {o === value ? <Check size={18} color={c.primary} /> : null}
-            </Pressable>
-          ))}
-        </ScrollView>
-      </View>
-    </Modal>
+          <AppText variant='body'>{t(PERIOD_KEY[o])}</AppText>
+          {o === value ? <Check size={18} color={c.primary} /> : null}
+        </Pressable>
+      ))}
+    </Sheet>
   );
 }
 
@@ -234,7 +160,6 @@ function CategoryMultiSelect({
 }) {
   const c = useTheme();
   const { t } = useTranslation('expenses');
-  const insets = useSafeAreaInsets();
   const [data, setData] = useState<{
     categories: Category[];
     tiers: Tier[];
@@ -264,102 +189,55 @@ function CategoryMultiSelect({
   }
 
   return (
-    <Modal
+    <Sheet
       visible={open}
-      animationType='slide'
-      presentationStyle='pageSheet'
-      onRequestClose={onClose}
+      onClose={onClose}
+      title={t('filters.allCategories')}
+      headerRight={
+        selected.length > 0 ? (
+          <Pressable hitSlop={8} onPress={() => onChange([])}>
+            <AppText variant='bodyMedium' color='primary'>
+              {t('common:multiSelect.clear')}
+            </AppText>
+          </Pressable>
+        ) : undefined
+      }
     >
-      <View style={[styles.sheet, { backgroundColor: c.background }]}>
-        <View style={styles.sheetHeader}>
-          <Text style={[styles.sheetTitle, { color: c.foreground }]}>
-            {t('filters.allCategories')}
-          </Text>
-          <View style={styles.headerActions}>
-            {selected.length > 0 ? (
-              <Pressable hitSlop={8} onPress={() => onChange([])}>
-                <Text style={[styles.clear, { color: c.primary }]}>
-                  {t('common:multiSelect.clear')}
-                </Text>
-              </Pressable>
-            ) : null}
-            <Pressable
-              hitSlop={8}
-              accessibilityRole='button'
-              accessibilityLabel={t('common:actions.close')}
-              onPress={onClose}
-            >
-              <X size={22} color={c.mutedForeground} />
-            </Pressable>
-          </View>
-        </View>
-        <ScrollView
-          contentContainerStyle={[
-            styles.sheetBody,
-            { paddingBottom: insets.bottom + Spacing.five },
-          ]}
-        >
-          {data === null ? (
-            <ActivityIndicator color={c.primary} style={styles.loader} />
-          ) : (
-            groups.map((group) =>
-              group.categories.length === 0 ? null : (
-                <View
-                  key={group.tier?.id ?? '__untiered__'}
-                  style={styles.group}
-                >
-                  <Text
-                    style={[styles.groupLabel, { color: c.mutedForeground }]}
+      {data === null ? (
+        <ActivityIndicator color={c.primary} style={styles.loader} />
+      ) : (
+        groups.map((group) =>
+          group.categories.length === 0 ? null : (
+            <View key={group.tier?.id ?? '__untiered__'} style={styles.group}>
+              <AppText variant='overline' color='mutedForeground'>
+                {group.tier ? group.tier.name : t('form.untiered')}
+              </AppText>
+              {group.categories.map((cat) => {
+                const checked = selectedSet.has(cat.id);
+                return (
+                  <Pressable
+                    key={cat.id}
+                    onPress={() => toggle(cat.id)}
+                    style={styles.option}
                   >
-                    {group.tier ? group.tier.name : t('form.untiered')}
-                  </Text>
-                  {group.categories.map((cat) => {
-                    const checked = selectedSet.has(cat.id);
-                    return (
-                      <Pressable
-                        key={cat.id}
-                        onPress={() => toggle(cat.id)}
-                        style={styles.option}
-                      >
-                        <View
-                          style={[
-                            styles.iconBadge,
-                            { backgroundColor: `${cat.color ?? '#8d8d8d'}22` },
-                          ]}
-                        >
-                          <CategoryIcon
-                            name={cat.icon}
-                            size={16}
-                            color={cat.color ?? c.foreground}
-                          />
-                        </View>
-                        <Text
-                          style={[styles.optionText, { color: c.foreground }]}
-                        >
-                          {cat.name}
-                        </Text>
-                        {checked ? <Check size={18} color={c.primary} /> : null}
-                      </Pressable>
-                    );
-                  })}
-                </View>
-              )
-            )
-          )}
-        </ScrollView>
-      </View>
-    </Modal>
+                    <CategoryBadge icon={cat.icon} color={cat.color} size={32} />
+                    <AppText variant='bodyMedium' style={styles.optionText}>
+                      {cat.name}
+                    </AppText>
+                    {checked ? <Check size={18} color={c.primary} /> : null}
+                  </Pressable>
+                );
+              })}
+            </View>
+          )
+        )
+      )}
+    </Sheet>
   );
 }
 
 const styles = StyleSheet.create({
-  card: {
-    borderWidth: StyleSheet.hairlineWidth * 2,
-    borderRadius: Radius['2xl'],
-    borderCurve: 'continuous',
-    padding: Spacing.three,
-    gap: Spacing.two,
-  },
+  card: { gap: Spacing.two },
   shell: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -375,37 +253,6 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.three,
   },
   row: { flexDirection: 'row', gap: Spacing.two },
-  pill: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.two,
-    borderRadius: Radius.pill,
-    borderCurve: 'continuous',
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.three,
-  },
-  pillLabel: { flex: 1, fontFamily: Fonts.medium, fontSize: 15 },
-  sheet: { flex: 1 },
-  sheetHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: Spacing.four,
-    paddingVertical: Spacing.three,
-  },
-  headerActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.three,
-  },
-  clear: { fontFamily: Fonts.semibold, fontSize: 15 },
-  sheetTitle: { fontFamily: Fonts.bold, fontSize: 20 },
-  sheetBody: {
-    paddingHorizontal: Spacing.four,
-    paddingTop: Spacing.two,
-    gap: Spacing.three,
-  },
   loader: { marginVertical: Spacing.four },
   periodOption: {
     flexDirection: 'row',
@@ -413,27 +260,12 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingVertical: Spacing.three,
   },
-  periodText: { fontFamily: Fonts.medium, fontSize: 16 },
   group: { gap: Spacing.one },
-  groupLabel: {
-    fontFamily: Fonts.medium,
-    fontSize: 12,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    marginBottom: Spacing.one,
-  },
   option: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.two,
     paddingVertical: Spacing.two,
   },
-  iconBadge: {
-    width: 32,
-    height: 32,
-    borderRadius: Radius.pill,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  optionText: { flex: 1, fontFamily: Fonts.medium, fontSize: 15 },
+  optionText: { flex: 1 },
 });

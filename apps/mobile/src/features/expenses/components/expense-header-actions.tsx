@@ -2,9 +2,10 @@ import { Button, Host, HStack, Image } from '@expo/ui/swift-ui';
 import { buttonStyle, controlSize, tint } from '@expo/ui/swift-ui/modifiers';
 import { Camera, Plus } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
-import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Platform, StyleSheet, View } from 'react-native';
 
-import { Fonts, Radius, Spacing } from '@/constants/theme';
+import { IconButton, Pill } from '@/components/ui';
+import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
 interface ExpenseHeaderActionsProps {
@@ -61,55 +62,23 @@ function FallbackActions({ onAdd, onCapture }: ExpenseHeaderActionsProps) {
 
   return (
     <View style={styles.row}>
-      <Pressable
-        accessibilityRole='button'
-        accessibilityLabel={t('nav.addExpense')}
+      <Pill
+        tone='primary'
+        label={t('actions.add')}
+        leading={<Plus size={16} color={c.primaryForeground} />}
         onPress={onAdd}
-        style={({ pressed }) => [
-          styles.addPill,
-          { backgroundColor: c.primary, opacity: pressed ? 0.6 : 1 },
-        ]}
-      >
-        <Plus size={16} color={c.foreground} />
-        <Text style={[styles.addLabel, { color: c.foreground }]}>
-          {t('actions.add')}
-        </Text>
-      </Pressable>
-
-      <Pressable
-        accessibilityRole='button'
+        accessibilityLabel={t('nav.addExpense')}
+      />
+      <IconButton
+        onPress={() => onCapture?.()}
         accessibilityLabel={t('nav.scanReceipt')}
-        onPress={onCapture}
-        style={({ pressed }) => [
-          styles.iconButton,
-          { backgroundColor: c.muted, opacity: pressed ? 0.6 : 1 },
-        ]}
       >
         <Camera size={18} color={c.foreground} />
-      </Pressable>
+      </IconButton>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
-  addPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.one,
-    paddingLeft: Spacing.two,
-    paddingRight: Spacing.three,
-    height: 34,
-    borderRadius: Radius.pill,
-    borderCurve: 'continuous',
-  },
-  addLabel: { fontFamily: Fonts.semibold, fontSize: 15 },
-  iconButton: {
-    width: 34,
-    height: 34,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: Radius.pill,
-    borderCurve: 'continuous',
-  },
 });

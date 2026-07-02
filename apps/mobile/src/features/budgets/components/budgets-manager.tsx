@@ -12,14 +12,14 @@ import {
 import { getCycleLabel, type CurrencyCode } from '@rinciku/core';
 
 import { Fonts, Radius, Spacing } from '@/constants/theme';
-import { Notice } from '@/features/auth/components/notice';
+import { Card, Notice } from '@/components/ui';
+import { CategoryBadge } from '@/components/category-badge';
 import { useAuth } from '@/features/auth/hooks/use-auth';
 import { deleteBudget, upsertBudget } from '@/features/budgets/api';
 import { BudgetMeter } from '@/features/budgets/components/budget-meter';
 import { TargetModal } from '@/features/budgets/components/target-modal';
 import { useBudgets } from '@/features/budgets/hooks/use-budgets';
 import type { BudgetCategoryRow } from '@/features/budgets/types';
-import { CategoryIcon } from '@/features/categories/components/category-icon';
 import { useTheme } from '@/hooks/use-theme';
 
 // Lean v1 (M11): per-category targets + status meters for the current period.
@@ -100,12 +100,7 @@ export function BudgetsManager() {
                 {t('page.noCategories')}
               </Text>
             ) : (
-              <View
-                style={[
-                  styles.card,
-                  { backgroundColor: c.card, borderColor: c.border },
-                ]}
-              >
+              <Card padding={0} style={styles.card}>
                 {section.categories.map((row, i) => (
                   <Pressable
                     key={row.category.id}
@@ -120,20 +115,11 @@ export function BudgetsManager() {
                       { opacity: pressed ? 0.6 : 1 },
                     ]}
                   >
-                    <View
-                      style={[
-                        styles.iconBadge,
-                        {
-                          backgroundColor: `${row.category.color ?? '#8d8d8d'}22`,
-                        },
-                      ]}
-                    >
-                      <CategoryIcon
-                        name={row.category.icon}
-                        size={16}
-                        color={row.category.color ?? c.foreground}
-                      />
-                    </View>
+                    <CategoryBadge
+                      icon={row.category.icon}
+                      color={row.category.color}
+                      size={32}
+                    />
                     <View style={styles.rowBody}>
                       <Text
                         style={[styles.categoryName, { color: c.foreground }]}
@@ -150,7 +136,7 @@ export function BudgetsManager() {
                     </View>
                   </Pressable>
                 ))}
-              </View>
+              </Card>
             )}
           </View>
         ))
@@ -187,12 +173,7 @@ const styles = StyleSheet.create({
   },
   dot: { width: 10, height: 10, borderRadius: Radius.pill },
   tierName: { fontFamily: Fonts.semibold, fontSize: 16 },
-  card: {
-    borderWidth: StyleSheet.hairlineWidth * 2,
-    borderRadius: Radius['2xl'],
-    borderCurve: 'continuous',
-    paddingHorizontal: Spacing.three,
-  },
+  card: { paddingHorizontal: Spacing.three },
   empty: {
     fontFamily: Fonts.regular,
     fontSize: 14,
@@ -204,13 +185,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: Spacing.three,
     paddingVertical: Spacing.three,
-  },
-  iconBadge: {
-    width: 32,
-    height: 32,
-    borderRadius: Radius.pill,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   rowBody: { flex: 1, gap: Spacing.two },
   categoryName: { fontFamily: Fonts.medium, fontSize: 15 },
