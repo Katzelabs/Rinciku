@@ -5,7 +5,14 @@ export default function ExpensesLayout() {
   const { t } = useTranslation('common');
   return (
     <Stack screenOptions={{ headerLargeTitle: true }}>
-      <Stack.Screen name='index' options={{ title: t('nav.items.expenses') }} />
+      <Stack.Screen
+        name='index'
+        options={{ headerLargeTitle: false, headerTitle: '' }}
+      />
+      <Stack.Screen
+        name='list'
+        options={{ title: t('expenses:list.title') }}
+      />
       <Stack.Screen
         name='new'
         options={{

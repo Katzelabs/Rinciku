@@ -1,39 +1,40 @@
-import { useCallback, useEffect, useState } from 'react';
 import { Stack, useFocusEffect, useRouter } from 'expo-router';
+import { ChevronRight, Receipt } from 'lucide-react-native';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
+  Pressable,
   RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
-import { Receipt, SearchX } from 'lucide-react-native';
 
-import {
-  convertToBase,
-  formatCurrency,
-  formatDate,
-  type CurrencyCode,
-} from '@rinciku/core';
+import { formatDate, getPeriodRange, type CurrencyCode } from '@rinciku/core';
 
-import { Fonts, Radius, Spacing } from '@/constants/theme';
 import { EmptyState } from '@/components/empty-state';
-import { HeaderAddButton } from '@/components/header-add-button';
+import { PeriodTabs } from '@/components/period-tabs';
+import type { SegmentedOption } from '@/components/segmented';
 import { TransactionRow } from '@/components/transaction-row';
 import { TransactionSummaryHeader } from '@/components/transaction-summary-header';
-import { groupByDay } from '@/lib/transaction-groups';
+import { Fonts, Radius, Spacing } from '@/constants/theme';
 import { Notice } from '@/features/auth/components/notice';
-import { ExpenseFilters } from '@/features/expenses/components/expense-filters';
+import { useAuth } from '@/features/auth/hooks/use-auth';
+import type { ListPeriod } from '@/features/expenses/components/expense-filters';
+import { ExpenseHeaderActions } from '@/features/expenses/components/expense-header-actions';
 import { useExpenses } from '@/features/expenses/hooks/use-expenses';
 import { useTheme } from '@/hooks/use-theme';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
+// How many recent expenses to preview on the overview before "See all".
+const PREVIEW_COUNT = 6;
 
 export default function ExpensesScreen() {
   const c = useTheme();
   const { t } = useTranslation('expenses');
   const router = useRouter();
+  const { profile } = useAuth();
   const {
     expenses,
     count,
@@ -42,16 +43,34 @@ export default function ExpensesScreen() {
     loading,
     error,
     filters,
-    search,
-    setSearch,
     setDateRange,
-    setCategoryIds,
     refetch,
   } = useExpenses();
 
+  const [period, setPeriod] = useState<ListPeriod>('month');
   const [refreshing, setRefreshing] = useState(false);
 
-  // Refetch when returning from the new/detail screens so a just-created or
+  const periodOptions = useMemo<SegmentedOption<ListPeriod>[]>(
+    () => [
+      { key: 'today', label: t('period.today') },
+      { key: 'week', label: t('period.thisWeek') },
+      { key: 'month', label: t('period.thisMonth') },
+    ],
+    [t]
+  );
+
+  const onPeriodChange = useCallback(
+    (next: ListPeriod) => {
+      setPeriod(next);
+      const range = getPeriodRange(next, {
+        month_start_day: profile?.month_start_day ?? 1,
+      });
+      setDateRange(range.start, range.end);
+    },
+    [profile?.month_start_day, setDateRange]
+  );
+
+  // Refetch when returning from the new/detail/list screens so a just-created or
   // edited expense shows up.
   useFocusEffect(
     useCallback(() => {
@@ -75,32 +94,13 @@ export default function ExpensesScreen() {
     Math.round((filters.to.getTime() - filters.from.getTime()) / DAY_MS) + 1
   );
 
-  const filtersActive =
-    search.trim().length > 0 || filters.categoryIds.length > 0;
-
-  const clearFilters = useCallback(() => {
-    setSearch('');
-    setCategoryIds([]);
-  }, [setSearch, setCategoryIds]);
-
-  const groups = groupByDay(
-    expenses,
-    (row) => new Date(row.occurred_at),
-    (row) =>
-      convertToBase(Number(row.amount), row.currency as CurrencyCode, base)
-        .amount_base,
-    {
-      today: t('common:time.today'),
-      yesterday: t('common:time.yesterday'),
-      format: (d) => formatDate(d, 'PP'),
-    }
-  );
+  const preview = expenses.slice(0, PREVIEW_COUNT);
+  const initialLoading = loading && expenses.length === 0;
 
   return (
     <ScrollView
       style={{ backgroundColor: c.background }}
       contentInsetAdjustmentBehavior='automatic'
-      keyboardShouldPersistTaps='handled'
       contentContainerStyle={styles.content}
       refreshControl={
         <RefreshControl
@@ -112,51 +112,72 @@ export default function ExpensesScreen() {
     >
       <Stack.Screen
         options={{
-          headerRight: () => (
-            <HeaderAddButton
-              accessibilityLabel={t('common:nav.addExpense')}
-              onPress={() => router.push('/(app)/(expenses)/new')}
-            />
-          ),
+          headerTransparent: true,
+          unstable_headerRightItems: () => [
+            {
+              type: 'custom',
+              hidesSharedBackground: true,
+              element: (
+                <ExpenseHeaderActions
+                  onAdd={() => router.push('/(app)/(expenses)/new')}
+                  onCapture={() => router.push('/(app)/(expenses)/capture')}
+                />
+              ),
+            },
+          ],
         }}
       />
 
-      <TransactionSummaryHeader
-        total={total}
-        count={count}
-        days={days}
-        base={base}
-        tone='expense'
-        labels={{
-          total: t('summary.totalSpent'),
-          transactions: t('summary.transactions'),
-          avgPerTransaction: t('summary.avgPerTransaction'),
-          avgPerDay: t('summary.avgPerDay'),
-          overDays: t('summary.overDays', { count: days }),
-        }}
+      <PeriodTabs
+        options={periodOptions}
+        value={period}
+        onChange={onPeriodChange}
       />
 
-      <ExpenseFilters
-        search={search}
-        onSearchChange={setSearch}
-        categoryIds={filters.categoryIds}
-        onCategoryIdsChange={setCategoryIds}
-        from={filters.from}
-        to={filters.to}
-        onDateRangeChange={setDateRange}
-      />
+      <View style={styles.block}>
+        <Text style={[styles.heading, { color: c.foreground }]}>
+          {t('section.summary')}
+        </Text>
+        <TransactionSummaryHeader
+          total={total}
+          count={count}
+          days={days}
+          base={base}
+          tone='expense'
+          labels={{
+            total: t('summary.totalSpent'),
+            transactions: t('summary.transactions'),
+            avgPerTransaction: t('summary.avgPerTransaction'),
+            avgPerDay: t('summary.avgPerDay'),
+            overDays: t('summary.overDays', { count: days }),
+          }}
+        />
+      </View>
 
-      {error ? <Notice tone='error'>{error}</Notice> : null}
+      <View style={styles.block}>
+        <View style={styles.headingRow}>
+          <Text style={[styles.heading, { color: c.foreground }]}>
+            {t('section.recentActivity')}
+          </Text>
+          <Pressable
+            accessibilityRole='button'
+            hitSlop={8}
+            onPress={() => router.push('/(app)/(expenses)/list')}
+            style={({ pressed }) => [
+              styles.seeAll,
+              { opacity: pressed ? 0.6 : 1 },
+            ]}
+          >
+            <Text style={[styles.seeAllText, { color: c.primary }]}>
+              {t('section.seeAll')}
+            </Text>
+            <ChevronRight size={16} color={c.primary} />
+          </Pressable>
+        </View>
 
-      {loading && expenses.length === 0 ? null : expenses.length === 0 ? (
-        filtersActive ? (
-          <EmptyState
-            icon={SearchX}
-            title={t('table.noResults')}
-            actionLabel={t('common:actions.clearFilters')}
-            onAction={clearFilters}
-          />
-        ) : (
+        {error ? <Notice tone='error'>{error}</Notice> : null}
+
+        {initialLoading ? null : expenses.length === 0 ? (
           <EmptyState
             icon={Receipt}
             title={t('table.empty')}
@@ -164,56 +185,45 @@ export default function ExpensesScreen() {
             actionLabel={t('page.addExpense')}
             onAction={() => router.push('/(app)/(expenses)/new')}
           />
-        )
-      ) : (
-        groups.map((group) => (
-          <View key={group.key} style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <Text style={[styles.sectionLabel, { color: c.mutedForeground }]}>
-                {group.label}
-              </Text>
-              <Text style={[styles.sectionSubtotal, { color: c.foreground }]}>
-                {formatCurrency(group.subtotal, base)}
-              </Text>
-            </View>
-            <View
-              style={[
-                styles.card,
-                { backgroundColor: c.card, borderColor: c.border },
-              ]}
-            >
-              {group.rows.map((expense, i) => {
-                const name = expense.category?.name;
-                const note = expense.note?.trim();
-                const title =
-                  name ?? (note || t('common:categoryTag.uncategorized'));
-                const subtitle =
-                  name && note
-                    ? note
-                    : formatDate(new Date(expense.occurred_at), 'p');
-                return (
-                  <TransactionRow
-                    key={expense.id}
-                    icon={expense.category?.icon}
-                    color={expense.category?.color}
-                    title={title}
-                    subtitle={subtitle}
-                    amount={Number(expense.amount)}
-                    currency={expense.currency as CurrencyCode}
-                    topBorder={i > 0}
-                    onPress={() =>
-                      router.push({
-                        pathname: '/(app)/(expenses)/[id]',
-                        params: { id: expense.id },
-                      })
-                    }
-                  />
-                );
-              })}
-            </View>
+        ) : (
+          <View
+            style={[
+              styles.card,
+              { backgroundColor: c.card, borderColor: c.border },
+            ]}
+          >
+            {preview.map((expense, i) => {
+              const name = expense.category?.name;
+              const note = expense.note?.trim();
+              const dateStr = formatDate(
+                new Date(expense.occurred_at),
+                'MMM d'
+              );
+              const title =
+                note || name || t('common:categoryTag.uncategorized');
+              const subtitle = note && name ? `${name} • ${dateStr}` : dateStr;
+              return (
+                <TransactionRow
+                  key={expense.id}
+                  icon={expense.category?.icon}
+                  color={expense.category?.color}
+                  title={title}
+                  subtitle={subtitle}
+                  amount={Number(expense.amount)}
+                  currency={expense.currency as CurrencyCode}
+                  topBorder={i > 0}
+                  onPress={() =>
+                    router.push({
+                      pathname: '/(app)/(expenses)/[id]',
+                      params: { id: expense.id },
+                    })
+                  }
+                />
+              );
+            })}
           </View>
-        ))
-      )}
+        )}
+      </View>
     </ScrollView>
   );
 }
@@ -222,22 +232,17 @@ const styles = StyleSheet.create({
   content: {
     padding: Spacing.four,
     paddingBottom: Spacing.six,
-    gap: Spacing.three,
+    gap: Spacing.four,
   },
-  section: { gap: Spacing.one },
-  sectionHeader: {
+  block: { gap: Spacing.two },
+  headingRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: Spacing.one,
   },
-  sectionLabel: {
-    fontFamily: Fonts.medium,
-    fontSize: 12,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  sectionSubtotal: { fontFamily: Fonts.semibold, fontSize: 13 },
+  heading: { fontFamily: Fonts.bold, fontSize: 22 },
+  seeAll: { flexDirection: 'row', alignItems: 'center', gap: 2 },
+  seeAllText: { fontFamily: Fonts.semibold, fontSize: 14 },
   card: {
     borderWidth: StyleSheet.hairlineWidth * 2,
     borderRadius: Radius['2xl'],

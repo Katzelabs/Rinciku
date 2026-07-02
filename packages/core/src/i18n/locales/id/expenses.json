@@ -13,6 +13,21 @@
     "deleteDescription": "Tindakan ini menghapus pengeluaran beserta struk terlampir secara permanen.",
     "deleting": "Menghapus…"
   },
+  "section": {
+    "summary": "Ringkasan",
+    "recentActivity": "Aktivitas Terbaru",
+    "seeAll": "Lihat semua"
+  },
+  "period": {
+    "title": "Periode",
+    "today": "Hari Ini",
+    "thisWeek": "Minggu Ini",
+    "thisMonth": "Bulan Ini"
+  },
+  "list": {
+    "title": "Transaksi",
+    "subtitle": "Tinjau dan kelola pengeluaran terbaru Anda."
+  },
   "summary": {
     "totalSpent": "Total pengeluaran",
     "transactions": "Transaksi",
@@ -80,6 +95,8 @@
   },
   "filters": {
     "searchPlaceholder": "Cari catatan…",
+    "searchTransactions": "Cari transaksi…",
+    "category": "Kategori",
     "allCategories": "Semua kategori",
     "searchCategories": "Cari kategori…",
     "noCategories": "Tidak ada kategori."

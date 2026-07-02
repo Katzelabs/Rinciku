@@ -13,6 +13,21 @@
     "deleteDescription": "This permanently removes the expense and any attached receipt.",
     "deleting": "Deleting…"
   },
+  "section": {
+    "summary": "Summary",
+    "recentActivity": "Recent Activity",
+    "seeAll": "See all"
+  },
+  "period": {
+    "title": "Period",
+    "today": "Today",
+    "thisWeek": "This Week",
+    "thisMonth": "This Month"
+  },
+  "list": {
+    "title": "Transactions",
+    "subtitle": "Review and manage your recent expenses."
+  },
   "summary": {
     "totalSpent": "Total spent",
     "transactions": "Transactions",
@@ -80,6 +95,8 @@
   },
   "filters": {
     "searchPlaceholder": "Search notes…",
+    "searchTransactions": "Search transactions…",
+    "category": "Category",
     "allCategories": "All categories",
     "searchCategories": "Search categories…",
     "noCategories": "No categories."

@@ -24,7 +24,8 @@
       "more": "More"
     },
     "openSettings": "Open settings",
-    "addExpense": "Add expense"
+    "addExpense": "Add expense",
+    "scanReceipt": "Scan receipt"
   },
   "settings": {
     "title": "Settings",
@@ -49,6 +50,7 @@
     }
   },
   "actions": {
+    "add": "Add",
     "save": "Save changes",
     "saving": "Saving…",
     "cancel": "Cancel",

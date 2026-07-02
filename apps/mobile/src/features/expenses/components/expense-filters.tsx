@@ -11,102 +11,213 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Check, ChevronDown, Search, X } from 'lucide-react-native';
+import {
+  Calendar,
+  Check,
+  ChevronDown,
+  Search,
+  Shapes,
+  X,
+} from 'lucide-react-native';
 import type { Tables } from '@rinciku/db';
 
 import { Fonts, Radius, Spacing } from '@/constants/theme';
-import { DateField } from '@/components/date-field';
 import { listCategories, listTiers } from '@/features/categories/api';
 import { CategoryIcon } from '@/features/categories/components/category-icon';
-import { groupByTier, type Tier, type TierGroup } from '@/features/categories/types';
-import { InputShell } from '@/features/auth/components/text-field';
+import {
+  groupByTier,
+  type Tier,
+  type TierGroup,
+} from '@/features/categories/types';
 import { useTheme } from '@/hooks/use-theme';
 
 type Category = Tables<'categories'>;
+
+/** Quick period presets offered on the transactions list (custom lives on web). */
+export type ListPeriod = 'today' | 'week' | 'month';
+
+const PERIOD_KEY: Record<ListPeriod, string> = {
+  today: 'period.today',
+  week: 'period.thisWeek',
+  month: 'period.thisMonth',
+};
 
 interface ExpenseFiltersProps {
   search: string;
   onSearchChange: (value: string) => void;
   categoryIds: string[];
   onCategoryIdsChange: (ids: string[]) => void;
-  from: Date;
-  to: Date;
-  onDateRangeChange: (from: Date, to: Date) => void;
+  period: ListPeriod;
+  onPeriodChange: (period: ListPeriod) => void;
 }
 
+// The transactions-list filter card from the reference design: a full-width
+// search on top, then a row of two dropdown pills (category + period). Each
+// dropdown opens a page-sheet; the category picker is multi-select, the period
+// picker single-select. Sits in a card so it reads as one grouped control.
 export function ExpenseFilters({
   search,
   onSearchChange,
   categoryIds,
   onCategoryIdsChange,
-  from,
-  to,
-  onDateRangeChange,
+  period,
+  onPeriodChange,
 }: ExpenseFiltersProps) {
   const c = useTheme();
   const { t } = useTranslation('expenses');
-  const [pickerOpen, setPickerOpen] = useState(false);
+  const [categoryOpen, setCategoryOpen] = useState(false);
+  const [periodOpen, setPeriodOpen] = useState(false);
 
-  const label =
+  const categoryLabel =
     categoryIds.length === 0
-      ? t('filters.allCategories')
+      ? t('filters.category')
       : t('common:multiSelect.selectedCount', { count: categoryIds.length });
 
   return (
-    <View style={styles.wrap}>
-      <InputShell leading={<Search size={16} color={c.mutedForeground} />}>
+    <View
+      style={[styles.card, { backgroundColor: c.card, borderColor: c.border }]}
+    >
+      <View style={[styles.shell, { backgroundColor: c.muted }]}>
+        <Search size={16} color={c.mutedForeground} />
         <TextInput
           style={[styles.searchInput, { color: c.foreground }]}
-          placeholder={t('filters.searchPlaceholder')}
+          placeholder={t('filters.searchTransactions')}
           placeholderTextColor={c.mutedForeground}
           value={search}
           onChangeText={onSearchChange}
           autoCapitalize='none'
           returnKeyType='search'
         />
-      </InputShell>
-
-      <View style={styles.dateRow}>
-        <View style={styles.dateItem}>
-          <DateField
-            value={from}
-            onChange={(d) => onDateRangeChange(d, to)}
-            maximumDate={to}
-          />
-        </View>
-        <Text style={[styles.dash, { color: c.mutedForeground }]}>–</Text>
-        <View style={styles.dateItem}>
-          <DateField
-            value={to}
-            onChange={(d) => onDateRangeChange(from, d)}
-            minimumDate={from}
-          />
-        </View>
       </View>
 
-      <Pressable accessibilityRole='button' onPress={() => setPickerOpen(true)}>
-        <InputShell>
-          <Text
-            style={[
-              styles.pickerLabel,
-              {
-                color: categoryIds.length ? c.foreground : c.mutedForeground,
-              },
-            ]}
-          >
-            {label}
-          </Text>
-          <ChevronDown size={18} color={c.mutedForeground} />
-        </InputShell>
-      </Pressable>
+      <View style={styles.row}>
+        <DropdownPill
+          icon={<Shapes size={16} color={c.mutedForeground} />}
+          label={categoryLabel}
+          active={categoryIds.length > 0}
+          onPress={() => setCategoryOpen(true)}
+        />
+        <DropdownPill
+          icon={<Calendar size={16} color={c.mutedForeground} />}
+          label={t(PERIOD_KEY[period])}
+          active
+          onPress={() => setPeriodOpen(true)}
+        />
+      </View>
 
       <CategoryMultiSelect
-        open={pickerOpen}
-        onClose={() => setPickerOpen(false)}
+        open={categoryOpen}
+        onClose={() => setCategoryOpen(false)}
         selected={categoryIds}
         onChange={onCategoryIdsChange}
       />
+      <PeriodSelect
+        open={periodOpen}
+        value={period}
+        onClose={() => setPeriodOpen(false)}
+        onChange={(p) => {
+          onPeriodChange(p);
+          setPeriodOpen(false);
+        }}
+      />
     </View>
+  );
+}
+
+function DropdownPill({
+  icon,
+  label,
+  active,
+  onPress,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  active?: boolean;
+  onPress: () => void;
+}) {
+  const c = useTheme();
+  return (
+    <Pressable
+      accessibilityRole='button'
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.pill,
+        { backgroundColor: c.muted, opacity: pressed ? 0.6 : 1 },
+      ]}
+    >
+      {icon}
+      <Text
+        numberOfLines={1}
+        style={[
+          styles.pillLabel,
+          { color: active ? c.foreground : c.mutedForeground },
+        ]}
+      >
+        {label}
+      </Text>
+      <ChevronDown size={16} color={c.mutedForeground} />
+    </Pressable>
+  );
+}
+
+function PeriodSelect({
+  open,
+  value,
+  onClose,
+  onChange,
+}: {
+  open: boolean;
+  value: ListPeriod;
+  onClose: () => void;
+  onChange: (period: ListPeriod) => void;
+}) {
+  const c = useTheme();
+  const { t } = useTranslation('expenses');
+  const insets = useSafeAreaInsets();
+  const options: ListPeriod[] = ['today', 'week', 'month'];
+
+  return (
+    <Modal
+      visible={open}
+      animationType='slide'
+      presentationStyle='pageSheet'
+      onRequestClose={onClose}
+    >
+      <View style={[styles.sheet, { backgroundColor: c.background }]}>
+        <View style={styles.sheetHeader}>
+          <Text style={[styles.sheetTitle, { color: c.foreground }]}>
+            {t('period.title')}
+          </Text>
+          <Pressable
+            hitSlop={8}
+            accessibilityRole='button'
+            accessibilityLabel={t('common:actions.close')}
+            onPress={onClose}
+          >
+            <X size={22} color={c.mutedForeground} />
+          </Pressable>
+        </View>
+        <ScrollView
+          contentContainerStyle={[
+            styles.sheetBody,
+            { paddingBottom: insets.bottom + Spacing.five },
+          ]}
+        >
+          {options.map((o) => (
+            <Pressable
+              key={o}
+              onPress={() => onChange(o)}
+              style={styles.periodOption}
+            >
+              <Text style={[styles.periodText, { color: c.foreground }]}>
+                {t(PERIOD_KEY[o])}
+              </Text>
+              {o === value ? <Check size={18} color={c.primary} /> : null}
+            </Pressable>
+          ))}
+        </ScrollView>
+      </View>
+    </Modal>
   );
 }
 
@@ -193,8 +304,13 @@ function CategoryMultiSelect({
           ) : (
             groups.map((group) =>
               group.categories.length === 0 ? null : (
-                <View key={group.tier?.id ?? '__untiered__'} style={styles.group}>
-                  <Text style={[styles.groupLabel, { color: c.mutedForeground }]}>
+                <View
+                  key={group.tier?.id ?? '__untiered__'}
+                  style={styles.group}
+                >
+                  <Text
+                    style={[styles.groupLabel, { color: c.mutedForeground }]}
+                  >
                     {group.tier ? group.tier.name : t('form.untiered')}
                   </Text>
                   {group.categories.map((cat) => {
@@ -217,7 +333,9 @@ function CategoryMultiSelect({
                             color={cat.color ?? c.foreground}
                           />
                         </View>
-                        <Text style={[styles.optionText, { color: c.foreground }]}>
+                        <Text
+                          style={[styles.optionText, { color: c.foreground }]}
+                        >
                           {cat.name}
                         </Text>
                         {checked ? <Check size={18} color={c.primary} /> : null}
@@ -235,17 +353,39 @@ function CategoryMultiSelect({
 }
 
 const styles = StyleSheet.create({
-  wrap: { gap: Spacing.two },
+  card: {
+    borderWidth: StyleSheet.hairlineWidth * 2,
+    borderRadius: Radius['2xl'],
+    borderCurve: 'continuous',
+    padding: Spacing.three,
+    gap: Spacing.two,
+  },
+  shell: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.two,
+    borderRadius: Radius.pill,
+    borderCurve: 'continuous',
+    paddingHorizontal: Spacing.three,
+  },
   searchInput: {
     flex: 1,
     fontFamily: Fonts.regular,
     fontSize: 16,
     paddingVertical: Spacing.three,
   },
-  dateRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
-  dateItem: { flex: 1 },
-  dash: { fontFamily: Fonts.regular, fontSize: 16 },
-  pickerLabel: { flex: 1, fontFamily: Fonts.regular, fontSize: 16, paddingVertical: Spacing.three },
+  row: { flexDirection: 'row', gap: Spacing.two },
+  pill: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.two,
+    borderRadius: Radius.pill,
+    borderCurve: 'continuous',
+    paddingHorizontal: Spacing.three,
+    paddingVertical: Spacing.three,
+  },
+  pillLabel: { flex: 1, fontFamily: Fonts.medium, fontSize: 15 },
   sheet: { flex: 1 },
   sheetHeader: {
     flexDirection: 'row',
@@ -254,7 +394,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.four,
     paddingVertical: Spacing.three,
   },
-  headerActions: { flexDirection: 'row', alignItems: 'center', gap: Spacing.three },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.three,
+  },
   clear: { fontFamily: Fonts.semibold, fontSize: 15 },
   sheetTitle: { fontFamily: Fonts.bold, fontSize: 20 },
   sheetBody: {
@@ -263,6 +407,13 @@ const styles = StyleSheet.create({
     gap: Spacing.three,
   },
   loader: { marginVertical: Spacing.four },
+  periodOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: Spacing.three,
+  },
+  periodText: { fontFamily: Fonts.medium, fontSize: 16 },
   group: { gap: Spacing.one },
   groupLabel: {
     fontFamily: Fonts.medium,

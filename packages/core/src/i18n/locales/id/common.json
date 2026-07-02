@@ -24,7 +24,8 @@
       "more": "Lainnya"
     },
     "openSettings": "Buka pengaturan",
-    "addExpense": "Tambah pengeluaran"
+    "addExpense": "Tambah pengeluaran",
+    "scanReceipt": "Pindai struk"
   },
   "settings": {
     "title": "Pengaturan",
@@ -49,6 +50,7 @@
     }
   },
   "actions": {
+    "add": "Tambah",
     "save": "Simpan perubahan",
     "saving": "Menyimpan…",
     "cancel": "Batal",
