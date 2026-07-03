@@ -10,6 +10,7 @@ import { Spacing } from '@/constants/theme';
 import { CategorySelect } from '@/components/category-select';
 import { CurrencyAmountInput } from '@/components/currency-amount-input';
 import { DateField } from '@/components/date-field';
+import { ReceiptField, type ExistingAttachment } from '@/components/receipt-field';
 import { Button } from '@/features/auth/components/button';
 import { Notice } from '@/features/auth/components/notice';
 import {
@@ -18,27 +19,53 @@ import {
   TextField,
 } from '@/features/auth/components/text-field';
 import { useAuth } from '@/features/auth/hooks/use-auth';
-import { createExpense, updateExpense } from '@/features/expenses/api';
+import {
+  createAttachment,
+  createExpense,
+  deleteAttachment,
+  deleteAttachmentObject,
+  updateAttachment,
+  updateExpense,
+} from '@/features/expenses/api';
 import {
   makeExpenseSchema,
   type ExpenseInput,
 } from '@/features/expenses/schemas';
+import {
+  EXPENSE_BUCKET,
+  uploadAttachmentObject,
+  type PickedImage,
+} from '@/lib/attachments';
+
+// The existing attachment row passed in on edit — enough to preview, relink, and
+// clean up the storage object when it's replaced or removed.
+type ExistingReceipt = ExistingAttachment & { id: string };
 
 type Props = {
   mode: 'create' | 'edit';
   defaultValues?: Partial<ExpenseInput> & { id?: string };
+  existingAttachment?: ExistingReceipt | null;
   onSuccess: () => void;
 };
 
 // Create/edit form for an expense. Currency is locked to the user's base
-// currency; attachments are web-only for now (deferred per the M8 plan).
-export function ExpenseForm({ mode, defaultValues, onSuccess }: Props) {
+// currency. A receipt image can be attached (camera or library); the object is
+// only uploaded on save, then linked via the two-step confirm flow that mirrors
+// the web form.
+export function ExpenseForm({
+  mode,
+  defaultValues,
+  existingAttachment,
+  onSuccess,
+}: Props) {
   const { t } = useTranslation('expenses');
   const { user, profile } = useAuth();
   const base = (profile?.base_currency ?? 'IDR') as CurrencyCode;
 
   const schema = useMemo(() => makeExpenseSchema(t), [t]);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [receipt, setReceipt] = useState<PickedImage | null>(null);
+  const [removeExisting, setRemoveExisting] = useState(false);
   const {
     control,
     handleSubmit,
@@ -61,34 +88,124 @@ export function ExpenseForm({ mode, defaultValues, onSuccess }: Props) {
       return;
     }
     const note = values.note?.trim() ? values.note.trim() : null;
+    const basePayload = {
+      user_id: user.id,
+      amount: values.amount,
+      currency: values.currency,
+      category_id: values.category_id,
+      occurred_at: values.occurred_at.toISOString(),
+      note,
+      source: 'manual' as const,
+    };
 
-    const { error } =
-      mode === 'create'
-        ? await createExpense({
-            user_id: user.id,
-            amount: values.amount,
-            currency: values.currency,
-            category_id: values.category_id,
-            occurred_at: values.occurred_at.toISOString(),
-            note,
-            source: 'manual',
-          })
-        : defaultValues?.id
-          ? await updateExpense(defaultValues.id, {
-              amount: values.amount,
-              currency: values.currency,
-              category_id: values.category_id,
-              occurred_at: values.occurred_at.toISOString(),
-              note,
-            })
-          : { error: new Error('missing id') };
+    try {
+      if (mode === 'edit') {
+        const id = defaultValues?.id;
+        if (!id) throw new Error('missing id');
 
-    if (error) {
+        const { error } = await updateExpense(id, {
+          amount: basePayload.amount,
+          currency: basePayload.currency,
+          category_id: basePayload.category_id,
+          occurred_at: basePayload.occurred_at,
+          note,
+        });
+        if (error) throw error;
+
+        // A newly picked receipt replaces whatever was there; "remove" with no
+        // new pick just unlinks and deletes the existing one.
+        if (receipt) {
+          await uploadAndLinkExpense(id, receipt, user.id);
+          if (existingAttachment) {
+            await deleteAttachment(existingAttachment.id);
+            await deleteAttachmentObject(existingAttachment.storage_path);
+          }
+        } else if (removeExisting && existingAttachment) {
+          const relink = await updateExpense(id, { attachment_id: null });
+          if (relink.error) throw relink.error;
+          await deleteAttachment(existingAttachment.id);
+          await deleteAttachmentObject(existingAttachment.storage_path);
+        }
+
+        onSuccess();
+        return;
+      }
+
+      if (!receipt) {
+        const { error } = await createExpense(basePayload);
+        if (error) throw error;
+        onSuccess();
+        return;
+      }
+
+      const up = await uploadAttachmentObject(EXPENSE_BUCKET, receipt, user.id);
+      if (up.error || !up.data) throw up.error ?? new Error('Upload failed');
+      const storage_path = up.data.storage_path;
+
+      const insert = await createAttachment({
+        user_id: user.id,
+        storage_path,
+        mime_type: receipt.mimeType,
+        file_size_bytes: receipt.fileSize,
+      });
+      if (insert.error || !insert.data) {
+        await deleteAttachmentObject(storage_path);
+        throw insert.error ?? new Error('Attachment insert failed');
+      }
+      const attachmentId = insert.data.id;
+
+      const created = await createExpense({
+        ...basePayload,
+        attachment_id: attachmentId,
+      });
+      if (created.error || !created.data) {
+        await deleteAttachment(attachmentId);
+        await deleteAttachmentObject(storage_path);
+        throw created.error ?? new Error('Expense insert failed');
+      }
+
+      await updateAttachment(attachmentId, {
+        expense_id: created.data.id,
+        confirmed: true,
+      });
+
+      onSuccess();
+    } catch {
       setSubmitError(t('toast.saveError'));
-      return;
     }
-    onSuccess();
   });
+
+  // Upload + insert + relink the given expense to a fresh attachment, rolling
+  // back the storage object / row if any step fails.
+  async function uploadAndLinkExpense(
+    expenseId: string,
+    asset: PickedImage,
+    userId: string
+  ): Promise<void> {
+    const up = await uploadAttachmentObject(EXPENSE_BUCKET, asset, userId);
+    if (up.error || !up.data) throw up.error ?? new Error('Upload failed');
+    const storage_path = up.data.storage_path;
+
+    const insert = await createAttachment({
+      user_id: userId,
+      storage_path,
+      mime_type: asset.mimeType,
+      file_size_bytes: asset.fileSize,
+    });
+    if (insert.error || !insert.data) {
+      await deleteAttachmentObject(storage_path);
+      throw insert.error ?? new Error('Attachment insert failed');
+    }
+    const newId = insert.data.id;
+
+    const relink = await updateExpense(expenseId, { attachment_id: newId });
+    if (relink.error) {
+      await deleteAttachment(newId);
+      await deleteAttachmentObject(storage_path);
+      throw relink.error;
+    }
+    await updateAttachment(newId, { expense_id: expenseId, confirmed: true });
+  }
 
   return (
     <View style={styles.form}>
@@ -150,6 +267,16 @@ export function ExpenseForm({ mode, defaultValues, onSuccess }: Props) {
         label={t('form.note')}
         placeholder={t('form.notePlaceholder')}
         multiline
+      />
+
+      <ReceiptField
+        label={t('form.receipt')}
+        value={receipt}
+        onChange={setReceipt}
+        existing={mode === 'edit' ? (existingAttachment ?? null) : null}
+        removed={removeExisting}
+        onRemovedChange={setRemoveExisting}
+        disabled={isSubmitting}
       />
 
       {submitError ? <Notice tone='error'>{submitError}</Notice> : null}

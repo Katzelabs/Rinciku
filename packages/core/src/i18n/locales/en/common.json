@@ -119,6 +119,19 @@
     "openError": "Could not open the attachment.",
     "unknownType": "Unknown type"
   },
+  "receiptPicker": {
+    "add": "Add receipt",
+    "change": "Change",
+    "remove": "Remove",
+    "takePhoto": "Take Photo",
+    "chooseFromLibrary": "Choose from Library",
+    "chooseFile": "Choose File (PDF)",
+    "chooseSource": "Add a receipt",
+    "permissionDenied": "Allow photo or camera access in Settings to attach a receipt.",
+    "uploadError": "Could not upload the attachment.",
+    "openError": "Could not open the attachment.",
+    "document": "Document"
+  },
   "rowActions": {
     "openAttachment": "Open attachment"
   },

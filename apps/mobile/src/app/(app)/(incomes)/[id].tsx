@@ -14,8 +14,13 @@ import {
   ScreenScroll,
   Sheet,
 } from '@/components/ui';
+import { ReceiptImage } from '@/components/receipt-field';
 import { CategoryIcon } from '@/features/categories/components/category-icon';
-import { deleteIncome, getIncome } from '@/features/incomes/api';
+import {
+  deleteIncome,
+  getIncome,
+  getIncomeAttachmentSignedUrl,
+} from '@/features/incomes/api';
 import { IncomeForm } from '@/features/incomes/components/income-form';
 import type { IncomeWithRelations } from '@/features/incomes/types';
 import { useTheme } from '@/hooks/use-theme';
@@ -127,6 +132,19 @@ export default function IncomeDetailScreen() {
             </DetailRow>
           </Card>
 
+          {income.attachment ? (
+            <View style={styles.receiptBlock}>
+              <Text style={[styles.label, { color: c.mutedForeground }]}>
+                {t('detail.proof')}
+              </Text>
+              <ReceiptImage
+                storagePath={income.attachment.storage_path}
+                mimeType={income.attachment.mime_type}
+                getSignedUrl={getIncomeAttachmentSignedUrl}
+              />
+            </View>
+          ) : null}
+
           <View style={styles.actions}>
             <Button
               variant='outline'
@@ -159,6 +177,15 @@ export default function IncomeDetailScreen() {
               occurred_at: new Date(income.occurred_at),
               note: income.note ?? '',
             }}
+            existingAttachment={
+              income.attachment
+                ? {
+                    id: income.attachment.id,
+                    storage_path: income.attachment.storage_path,
+                    mime_type: income.attachment.mime_type,
+                  }
+                : null
+            }
             onSuccess={() => {
               setEditOpen(false);
               load();
@@ -200,6 +227,7 @@ const styles = StyleSheet.create({
   loader: { marginVertical: Spacing.five },
   amountBlock: { alignItems: 'center', gap: Spacing.one },
   card: { paddingHorizontal: Spacing.three },
+  receiptBlock: { gap: Spacing.two },
   detailRow: {
     flexDirection: 'row',
     alignItems: 'center',

@@ -119,6 +119,19 @@
     "openError": "Tidak dapat membuka lampiran.",
     "unknownType": "Tipe tidak diketahui"
   },
+  "receiptPicker": {
+    "add": "Tambah struk",
+    "change": "Ganti",
+    "remove": "Hapus",
+    "takePhoto": "Ambil Foto",
+    "chooseFromLibrary": "Pilih dari Galeri",
+    "chooseFile": "Pilih Berkas (PDF)",
+    "chooseSource": "Tambahkan struk",
+    "permissionDenied": "Izinkan akses foto atau kamera di Pengaturan untuk melampirkan struk.",
+    "uploadError": "Tidak dapat mengunggah lampiran.",
+    "openError": "Tidak dapat membuka lampiran.",
+    "document": "Dokumen"
+  },
   "rowActions": {
     "openAttachment": "Buka lampiran"
   },

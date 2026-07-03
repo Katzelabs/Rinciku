@@ -14,8 +14,13 @@ import {
   ScreenScroll,
   Sheet,
 } from '@/components/ui';
+import { ReceiptImage } from '@/components/receipt-field';
 import { CategoryIcon } from '@/features/categories/components/category-icon';
-import { deleteExpense, getExpense } from '@/features/expenses/api';
+import {
+  deleteExpense,
+  getAttachmentSignedUrl,
+  getExpense,
+} from '@/features/expenses/api';
 import { ExpenseForm } from '@/features/expenses/components/expense-form';
 import type { ExpenseWithRelations } from '@/features/expenses/types';
 import { useTheme } from '@/hooks/use-theme';
@@ -127,6 +132,19 @@ export default function ExpenseDetailScreen() {
             </DetailRow>
           </Card>
 
+          {expense.attachment ? (
+            <View style={styles.receiptBlock}>
+              <Text style={[styles.label, { color: c.mutedForeground }]}>
+                {t('detail.receipt')}
+              </Text>
+              <ReceiptImage
+                storagePath={expense.attachment.storage_path}
+                mimeType={expense.attachment.mime_type}
+                getSignedUrl={getAttachmentSignedUrl}
+              />
+            </View>
+          ) : null}
+
           <View style={styles.actions}>
             <Button
               variant='outline'
@@ -160,6 +178,15 @@ export default function ExpenseDetailScreen() {
               occurred_at: new Date(expense.occurred_at),
               note: expense.note ?? '',
             }}
+            existingAttachment={
+              expense.attachment
+                ? {
+                    id: expense.attachment.id,
+                    storage_path: expense.attachment.storage_path,
+                    mime_type: expense.attachment.mime_type,
+                  }
+                : null
+            }
             onSuccess={() => {
               setEditOpen(false);
               load();
@@ -201,6 +228,7 @@ const styles = StyleSheet.create({
   loader: { marginVertical: Spacing.five },
   amountBlock: { alignItems: 'center', gap: Spacing.one },
   card: { paddingHorizontal: Spacing.three },
+  receiptBlock: { gap: Spacing.two },
   detailRow: {
     flexDirection: 'row',
     alignItems: 'center',
