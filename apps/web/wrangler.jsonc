@@ -1,0 +1,15 @@
+{
+  // Cloudflare Workers Static Assets config for the Rinciku web SPA.
+  // The dashboard builds from root directory `apps/web` (build command
+  // `pnpm build` -> Vite emits `dist/`). This config uploads that output
+  // and, crucially, serves index.html for unknown paths so client-side
+  // routes (e.g. /dashboard) don't 404 — the SPA equivalent of the old
+  // `_redirects` `/* /index.html 200` (which the assets validator rejects
+  // as an infinite-loop rule).
+  "name": "rinciku-web-app",
+  "compatibility_date": "2025-01-01",
+  "assets": {
+    "directory": "./dist",
+    "not_found_handling": "single-page-application"
+  }
+}
