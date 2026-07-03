@@ -1,4 +1,4 @@
-import { Stack } from 'expo-router';
+import { Stack, useRouter } from 'expo-router';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
@@ -10,12 +10,9 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { List, Plus } from 'lucide-react-native';
 
-import { HeaderAction } from '@/components/header-action';
 import { Screen } from '@/components/ui';
 import { Spacing } from '@/constants/theme';
-import { Notice } from '@/features/auth/components/notice';
 import { deleteConversation, touchConversation } from '@/features/ai-chat/api';
 import { ChatThread } from '@/features/ai-chat/components/chat-thread';
 import { ConversationList } from '@/features/ai-chat/components/conversation-list';
@@ -23,6 +20,7 @@ import { MessageComposer } from '@/features/ai-chat/components/message-composer'
 import { WelcomeScreen } from '@/features/ai-chat/components/welcome-screen';
 import { useChat } from '@/features/ai-chat/hooks/use-chat';
 import { useConversations } from '@/features/ai-chat/hooks/use-conversations';
+import { Notice } from '@/features/auth/components/notice';
 import { useTheme } from '@/hooks/use-theme';
 
 // The AI chat tab: budget-grounded consultation + expense/income/change
@@ -33,6 +31,7 @@ export default function AiScreen() {
   const c = useTheme();
   const { t } = useTranslation('aiChat');
   const insets = useSafeAreaInsets();
+  const router = useRouter();
   const conversations = useConversations();
   const chat = useChat({
     // Re-sort/refresh the history list after every turn so a new or bumped
@@ -42,6 +41,11 @@ export default function AiScreen() {
     onConversationCreated: () => conversations.refetch(),
   });
   const [historyOpen, setHistoryOpen] = useState(false);
+
+  // Clearance so the newest turn / welcome hero clears the header. The inverted
+  // message list draws under the floating header items, so we inset content by
+  // the header bar height (~52) plus the safe-area top.
+  const headerClearance = insets.top + 52;
 
   const showWelcome =
     chat.messages.length === 0 &&
@@ -86,26 +90,45 @@ export default function AiScreen() {
 
   return (
     <Screen>
-      {/* Standard (non-large) header so the keyboard offset is predictable. */}
+      {/* Immersive full-screen chat (the native tab bar is hidden for this tab
+          via the (app) layout). Header: a "home" button on the left returns to
+          the tabbed app; the chat-list + prominent "new chat" actions are
+          grouped on the right. The header is transparent (floating glass
+          buttons); the inverted list is inset by `headerClearance` so the newest
+          turn rests below the buttons. */}
       <Stack.Screen
         options={{
-          headerLargeTitle: false,
-          headerRight: () => (
-            <View style={styles.headerActions}>
-              <HeaderAction
-                onPress={() => setHistoryOpen(true)}
-                accessibilityLabel={t('header.openHistory')}
-                systemImage='list.bullet'
-                icon={List}
-              />
-              <HeaderAction
-                onPress={chat.startNew}
-                accessibilityLabel={t('header.newChat')}
-                systemImage='plus'
-                icon={Plus}
-              />
-            </View>
-          ),
+          headerTitle: '',
+          unstable_headerLeftItems: () => [
+            {
+              label: t('common:nav.items.home'),
+              accessibilityLabel: t('common:nav.items.home'),
+              type: 'button',
+              icon: { type: 'sfSymbol', name: 'house' },
+              sharesBackground: false,
+              onPress: () => router.navigate('/(app)/(dashboard)'),
+            },
+          ],
+          unstable_headerRightItems: () => [
+            {
+              label: t('header.openHistory'),
+              accessibilityLabel: t('header.openHistory'),
+              type: 'button',
+              icon: { type: 'sfSymbol', name: 'list.bullet' },
+              sharesBackground: false,
+              onPress: () => setHistoryOpen(true),
+            },
+            {
+              label: t('header.newChat'),
+              accessibilityLabel: t('header.newChat'),
+              type: 'button',
+              icon: { type: 'sfSymbol', name: 'plus' },
+              tintColor: c.primary,
+              variant: 'prominent',
+              sharesBackground: false,
+              onPress: chat.startNew,
+            },
+          ],
         }}
       />
       <KeyboardAvoidingView
@@ -114,19 +137,19 @@ export default function AiScreen() {
         keyboardVerticalOffset={Platform.OS === 'ios' ? insets.top + 44 : 0}
       >
         {chat.error ? (
-          <View style={styles.notice}>
+          <View style={[styles.notice]}>
             <Notice tone='error'>{chat.error}</Notice>
           </View>
         ) : null}
 
         {chat.isLoading ? (
-          <View style={styles.center}>
+          <View style={[styles.center]}>
             <ActivityIndicator color={c.primary} />
           </View>
         ) : showWelcome ? (
-          <WelcomeScreen onPick={chat.send} />
+          <WelcomeScreen onPick={chat.send} topInset={headerClearance} />
         ) : (
-          <ChatThread chat={chat} />
+          <ChatThread chat={chat} topInset={headerClearance} />
         )}
 
         <MessageComposer
@@ -156,10 +179,5 @@ const styles = StyleSheet.create({
   notice: {
     paddingHorizontal: Spacing.four,
     paddingTop: Spacing.two,
-  },
-  headerActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.two,
   },
 });

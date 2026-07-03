@@ -1,4 +1,5 @@
 import MaterialDesignIcons from '@react-native-vector-icons/material-design-icons';
+import { useSegments } from 'expo-router';
 import { NativeTabs } from 'expo-router/unstable-native-tabs';
 import { useTranslation } from 'react-i18next';
 
@@ -51,9 +52,19 @@ const icons = {
 export default function AppLayout() {
   const { t } = useTranslation('common');
   const c = useTheme();
+  // The AI chat is a full-screen, immersive experience: hide the whole native
+  // tab bar while its tab is focused (users leave via the header "home" button).
+  // `useSegments()` keeps the route-group names (e.g. `(ai)`) that `usePathname`
+  // strips; the cast loosens the typed-routes union, which doesn't model groups.
+  const segments = useSegments() as string[];
+  const aiFocused = segments.includes('(ai)');
 
   return (
-    <NativeTabs minimizeBehavior='onScrollDown' tintColor={c.primary}>
+    <NativeTabs
+      hidden={aiFocused}
+      minimizeBehavior='onScrollDown'
+      tintColor={c.primary}
+    >
       <NativeTabs.Trigger name='(dashboard)'>
         <NativeTabs.Trigger.Icon src={icons.home} renderingMode='template' />
         <NativeTabs.Trigger.Label>

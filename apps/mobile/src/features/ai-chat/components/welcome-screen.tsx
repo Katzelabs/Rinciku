@@ -12,7 +12,14 @@ type Group = { label: string; examples: string[] };
 // Empty-state for a fresh chat: a short intro plus tappable example prompts
 // grouped by intent. Tapping a prompt sends it immediately (same as the web
 // welcome screen). Reuses the authored aiChat.welcome.* strings.
-export function WelcomeScreen({ onPick }: { onPick: (text: string) => void }) {
+export function WelcomeScreen({
+  onPick,
+  topInset = 0,
+}: {
+  onPick: (text: string) => void;
+  /** Clearance so the hero clears the transparent header. */
+  topInset?: number;
+}) {
   const c = useTheme();
   const { t } = useTranslation('aiChat');
 
@@ -34,7 +41,10 @@ export function WelcomeScreen({ onPick }: { onPick: (text: string) => void }) {
   return (
     <ScrollView
       style={styles.flex}
-      contentContainerStyle={styles.content}
+      contentContainerStyle={[
+        styles.content,
+        { paddingTop: Spacing.four + topInset },
+      ]}
       keyboardShouldPersistTaps='handled'
       showsVerticalScrollIndicator={false}
     >

@@ -1,16 +1,18 @@
-import { useState } from 'react';
+import { Image } from 'expo-image';
+import { ArrowUp, ImagePlus, X } from 'lucide-react-native';
+import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   ActionSheetIOS,
   Alert,
+  Keyboard,
   Platform,
   Pressable,
   StyleSheet,
   TextInput,
   View,
 } from 'react-native';
-import { Image } from 'expo-image';
-import { useTranslation } from 'react-i18next';
-import { ArrowUp, ImagePlus, X } from 'lucide-react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { IconButton } from '@/components/ui';
 import { Border, Radius, Spacing } from '@/constants/theme';
@@ -33,10 +35,37 @@ export function MessageComposer({
 }) {
   const c = useTheme();
   const { t } = useTranslation('aiChat');
+  const insets = useSafeAreaInsets();
   const [text, setText] = useState('');
   const [staged, setStaged] = useState<PickedImage | null>(null);
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
 
   const canSend = !disabled && (staged !== null || text.trim().length > 0);
+
+  // The AI screen hides the tab bar, so when the keyboard is closed we only
+  // need to clear the bottom safe area (home indicator). When it's open the
+  // KeyboardAvoidingView already lifts the composer, so collapse the padding to
+  // avoid a gap above the keyboard.
+  useEffect(() => {
+    const showEvent =
+      Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvent =
+      Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+    const show = Keyboard.addListener(showEvent, () =>
+      setKeyboardVisible(true)
+    );
+    const hide = Keyboard.addListener(hideEvent, () =>
+      setKeyboardVisible(false)
+    );
+    return () => {
+      show.remove();
+      hide.remove();
+    };
+  }, []);
+
+  const paddingBottom = keyboardVisible
+    ? Spacing.two
+    : Math.max(insets.bottom, Spacing.two);
 
   function handleSend() {
     if (!canSend) return;
@@ -89,53 +118,47 @@ export function MessageComposer({
   }
 
   return (
-    <View
-      style={[
-        styles.bar,
-        { backgroundColor: c.background, borderTopColor: c.border },
-      ]}
-    >
-      {staged ? (
-        <View
-          style={[
-            styles.previewChip,
-            { backgroundColor: c.card, borderColor: c.border },
-          ]}
-        >
-          <Image
-            source={{ uri: staged.uri }}
-            style={[styles.previewImage, { backgroundColor: c.muted }]}
-            contentFit='cover'
-          />
-          <Pressable
-            accessibilityRole='button'
-            accessibilityLabel={t('composer.removeImage')}
-            onPress={() => setStaged(null)}
-            style={({ pressed }) => [
-              styles.removeButton,
-              { backgroundColor: c.foreground, opacity: pressed ? 0.7 : 1 },
-            ]}
-          >
-            <X size={14} color={c.background} />
-          </Pressable>
-        </View>
-      ) : null}
+    <View style={[styles.bar, { paddingBottom }]}>
+      {/* Transparent bar — no full-width strip. Only the rounded shell below is
+          visible, floating directly on the chat background. */}
+      {/* One rounded shell holds the staged preview, the growing input, and the
+          attach + send controls — the unified composer surface. */}
+      <View
+        style={[
+          styles.shell,
+          { backgroundColor: c.card, borderColor: c.border },
+        ]}
+      >
+        {staged ? (
+          <View style={styles.previewChip}>
+            <Image
+              source={{ uri: staged.uri }}
+              style={[styles.previewImage, { backgroundColor: c.muted }]}
+              contentFit='cover'
+            />
+            <Pressable
+              accessibilityRole='button'
+              accessibilityLabel={t('composer.removeImage')}
+              onPress={() => setStaged(null)}
+              style={({ pressed }) => [
+                styles.removeButton,
+                { backgroundColor: c.foreground, opacity: pressed ? 0.7 : 1 },
+              ]}
+            >
+              <X size={14} color={c.background} />
+            </Pressable>
+          </View>
+        ) : null}
 
-      <View style={styles.inputRow}>
-        <IconButton
-          onPress={promptAttach}
-          accessibilityLabel={t('composer.attachImage')}
-          systemImage='paperclip'
-          tone='muted'
-        >
-          <ImagePlus size={20} color={c.mutedForeground} />
-        </IconButton>
-        <View
-          style={[
-            styles.inputWrap,
-            { backgroundColor: c.card, borderColor: c.input },
-          ]}
-        >
+        <View style={styles.inputRow}>
+          <IconButton
+            onPress={promptAttach}
+            accessibilityLabel={t('composer.attachImage')}
+            systemImage='paperclip'
+            tone='muted'
+          >
+            <ImagePlus size={20} color={c.mutedForeground} />
+          </IconButton>
           <TextInput
             style={[styles.input, { color: c.foreground }]}
             placeholder={
@@ -149,18 +172,18 @@ export function MessageComposer({
             multiline
             editable={!disabled}
           />
+          <IconButton
+            onPress={handleSend}
+            accessibilityLabel={t('composer.send')}
+            systemImage='arrow.up'
+            tone={canSend ? 'primary' : 'muted'}
+          >
+            <ArrowUp
+              size={20}
+              color={canSend ? c.primaryForeground : c.mutedForeground}
+            />
+          </IconButton>
         </View>
-        <IconButton
-          onPress={handleSend}
-          accessibilityLabel={t('composer.send')}
-          systemImage='arrow.up'
-          tone={canSend ? 'primary' : 'muted'}
-        >
-          <ArrowUp
-            size={20}
-            color={canSend ? c.primaryForeground : c.mutedForeground}
-          />
-        </IconButton>
       </View>
     </View>
   );
@@ -168,36 +191,34 @@ export function MessageComposer({
 
 const styles = StyleSheet.create({
   bar: {
-    gap: Spacing.two,
     paddingHorizontal: Spacing.three,
     paddingTop: Spacing.two,
-    paddingBottom: Spacing.two,
-    borderTopWidth: Border.hairline,
+    // paddingBottom is applied inline (tab-bar + keyboard aware).
   },
-  inputRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
+  shell: {
     gap: Spacing.two,
-  },
-  inputWrap: {
-    flex: 1,
     borderWidth: Border.hairline,
     borderRadius: Radius['2xl'],
     borderCurve: 'continuous',
-    paddingHorizontal: Spacing.three,
-    justifyContent: 'center',
+    paddingHorizontal: Spacing.two,
+    paddingVertical: Spacing.one,
+  },
+  inputRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: Spacing.two,
   },
   input: {
+    flex: 1,
     fontSize: 16,
     maxHeight: 120,
     paddingVertical: Spacing.two,
+    paddingHorizontal: Spacing.one,
   },
   previewChip: {
     alignSelf: 'flex-start',
-    padding: Spacing.one,
-    borderWidth: Border.hairline,
-    borderRadius: Radius.xl,
-    borderCurve: 'continuous',
+    marginTop: Spacing.one,
+    marginLeft: Spacing.one,
   },
   previewImage: {
     width: 56,
