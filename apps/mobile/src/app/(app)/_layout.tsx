@@ -5,6 +5,16 @@ import { useTranslation } from 'react-i18next';
 
 import { useTheme } from '@/hooks/use-theme';
 
+// The tab bar's display order comes from the <NativeTabs.Trigger> order below,
+// but the *initially focused* tab on cold start is the first route group by
+// filesystem sort, not the trigger order (and `initialRouteName` only sets the
+// back-behavior anchor, not the launch tab). The AI group is therefore named
+// `(z-ai)` so it sorts LAST — matching its position in the tab bar and leaving
+// `(dashboard)` as the first group, i.e. the screen the app opens on.
+export const unstable_settings = {
+  initialRouteName: '(dashboard)',
+};
+
 // Tab-bar icons. Both platforms use the same Material Design Icons for a
 // consistent custom look: the glyphs are rasterized from the icon font via
 // `getImageSourceSync` and passed to `src` (we intentionally omit `sf`, which
@@ -54,10 +64,11 @@ export default function AppLayout() {
   const c = useTheme();
   // The AI chat is a full-screen, immersive experience: hide the whole native
   // tab bar while its tab is focused (users leave via the header "home" button).
-  // `useSegments()` keeps the route-group names (e.g. `(ai)`) that `usePathname`
-  // strips; the cast loosens the typed-routes union, which doesn't model groups.
+  // `useSegments()` keeps the route-group names (e.g. `(z-ai)`) that
+  // `usePathname` strips; the cast loosens the typed-routes union, which doesn't
+  // model groups.
   const segments = useSegments() as string[];
-  const aiFocused = segments.includes('(ai)');
+  const aiFocused = segments.includes('(z-ai)');
 
   return (
     <NativeTabs
@@ -96,7 +107,7 @@ export default function AppLayout() {
         </NativeTabs.Trigger.Label>
       </NativeTabs.Trigger>
 
-      <NativeTabs.Trigger name='(ai)'>
+      <NativeTabs.Trigger name='(z-ai)'>
         <NativeTabs.Trigger.Icon src={icons.ai} renderingMode='template' />
         <NativeTabs.Trigger.Label>
           {t('nav.items.aiChat')}
