@@ -7,13 +7,13 @@ import { createMobileClient } from '@rinciku/db';
 // `@rinciku/db`. `AsyncStorage` already satisfies the `SupportedStorage` shape
 // (get/set/removeItem), so it is passed straight through.
 const url = process.env.EXPO_PUBLIC_SUPABASE_URL;
-const anonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
+const publishableKey = process.env.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
 
-if (!url || !anonKey) {
+if (!url || !publishableKey) {
   throw new Error(
-    'Missing EXPO_PUBLIC_SUPABASE_URL or EXPO_PUBLIC_SUPABASE_ANON_KEY. ' +
+    'Missing EXPO_PUBLIC_SUPABASE_URL or EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY. ' +
       'Copy apps/mobile/.env.example to apps/mobile/.env and fill it in.'
   );
 }
 
-export const supabase = createMobileClient(url, anonKey, AsyncStorage);
+export const supabase = createMobileClient(url, publishableKey, AsyncStorage);

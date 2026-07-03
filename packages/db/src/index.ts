@@ -19,12 +19,12 @@ export { Constants } from './database.types';
 export type { SupportedStorage } from '@supabase/supabase-js';
 
 /**
- * Build a typed Supabase browser client. The caller supplies the URL + anon key
- * so this package stays free of any bundler-specific env access (Vite's
- * `import.meta.env`, Expo's `process.env`, etc.).
+ * Build a typed Supabase browser client. The caller supplies the URL +
+ * publishable key so this package stays free of any bundler-specific env access
+ * (Vite's `import.meta.env`, Expo's `process.env`, etc.).
  */
-export function createSupabaseClient(url: string, anonKey: string) {
-  return createBrowserClient<Database>(url, anonKey);
+export function createSupabaseClient(url: string, publishableKey: string) {
+  return createBrowserClient<Database>(url, publishableKey);
 }
 
 /**
@@ -37,10 +37,10 @@ export function createSupabaseClient(url: string, anonKey: string) {
  */
 export function createMobileClient(
   url: string,
-  anonKey: string,
+  publishableKey: string,
   storage: SupportedStorage
 ) {
-  return createClient<Database>(url, anonKey, {
+  return createClient<Database>(url, publishableKey, {
     auth: {
       storage,
       autoRefreshToken: true,
