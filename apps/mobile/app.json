@@ -34,7 +34,14 @@
         }
       ],
       "expo-localization",
-      "@react-native-vector-icons/material-design-icons"
+      "@react-native-vector-icons/material-design-icons",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Rinciku uses your photos to attach receipts to your transactions.",
+          "cameraPermission": "Rinciku uses your camera to photograph receipts for your transactions."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

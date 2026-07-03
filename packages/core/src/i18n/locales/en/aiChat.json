@@ -27,7 +27,10 @@
     "toSend": "to send",
     "newline": "newline",
     "invalidImage": "Please pick an image (JPG, PNG, WEBP, or HEIC).",
-    "imageTooLarge": "Image must be 10 MB or smaller."
+    "imageTooLarge": "Image must be 10 MB or smaller.",
+    "takePhoto": "Take Photo",
+    "chooseFromLibrary": "Choose from Library",
+    "permissionDenied": "Allow photo or camera access in Settings to attach a receipt."
   },
   "header": {
     "newChat": "New chat",

@@ -27,7 +27,10 @@
     "toSend": "untuk mengirim",
     "newline": "baris baru",
     "invalidImage": "Pilih gambar (JPG, PNG, WEBP, atau HEIC).",
-    "imageTooLarge": "Gambar harus berukuran 10 MB atau lebih kecil."
+    "imageTooLarge": "Gambar harus berukuran 10 MB atau lebih kecil.",
+    "takePhoto": "Ambil Foto",
+    "chooseFromLibrary": "Pilih dari Galeri",
+    "permissionDenied": "Izinkan akses foto atau kamera di Pengaturan untuk melampirkan struk."
   },
   "header": {
     "newChat": "Obrolan baru",

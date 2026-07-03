@@ -11,6 +11,9 @@ import { useTheme } from '@/hooks/use-theme';
 interface SwipeRowProps {
   /** Tap the row body (e.g. open the edit sheet). */
   onPress: () => void;
+  /** Optional long-press on the row body — for a contextual action (e.g. rename)
+   * that stays off the row so it isn't a trailing icon button. */
+  onLongPress?: () => void;
   /** Fired when the revealed delete action is tapped. Route it through your own
    * confirmation (Alert) — SwipeRow just closes itself first. */
   onDelete: () => void;
@@ -34,6 +37,7 @@ interface SwipeRowProps {
  */
 export function SwipeRow({
   onPress,
+  onLongPress,
   onDelete,
   deleteLabel,
   children,
@@ -65,6 +69,7 @@ export function SwipeRow({
       <Pressable
         accessibilityRole='button'
         onPress={onPress}
+        onLongPress={onLongPress}
         style={({ pressed }) => [
           styles.body,
           { backgroundColor: c.card },

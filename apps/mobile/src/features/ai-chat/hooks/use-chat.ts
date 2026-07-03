@@ -8,6 +8,7 @@ import {
   appendMessage,
   applyProposedChange,
   buildBudgetContext,
+  chatImageUrl,
   conversationTitleFrom,
   createConversation,
   extractText,
@@ -18,12 +19,21 @@ import {
   summarizeProposal,
   touchConversation,
 } from '../api';
+import {
+  createImageAttachment,
+  type PickedImage,
+  uploadChatImage,
+} from '../lib/image';
 import type {
   ChatItem,
+  ChatMessageRowWithImage,
+  ImageBlock,
   MessageParam,
   PendingAttachment,
   ProposedChange,
   ProposedTransaction,
+  TextBlock,
+  ToolChoice,
 } from '../types';
 
 export type ActiveProposal = {
@@ -50,6 +60,7 @@ export type UseChatResult = {
   selectConversation: (id: string) => void;
   startNew: () => void;
   send: (text: string) => void;
+  sendImage: (asset: PickedImage, caption?: string) => void;
   dismissProposal: () => void;
   dismissChange: () => void;
   confirmChange: () => void;
@@ -60,6 +71,24 @@ let seq = 0;
 function tempId(): string {
   seq += 1;
   return `tmp-${seq}-${Math.round(Math.random() * 1e9)}`;
+}
+
+// Resolves a signed URL for each message that carries an image attachment so
+// reloaded threads render their images. Text-only rows resolve to null.
+async function rowsToItems(
+  rows: ChatMessageRowWithImage[]
+): Promise<ChatItem[]> {
+  return Promise.all(
+    rows.map(async (row) => {
+      const storagePath = row.attachment?.storage_path ?? null;
+      return {
+        id: row.id,
+        role: row.role === 'assistant' ? 'assistant' : 'user',
+        content: row.content,
+        imageUrl: storagePath ? await chatImageUrl(storagePath) : null,
+      } satisfies ChatItem;
+    })
+  );
 }
 
 // Owns the active thread on native. Loading is driven by explicit handlers
@@ -101,27 +130,31 @@ export function useChat(options: UseChatOptions = {}): UseChatResult {
     setError(null);
     setIsLoading(true);
     getMessages(id)
-      .then(({ data, error: loadError }) => {
+      .then(async ({ data, error: loadError }) => {
         if (currentIdRef.current !== id) return; // switched away mid-load
         if (loadError) {
           setError(loadError.message);
           setMessages([]);
           return;
         }
-        setMessages(
-          (data ?? []).map((row) => ({
-            id: row.id,
-            role: row.role === 'assistant' ? 'assistant' : 'user',
-            content: row.content,
-          }))
-        );
+        const items = await rowsToItems(data ?? []);
+        if (currentIdRef.current !== id) return; // switched away mid-resolve
+        setMessages(items);
       })
       .finally(() => {
         if (currentIdRef.current === id) setIsLoading(false);
       });
   }
 
-  async function runTurn(text: string) {
+  async function runTurn(params: {
+    apiContent: Array<TextBlock | ImageBlock>;
+    displayText: string;
+    toolChoice: ToolChoice;
+    // Picked image whose kind-specific attachment is created after extraction.
+    imageAsset?: PickedImage;
+    // Pre-uploaded chat image: persisted on the user message + shown optimistically.
+    image?: { attachmentId: string; previewUrl: string };
+  }) {
     if (!profile) {
       setError(t('chat.signInRequired'));
       return;
@@ -139,7 +172,7 @@ export function useChat(options: UseChatOptions = {}): UseChatResult {
       // 1. Ensure a conversation exists (lazy create on first send).
       let convId = currentIdRef.current;
       if (convId == null) {
-        const title = conversationTitleFrom(text);
+        const title = conversationTitleFrom(params.displayText);
         const { data, error: createError } = await createConversation(
           profile.id,
           title
@@ -152,16 +185,22 @@ export function useChat(options: UseChatOptions = {}): UseChatResult {
         options.onConversationCreated?.(convId);
       }
 
-      // 2. Optimistic user bubble + persist.
+      // 2. Optimistic user bubble + persist (with the pre-uploaded image, if any).
       setMessages((m) => [
         ...m,
-        { id: tempId(), role: 'user', content: text },
+        {
+          id: tempId(),
+          role: 'user',
+          content: params.displayText,
+          imageUrl: params.image?.previewUrl ?? null,
+        },
       ]);
       await appendMessage({
         conversation_id: convId,
         user_id: profile.id,
         role: 'user',
-        content: text,
+        content: params.displayText,
+        attachment_id: params.image?.attachmentId ?? null,
       });
 
       // 3. Ground in the current budget state.
@@ -176,8 +215,8 @@ export function useChat(options: UseChatOptions = {}): UseChatResult {
         {
           system: ctx.data.system,
           history,
-          apiContent: [{ type: 'text', text }],
-          toolChoice: { type: 'auto' },
+          apiContent: params.apiContent,
+          toolChoice: params.toolChoice,
           profile,
         },
         { noResponseMessage: t('chat.noResponse') }
@@ -208,10 +247,20 @@ export function useChat(options: UseChatOptions = {}): UseChatResult {
         tokens_output: res.usage?.output_tokens ?? null,
       });
 
-      // 6. Stage a confirmation card (transaction proposals stay text-sourced on
-      //    native until image capture lands in Phase 4).
+      // 6. Stage a confirmation card. For an image turn, create the kind-specific
+      //    attachment now (expense vs income live in separate tables/buckets) so
+      //    confirming links it to the created record.
       if (txProposal) {
-        setProposal({ proposal: txProposal, attachment: null });
+        let attachment: PendingAttachment | null = null;
+        if (params.imageAsset) {
+          const created = await createImageAttachment(
+            params.imageAsset,
+            txProposal.kind,
+            profile.id
+          );
+          attachment = created.data;
+        }
+        setProposal({ proposal: txProposal, attachment });
       } else if (change) {
         setPendingChange(change);
       }
@@ -230,7 +279,49 @@ export function useChat(options: UseChatOptions = {}): UseChatResult {
   function send(text: string) {
     const trimmed = text.trim();
     if (!trimmed || sending) return;
-    void runTurn(trimmed);
+    void runTurn({
+      apiContent: [{ type: 'text', text: trimmed }],
+      displayText: trimmed,
+      toolChoice: { type: 'auto' },
+    });
+  }
+
+  // Sends a receipt/transfer image. Uploads it up front so the user bubble shows
+  // the thumbnail (and reloads via chatImageUrl later), then forces a tool call
+  // so the model proposes a transaction from it.
+  function sendImage(asset: PickedImage, caption?: string) {
+    if (sending) return;
+    if (!profile) {
+      setError(t('chat.signInRequired'));
+      return;
+    }
+    const text = caption?.trim() ?? '';
+    void (async () => {
+      const uploaded = await uploadChatImage(asset, profile.id);
+      const image = uploaded.data
+        ? { attachmentId: uploaded.data.attachmentId, previewUrl: asset.uri }
+        : undefined;
+      await runTurn({
+        apiContent: [
+          {
+            type: 'image',
+            source: {
+              type: 'base64',
+              media_type: asset.mimeType,
+              data: asset.base64,
+            },
+          },
+          {
+            type: 'text',
+            text: text || 'Log this transaction from the attached image.',
+          },
+        ],
+        displayText: text,
+        toolChoice: { type: 'any' },
+        imageAsset: asset,
+        image,
+      });
+    })();
   }
 
   function dismissProposal() {
@@ -296,6 +387,7 @@ export function useChat(options: UseChatOptions = {}): UseChatResult {
     selectConversation,
     startNew,
     send,
+    sendImage,
     dismissProposal,
     dismissChange,
     confirmChange,
