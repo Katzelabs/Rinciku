@@ -10,9 +10,10 @@
     "platforms": ["ios", "android"],
     "ios": {
       "icon": "./assets/expo.icon",
-      "bundleIdentifier": "com.anonymous.rinciku"
+      "bundleIdentifier": "com.rinciku.app"
     },
     "android": {
+      "package": "com.rinciku.app",
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
