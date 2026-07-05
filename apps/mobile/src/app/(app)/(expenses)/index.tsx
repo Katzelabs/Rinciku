@@ -135,13 +135,12 @@ export default function ExpensesScreen() {
       <View style={styles.block}>
         <TransactionSummaryHeader
           total={total}
-          count={count}
           days={days}
           base={base}
           tone='expense'
           labels={{
             total: t('summary.totalSpent'),
-            transactions: t('summary.transactions'),
+            count: t('summary.txnCount', { count }),
             avgPerDay: t('summary.avgPerDay'),
             overDays: t('summary.overDays', { count: days }),
           }}
@@ -162,10 +161,10 @@ export default function ExpensesScreen() {
                 { opacity: pressed ? 0.6 : 1 },
               ]}
             >
-              <AppText variant='label' color='primary'>
+              <AppText variant='label' color='foreground'>
                 {t('section.seeAll')}
               </AppText>
-              <ChevronRight size={16} color={c.primary} />
+              <ChevronRight size={16} color={c.foreground} />
             </Pressable>
           }
         />

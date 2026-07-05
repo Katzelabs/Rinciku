@@ -34,6 +34,8 @@
   "summary": {
     "totalSpent": "Total pengeluaran",
     "transactions": "Transaksi",
+    "txnCount_one": "{{count}} transaksi",
+    "txnCount_other": "{{count}} transaksi",
     "avgPerTransaction": "Rata-rata / transaksi",
     "avgPerDay": "Rata-rata / hari",
     "overDays_one": "selama {{count}} hari",
@@ -81,7 +83,7 @@
     "noNote": "Tidak ada catatan",
     "receipt": "Struk",
     "noAttachment": "Tidak ada lampiran",
-    "edit": "Edit"
+    "edit": "Ubah"
   },
   "edit": {
     "title": "Edit pengeluaran",

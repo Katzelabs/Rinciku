@@ -44,7 +44,9 @@ export function Button({
   const bg: Record<Variant, string> = {
     primary: c.primary,
     secondary: c.secondary,
-    outline: 'transparent',
+    // A `card` fill (not transparent) so the bordered button reads as a raised
+    // control against the warm paper ground instead of dissolving into it.
+    outline: c.card,
     ghost: 'transparent',
     destructive: c.destructive,
   };
@@ -65,7 +67,9 @@ export function Button({
       onPress={onPress}
       style={({ pressed }) => [
         styles.base,
-        variant === 'primary' && !isDisabled ? styles.elevated : null,
+        (variant === 'primary' || variant === 'outline') && !isDisabled
+          ? styles.elevated
+          : null,
         {
           backgroundColor: bg[variant],
           borderColor: variant === 'outline' ? c.border : 'transparent',

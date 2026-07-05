@@ -1,21 +1,14 @@
 import { useCallback, useState } from 'react';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
-import { ActivityIndicator, Alert, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, StyleSheet } from 'react-native';
 
-import { formatCurrency, formatDate, type CurrencyCode } from '@rinciku/core';
+import { type CurrencyCode } from '@rinciku/core';
 
-import { Fonts, Spacing } from '@/constants/theme';
-import {
-  AppText,
-  Button,
-  Card,
-  Notice,
-  ScreenScroll,
-  Sheet,
-} from '@/components/ui';
+import { Spacing } from '@/constants/theme';
+import { Notice, ScreenScroll, Sheet } from '@/components/ui';
 import { ReceiptImage } from '@/components/receipt-field';
-import { CategoryIcon } from '@/features/categories/components/category-icon';
+import { TransactionDetailView } from '@/components/transaction-detail-view';
 import {
   deleteIncome,
   getIncome,
@@ -81,85 +74,34 @@ export default function IncomeDetailScreen() {
           {error ?? t('page.loadError', { error: '' })}
         </Notice>
       ) : (
-        <>
-          <View style={styles.amountBlock}>
-            <AppText
-              variant='hero'
-              color='primary'
-              numberOfLines={1}
-              adjustsFontSizeToFit
-              minimumFontScale={0.6}
-            >
-              +
-              {formatCurrency(
-                Number(income.amount),
-                income.currency as CurrencyCode
-              )}
-            </AppText>
-            <AppText variant='body' color='mutedForeground'>
-              {formatDate(new Date(income.occurred_at), 'PPP')}
-            </AppText>
-          </View>
-
-          <Card padding={0} style={styles.card}>
-            <DetailRow label={t('detail.source')}>
-              {income.category ? (
-                <View style={styles.sourceValue}>
-                  <CategoryIcon
-                    name={income.category.icon}
-                    size={16}
-                    color={income.category.color ?? c.foreground}
-                  />
-                  <Text style={[styles.value, { color: c.foreground }]}>
-                    {income.category.name}
-                  </Text>
-                </View>
-              ) : (
-                <Text style={[styles.value, { color: c.mutedForeground }]}>
-                  {t('form.uncategorized')}
-                </Text>
-              )}
-            </DetailRow>
-            <DetailRow label={t('detail.note')} topBorder>
-              <Text
-                style={[
-                  styles.value,
-                  { color: income.note ? c.foreground : c.mutedForeground },
-                ]}
-              >
-                {income.note?.trim() ? income.note.trim() : t('detail.noNote')}
-              </Text>
-            </DetailRow>
-          </Card>
-
-          {income.attachment ? (
-            <View style={styles.receiptBlock}>
-              <Text style={[styles.label, { color: c.mutedForeground }]}>
-                {t('detail.proof')}
-              </Text>
+        <TransactionDetailView
+          tone='income'
+          amount={Number(income.amount)}
+          currency={income.currency as CurrencyCode}
+          date={new Date(income.occurred_at)}
+          category={income.category ?? null}
+          note={income.note ?? null}
+          receipt={
+            income.attachment ? (
               <ReceiptImage
                 storagePath={income.attachment.storage_path}
                 mimeType={income.attachment.mime_type}
                 getSignedUrl={getIncomeAttachmentSignedUrl}
               />
-            </View>
-          ) : null}
-
-          <View style={styles.actions}>
-            <Button
-              variant='outline'
-              label={t('actions.edit')}
-              onPress={() => setEditOpen(true)}
-              style={styles.actionButton}
-            />
-            <Button
-              variant='destructive'
-              label={t('common:actions.delete')}
-              onPress={confirmDelete}
-              style={styles.actionButton}
-            />
-          </View>
-        </>
+            ) : null
+          }
+          labels={{
+            category: t('detail.source'),
+            categoryFallback: t('form.uncategorized'),
+            note: t('detail.note'),
+            noteEmpty: t('detail.noNote'),
+            receipt: t('detail.proof'),
+            edit: t('actions.edit'),
+            delete: t('common:actions.delete'),
+          }}
+          onEdit={() => setEditOpen(true)}
+          onDelete={confirmDelete}
+        />
       )}
 
       <Sheet
@@ -197,48 +139,6 @@ export default function IncomeDetailScreen() {
   );
 }
 
-function DetailRow({
-  label,
-  topBorder,
-  children,
-}: {
-  label: string;
-  topBorder?: boolean;
-  children: React.ReactNode;
-}) {
-  const c = useTheme();
-  return (
-    <View
-      style={[
-        styles.detailRow,
-        topBorder && {
-          borderTopColor: c.border,
-          borderTopWidth: StyleSheet.hairlineWidth,
-        },
-      ]}
-    >
-      <Text style={[styles.label, { color: c.mutedForeground }]}>{label}</Text>
-      <View style={styles.detailValue}>{children}</View>
-    </View>
-  );
-}
-
 const styles = StyleSheet.create({
   loader: { marginVertical: Spacing.five },
-  amountBlock: { alignItems: 'center', gap: Spacing.one },
-  card: { paddingHorizontal: Spacing.three },
-  receiptBlock: { gap: Spacing.two },
-  detailRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: Spacing.three,
-    paddingVertical: Spacing.three,
-  },
-  label: { fontFamily: Fonts.medium, fontSize: 14 },
-  detailValue: { flexShrink: 1, alignItems: 'flex-end' },
-  sourceValue: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
-  value: { fontFamily: Fonts.medium, fontSize: 15, textAlign: 'right' },
-  actions: { flexDirection: 'row', gap: Spacing.three },
-  actionButton: { flex: 1 },
 });

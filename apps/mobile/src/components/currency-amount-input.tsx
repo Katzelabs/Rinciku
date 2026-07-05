@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { StyleSheet, Text, TextInput } from 'react-native';
+import { StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { useTranslation } from 'react-i18next';
 
@@ -9,7 +9,7 @@ import {
   type CurrencyCode,
 } from '@rinciku/core';
 
-import { Fonts, Spacing } from '@/constants/theme';
+import { Fonts, Spacing, TabularNums } from '@/constants/theme';
 import { InputShell } from '@/features/auth/components/text-field';
 import { useTheme } from '@/hooks/use-theme';
 
@@ -33,6 +33,12 @@ interface CurrencyAmountInputProps {
   onBlur?: () => void;
   invalid?: boolean;
   placeholder?: string;
+  /**
+   * `default` — the pill InputShell used inline in forms. `hero` — a large,
+   * shell-less amount (symbol + big number) for the amount-first create/edit
+   * forms; the caller frames it (e.g. a tone-washed Card).
+   */
+  variant?: 'default' | 'hero';
 }
 
 // Parse a user-typed string into the canonical digits[.digits] form, capping the
@@ -88,6 +94,7 @@ export function CurrencyAmountInput({
   onBlur,
   invalid,
   placeholder,
+  variant = 'default',
 }: CurrencyAmountInputProps) {
   const c = useTheme();
   const { i18n } = useTranslation();
@@ -114,6 +121,32 @@ export function CurrencyAmountInput({
     const canonical = sanitize(input, decimals, group);
     setText(toDisplay(canonical, group, decimal));
     onChange(toNumber(canonical));
+  }
+
+  if (variant === 'hero') {
+    return (
+      <View style={styles.heroRow}>
+        <Text style={[styles.heroSymbol, { color: c.mutedForeground }]}>
+          {currencySymbol(currency)}
+        </Text>
+        <TextInput
+          style={[
+            styles.heroInput,
+            { color: invalid ? c.destructive : c.foreground },
+          ]}
+          placeholderTextColor={c.mutedForeground}
+          keyboardType={decimals === 0 ? 'number-pad' : 'decimal-pad'}
+          value={text}
+          onFocus={() => setFocused(true)}
+          onBlur={() => {
+            setFocused(false);
+            onBlur?.();
+          }}
+          onChangeText={handleChangeText}
+          placeholder={placeholder ?? (decimals === 0 ? '0' : '0.00')}
+        />
+      </View>
+    );
   }
 
   return (
@@ -150,5 +183,14 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.regular,
     fontSize: 16,
     paddingVertical: Spacing.three,
+  },
+  heroRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
+  heroSymbol: { fontFamily: Fonts.semibold, fontSize: 22 },
+  heroInput: {
+    flex: 1,
+    fontFamily: Fonts.bold,
+    fontSize: 36,
+    padding: 0,
+    ...TabularNums,
   },
 });

@@ -1,6 +1,8 @@
 import { type ReactNode } from 'react';
 import {
+  KeyboardAvoidingView,
   Modal,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -63,7 +65,10 @@ export function Sheet({
       presentationStyle='pageSheet'
       onRequestClose={onClose}
     >
-      <View style={[styles.sheet, { backgroundColor: c.background }]}>
+      <KeyboardAvoidingView
+        style={[styles.sheet, { backgroundColor: c.background }]}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
         <View style={styles.header}>
           <AppText variant='sheetTitle'>{title}</AppText>
           <View style={styles.headerActions}>
@@ -79,7 +84,7 @@ export function Sheet({
           </View>
         </View>
         {body}
-      </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }

@@ -1,21 +1,14 @@
 import { useCallback, useState } from 'react';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
-import { ActivityIndicator, Alert, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, StyleSheet } from 'react-native';
 
-import { formatCurrency, formatDate, type CurrencyCode } from '@rinciku/core';
+import { type CurrencyCode } from '@rinciku/core';
 
-import { Fonts, Spacing } from '@/constants/theme';
-import {
-  AppText,
-  Button,
-  Card,
-  Notice,
-  ScreenScroll,
-  Sheet,
-} from '@/components/ui';
+import { Spacing } from '@/constants/theme';
+import { Notice, ScreenScroll, Sheet } from '@/components/ui';
 import { ReceiptImage } from '@/components/receipt-field';
-import { CategoryIcon } from '@/features/categories/components/category-icon';
+import { TransactionDetailView } from '@/components/transaction-detail-view';
 import {
   deleteExpense,
   getAttachmentSignedUrl,
@@ -81,85 +74,34 @@ export default function ExpenseDetailScreen() {
           {error ?? t('page.loadError', { error: '' })}
         </Notice>
       ) : (
-        <>
-          <View style={styles.amountBlock}>
-            <AppText
-              variant='hero'
-              numberOfLines={1}
-              adjustsFontSizeToFit
-              minimumFontScale={0.6}
-            >
-              {formatCurrency(
-                Number(expense.amount),
-                expense.currency as CurrencyCode
-              )}
-            </AppText>
-            <AppText variant='body' color='mutedForeground'>
-              {formatDate(new Date(expense.occurred_at), 'PPP')}
-            </AppText>
-          </View>
-
-          <Card padding={0} style={styles.card}>
-            <DetailRow label={t('detail.category')}>
-              {expense.category ? (
-                <View style={styles.categoryValue}>
-                  <CategoryIcon
-                    name={expense.category.icon}
-                    size={16}
-                    color={expense.category.color ?? c.foreground}
-                  />
-                  <Text style={[styles.value, { color: c.foreground }]}>
-                    {expense.category.name}
-                  </Text>
-                </View>
-              ) : (
-                <Text style={[styles.value, { color: c.mutedForeground }]}>
-                  {t('common:categoryTag.uncategorized')}
-                </Text>
-              )}
-            </DetailRow>
-            <DetailRow label={t('detail.note')} topBorder>
-              <Text
-                style={[
-                  styles.value,
-                  { color: expense.note ? c.foreground : c.mutedForeground },
-                ]}
-              >
-                {expense.note?.trim()
-                  ? expense.note.trim()
-                  : t('detail.noNote')}
-              </Text>
-            </DetailRow>
-          </Card>
-
-          {expense.attachment ? (
-            <View style={styles.receiptBlock}>
-              <Text style={[styles.label, { color: c.mutedForeground }]}>
-                {t('detail.receipt')}
-              </Text>
+        <TransactionDetailView
+          tone='expense'
+          amount={Number(expense.amount)}
+          currency={expense.currency as CurrencyCode}
+          date={new Date(expense.occurred_at)}
+          category={expense.category ?? null}
+          note={expense.note ?? null}
+          receipt={
+            expense.attachment ? (
               <ReceiptImage
                 storagePath={expense.attachment.storage_path}
                 mimeType={expense.attachment.mime_type}
                 getSignedUrl={getAttachmentSignedUrl}
               />
-            </View>
-          ) : null}
-
-          <View style={styles.actions}>
-            <Button
-              variant='outline'
-              label={t('detail.edit')}
-              onPress={() => setEditOpen(true)}
-              style={styles.actionButton}
-            />
-            <Button
-              variant='destructive'
-              label={t('common:actions.delete')}
-              onPress={confirmDelete}
-              style={styles.actionButton}
-            />
-          </View>
-        </>
+            ) : null
+          }
+          labels={{
+            category: t('detail.category'),
+            categoryFallback: t('common:categoryTag.uncategorized'),
+            note: t('detail.note'),
+            noteEmpty: t('detail.noNote'),
+            receipt: t('detail.receipt'),
+            edit: t('detail.edit'),
+            delete: t('common:actions.delete'),
+          }}
+          onEdit={() => setEditOpen(true)}
+          onDelete={confirmDelete}
+        />
       )}
 
       <Sheet
@@ -198,52 +140,6 @@ export default function ExpenseDetailScreen() {
   );
 }
 
-function DetailRow({
-  label,
-  topBorder,
-  children,
-}: {
-  label: string;
-  topBorder?: boolean;
-  children: React.ReactNode;
-}) {
-  const c = useTheme();
-  return (
-    <View
-      style={[
-        styles.detailRow,
-        topBorder && {
-          borderTopColor: c.border,
-          borderTopWidth: StyleSheet.hairlineWidth,
-        },
-      ]}
-    >
-      <Text style={[styles.label, { color: c.mutedForeground }]}>{label}</Text>
-      <View style={styles.detailValue}>{children}</View>
-    </View>
-  );
-}
-
 const styles = StyleSheet.create({
   loader: { marginVertical: Spacing.five },
-  amountBlock: { alignItems: 'center', gap: Spacing.one },
-  card: { paddingHorizontal: Spacing.three },
-  receiptBlock: { gap: Spacing.two },
-  detailRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: Spacing.three,
-    paddingVertical: Spacing.three,
-  },
-  label: { fontFamily: Fonts.medium, fontSize: 14 },
-  detailValue: { flexShrink: 1, alignItems: 'flex-end' },
-  categoryValue: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.two,
-  },
-  value: { fontFamily: Fonts.medium, fontSize: 15, textAlign: 'right' },
-  actions: { flexDirection: 'row', gap: Spacing.three },
-  actionButton: { flex: 1 },
 });

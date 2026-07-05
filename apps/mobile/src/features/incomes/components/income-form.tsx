@@ -7,7 +7,7 @@ import { StyleSheet, View } from 'react-native';
 import { type CurrencyCode } from '@rinciku/core';
 
 import { Spacing } from '@/constants/theme';
-import { CurrencyAmountInput } from '@/components/currency-amount-input';
+import { AmountHeroField } from '@/components/amount-hero-field';
 import { DateField } from '@/components/date-field';
 import { ReceiptField, type ExistingAttachment } from '@/components/receipt-field';
 import { Button } from '@/features/auth/components/button';
@@ -206,17 +206,15 @@ export function IncomeForm({
         control={control}
         name='amount'
         render={({ field, fieldState }) => (
-          <View style={styles.field}>
-            <FieldLabel>{t('form.amount')}</FieldLabel>
-            <CurrencyAmountInput
-              currency={base}
-              value={field.value}
-              onChange={field.onChange}
-              onBlur={field.onBlur}
-              invalid={!!fieldState.error}
-            />
-            <FieldError message={fieldState.error?.message} />
-          </View>
+          <AmountHeroField
+            tone='income'
+            label={t('form.amount')}
+            currency={base}
+            value={field.value}
+            onChange={field.onChange}
+            onBlur={field.onBlur}
+            error={fieldState.error?.message}
+          />
         )}
       />
 

@@ -37,6 +37,8 @@
   "summary": {
     "totalIncome": "Total income",
     "transactions": "Transactions",
+    "txnCount_one": "{{count}} transaction",
+    "txnCount_other": "{{count}} transactions",
     "avgPerTransaction": "Avg / transaction",
     "avgPerDay": "Avg / day",
     "overDays_one": "over {{count}} day",

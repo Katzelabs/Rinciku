@@ -37,6 +37,8 @@
   "summary": {
     "totalIncome": "Total pemasukan",
     "transactions": "Transaksi",
+    "txnCount_one": "{{count}} transaksi",
+    "txnCount_other": "{{count}} transaksi",
     "avgPerTransaction": "Rata-rata / transaksi",
     "avgPerDay": "Rata-rata / hari",
     "overDays_one": "selama {{count}} hari",
