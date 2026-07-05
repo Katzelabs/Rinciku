@@ -1,3 +1,4 @@
+import MaterialDesignIcons from '@react-native-vector-icons/material-design-icons';
 import { Stack, useRouter } from 'expo-router';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -22,6 +23,21 @@ import { useChat } from '@/features/ai-chat/hooks/use-chat';
 import { useConversations } from '@/features/ai-chat/hooks/use-conversations';
 import { Notice } from '@/features/auth/components/notice';
 import { useTheme } from '@/hooks/use-theme';
+
+// Custom header-button icons. The native header items render an ImageSource, not
+// a React node — so (like the NativeTabs bar) we rasterize Material Design Icons
+// via `getImageSourceSync` instead of SF Symbols, keeping the chrome's custom
+// look consistent across platforms. Computed once at module scope (the call is
+// synchronous and must not run per render); baked black and tinted by the header.
+const HEADER_ICON_SIZE = 26;
+type MdiName = Parameters<typeof MaterialDesignIcons.getImageSourceSync>[0];
+const headerIcon = (name: MdiName) =>
+  MaterialDesignIcons.getImageSourceSync(name, HEADER_ICON_SIZE, 'black');
+const headerIcons = {
+  home: headerIcon('home-variant-outline'),
+  history: headerIcon('menu'),
+  newChat: headerIcon('plus'),
+};
 
 // The AI chat tab: budget-grounded consultation + expense/income/change
 // proposal cards, plus multi-conversation management (history sheet, new chat,
@@ -104,8 +120,7 @@ export default function AiScreen() {
               label: t('common:nav.items.home'),
               accessibilityLabel: t('common:nav.items.home'),
               type: 'button',
-              icon: { type: 'sfSymbol', name: 'house' },
-              sharesBackground: false,
+              icon: { type: 'image', source: headerIcons.home, tinted: true },
               onPress: () => router.navigate('/(app)/(dashboard)'),
             },
           ],
@@ -114,18 +129,22 @@ export default function AiScreen() {
               label: t('header.openHistory'),
               accessibilityLabel: t('header.openHistory'),
               type: 'button',
-              icon: { type: 'sfSymbol', name: 'list.bullet' },
-              sharesBackground: false,
+              icon: {
+                type: 'image',
+                source: headerIcons.history,
+                tinted: true,
+              },
               onPress: () => setHistoryOpen(true),
             },
             {
               label: t('header.newChat'),
               accessibilityLabel: t('header.newChat'),
               type: 'button',
-              icon: { type: 'sfSymbol', name: 'plus' },
-              tintColor: c.primary,
-              variant: 'prominent',
-              sharesBackground: false,
+              icon: {
+                type: 'image',
+                source: headerIcons.newChat,
+                tinted: true,
+              },
               onPress: chat.startNew,
             },
           ],
@@ -134,7 +153,12 @@ export default function AiScreen() {
       <KeyboardAvoidingView
         style={styles.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? insets.top + 44 : 0}
+        // The KeyboardAvoidingView fills the whole screen (transparent header,
+        // hidden tab bar), so its bottom edge sits at the screen bottom. For
+        // `behavior='padding'` that means the inserted padding already equals the
+        // keyboard height — any positive offset here just floats the composer
+        // that many px ABOVE the keyboard. Keep it at 0 so the input rests flush.
+        keyboardVerticalOffset={0}
       >
         {chat.error ? (
           <View style={[styles.notice]}>

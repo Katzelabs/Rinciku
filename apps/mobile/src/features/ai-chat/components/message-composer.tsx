@@ -1,6 +1,7 @@
 import { Image } from 'expo-image';
+import { GlassView, isLiquidGlassAvailable } from 'expo-glass-effect';
 import { ArrowUp, ImagePlus, X } from 'lucide-react-native';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   ActionSheetIOS,
@@ -117,74 +118,92 @@ export function MessageComposer({
     }
   }
 
+  // One rounded shell holds the staged preview, the growing input, and the
+  // attach + send controls — the unified composer surface.
+  const shellChildren: ReactNode = (
+    <>
+      {staged ? (
+        <View style={styles.previewChip}>
+          <Image
+            source={{ uri: staged.uri }}
+            style={[styles.previewImage, { backgroundColor: c.muted }]}
+            contentFit='cover'
+          />
+          <Pressable
+            accessibilityRole='button'
+            accessibilityLabel={t('composer.removeImage')}
+            onPress={() => setStaged(null)}
+            style={({ pressed }) => [
+              styles.removeButton,
+              { backgroundColor: c.foreground, opacity: pressed ? 0.7 : 1 },
+            ]}
+          >
+            <X size={14} color={c.background} />
+          </Pressable>
+        </View>
+      ) : null}
+
+      <View style={styles.inputRow}>
+        <IconButton
+          onPress={promptAttach}
+          accessibilityLabel={t('composer.attachImage')}
+          systemImage='paperclip'
+          tone='muted'
+        >
+          <ImagePlus size={20} color={c.mutedForeground} />
+        </IconButton>
+        <TextInput
+          style={[styles.input, { color: c.foreground }]}
+          placeholder={
+            staged
+              ? t('composer.placeholderImage')
+              : t('composer.placeholderDefault')
+          }
+          placeholderTextColor={c.mutedForeground}
+          value={text}
+          onChangeText={setText}
+          multiline
+          editable={!disabled}
+        />
+        <IconButton
+          onPress={handleSend}
+          accessibilityLabel={t('composer.send')}
+          systemImage='arrow.up'
+          tone={canSend ? 'primary' : 'muted'}
+        >
+          <ArrowUp
+            size={20}
+            color={canSend ? c.primaryForeground : c.mutedForeground}
+          />
+        </IconButton>
+      </View>
+    </>
+  );
+
   return (
     <View style={[styles.bar, { paddingBottom }]}>
       {/* Transparent bar — no full-width strip. Only the rounded shell below is
-          visible, floating directly on the chat background. */}
-      {/* One rounded shell holds the staged preview, the growing input, and the
-          attach + send controls — the unified composer surface. */}
-      <View
-        style={[
-          styles.shell,
-          { backgroundColor: c.card, borderColor: c.border },
-        ]}
-      >
-        {staged ? (
-          <View style={styles.previewChip}>
-            <Image
-              source={{ uri: staged.uri }}
-              style={[styles.previewImage, { backgroundColor: c.muted }]}
-              contentFit='cover'
-            />
-            <Pressable
-              accessibilityRole='button'
-              accessibilityLabel={t('composer.removeImage')}
-              onPress={() => setStaged(null)}
-              style={({ pressed }) => [
-                styles.removeButton,
-                { backgroundColor: c.foreground, opacity: pressed ? 0.7 : 1 },
-              ]}
-            >
-              <X size={14} color={c.background} />
-            </Pressable>
-          </View>
-        ) : null}
-
-        <View style={styles.inputRow}>
-          <IconButton
-            onPress={promptAttach}
-            accessibilityLabel={t('composer.attachImage')}
-            systemImage='paperclip'
-            tone='muted'
-          >
-            <ImagePlus size={20} color={c.mutedForeground} />
-          </IconButton>
-          <TextInput
-            style={[styles.input, { color: c.foreground }]}
-            placeholder={
-              staged
-                ? t('composer.placeholderImage')
-                : t('composer.placeholderDefault')
-            }
-            placeholderTextColor={c.mutedForeground}
-            value={text}
-            onChangeText={setText}
-            multiline
-            editable={!disabled}
-          />
-          <IconButton
-            onPress={handleSend}
-            accessibilityLabel={t('composer.send')}
-            systemImage='arrow.up'
-            tone={canSend ? 'primary' : 'muted'}
-          >
-            <ArrowUp
-              size={20}
-              color={canSend ? c.primaryForeground : c.mutedForeground}
-            />
-          </IconButton>
+          visible, floating directly over the chat. On iOS 26+ the shell is a
+          Liquid Glass surface; elsewhere it falls back to a solid `card` fill. */}
+      {isLiquidGlassAvailable() ? (
+        <GlassView
+          glassEffectStyle='regular'
+          isInteractive
+          style={[styles.shell, styles.shellGlass]}
+        >
+          {shellChildren}
+        </GlassView>
+      ) : (
+        <View
+          style={[
+            styles.shell,
+            styles.shellSolid,
+            { backgroundColor: c.card, borderColor: c.border },
+          ]}
+        >
+          {shellChildren}
         </View>
-      </View>
+      )}
     </View>
   );
 }
@@ -197,12 +216,15 @@ const styles = StyleSheet.create({
   },
   shell: {
     gap: Spacing.two,
-    borderWidth: Border.hairline,
     borderRadius: Radius['2xl'],
     borderCurve: 'continuous',
     paddingHorizontal: Spacing.two,
     paddingVertical: Spacing.one,
   },
+  // Solid fallback (Android / pre-iOS-26): a `card` fill with a hairline edge.
+  shellSolid: { borderWidth: Border.hairline },
+  // Liquid Glass: the material provides the surface; clip children to the radius.
+  shellGlass: { overflow: 'hidden' },
   inputRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',

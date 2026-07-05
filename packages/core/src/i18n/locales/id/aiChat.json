@@ -2,6 +2,11 @@
   "welcome": {
     "heading": "Tanyakan apa saja soal keuanganmu ke Rinciku",
     "description": "Dapatkan jawaban yang berdasar sebelum belanja, atau catat pengeluaran dan pemasukan lewat obrolan atau dengan mengirim struk.",
+    "starters": {
+      "afford": "Sanggup beli ini nggak?",
+      "log": "Habis 45rb buat makan siang",
+      "summary": "Berapa sisa bulan ini?"
+    },
     "groups": {
       "affordability": "Cek kemampuan beli",
       "logTransaction": "Catat transaksi",
@@ -17,8 +22,8 @@
     }
   },
   "composer": {
-    "placeholderDefault": "Tanyakan apakah kamu sanggup beli sesuatu, atau catat transaksi…",
-    "placeholderImage": "Tambahkan catatan tentang gambar ini (opsional)…",
+    "placeholderDefault": "Tanya Rinciku…",
+    "placeholderImage": "Tambahkan catatan (opsional)…",
     "attachImage": "Lampirkan gambar struk atau bukti transfer",
     "removeImage": "Hapus gambar",
     "send": "Kirim pesan",

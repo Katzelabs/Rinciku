@@ -179,6 +179,8 @@ function NativeIconButton({
 }: IconButtonProps & { systemImage: SystemImage }) {
   const c = useTheme();
   const glass = isLiquidGlassAvailable();
+  // `primary` renders a filled/prominent button (lime fill, contrasting glyph) so
+  // the send action reads as the primary CTA — not just a lime-tinted glass icon.
   const tintColor = tone === 'primary' ? c.primary : c.foreground;
   return (
     <Host matchContents>
@@ -187,7 +189,7 @@ function NativeIconButton({
         systemImage={systemImage}
         onPress={onPress}
         modifiers={[
-          buttonStyle(glass ? 'glass' : 'bordered'),
+          buttonStyle(nativeButtonStyle(tone, glass)),
           labelStyle('iconOnly'),
           controlSize('regular'),
           tint(tintColor),

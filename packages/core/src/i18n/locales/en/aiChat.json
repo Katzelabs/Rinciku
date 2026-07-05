@@ -2,6 +2,11 @@
   "welcome": {
     "heading": "Ask Rinciku anything about your money",
     "description": "Get a grounded answer before you spend, or log expenses and income by chatting or sending a receipt.",
+    "starters": {
+      "afford": "Can I afford this?",
+      "log": "Spent 45k on lunch",
+      "summary": "How much is left this month?"
+    },
     "groups": {
       "affordability": "Check affordability",
       "logTransaction": "Log a transaction",
@@ -17,8 +22,8 @@
     }
   },
   "composer": {
-    "placeholderDefault": "Ask if you can afford something, or log a transaction…",
-    "placeholderImage": "Add a note about this image (optional)…",
+    "placeholderDefault": "Ask Rinciku…",
+    "placeholderImage": "Add a note (optional)…",
     "attachImage": "Attach a receipt or transfer image",
     "removeImage": "Remove image",
     "send": "Send message",
