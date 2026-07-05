@@ -1,6 +1,6 @@
 import { StyleSheet, View, type ViewProps } from 'react-native';
 
-import { CardStyle } from '@/constants/theme';
+import { CardStyle, Shadow } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
 interface CardProps extends ViewProps {
@@ -53,6 +53,10 @@ const styles = StyleSheet.create({
   card: {
     borderWidth: CardStyle.borderWidth,
     borderCurve: 'continuous',
+    // Soft elevation so white cards read as raised objects against the warm
+    // ground. Renders on light; effectively invisible on the dark scheme, where
+    // the card/background contrast already does the work.
+    boxShadow: Shadow.sm,
   },
   divider: { height: StyleSheet.hairlineWidth },
 });

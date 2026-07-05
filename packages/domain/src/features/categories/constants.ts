@@ -45,21 +45,90 @@ export const CATEGORY_ICONS = [
 
 export type CategoryIconName = (typeof CATEGORY_ICONS)[number];
 
-// Olive-family swatches offered for tiers/categories.
+// Emoji rendered for each curated icon key. The category's stored `icon` value
+// stays the lucide name (so the picker and data model are unchanged) — apps map
+// it to an emoji at render time for the friendlier, full-color "chip" look.
+// Kept to widely-supported single/VS16 emoji so they render on both iOS and
+// Android. Unknown/legacy names fall back to the 🏷️ tag, mirroring the icon.
+const CATEGORY_EMOJI: Record<CategoryIconName, string> = {
+  Home: '🏠',
+  Wifi: '📶',
+  Zap: '⚡',
+  Droplet: '💧',
+  Flame: '🔥',
+  ShoppingCart: '🛒',
+  ShoppingBag: '🛍️',
+  Car: '🚗',
+  Bus: '🚌',
+  Train: '🚆',
+  Fuel: '⛽',
+  HeartPulse: '❤️',
+  Stethoscope: '🩺',
+  Pill: '💊',
+  Dumbbell: '💪',
+  UtensilsCrossed: '🍽️',
+  Coffee: '☕',
+  Tv: '📺',
+  Gamepad2: '🎮',
+  BookOpen: '📖',
+  GraduationCap: '🎓',
+  Plane: '✈️',
+  Gift: '🎁',
+  Receipt: '🧾',
+  CreditCard: '💳',
+  Wallet: '👛',
+  Banknote: '💵',
+  PiggyBank: '🐷',
+  Briefcase: '💼',
+  TrendingUp: '📈',
+  Shirt: '👕',
+  Phone: '📱',
+};
+
+const DEFAULT_CATEGORY_EMOJI = '🏷️';
+
+/** Emoji for a category's stored icon name (🏷️ for unknown/empty). */
+export function categoryEmoji(name?: string | null): string {
+  return (name && CATEGORY_EMOJI[name as CategoryIconName]) || DEFAULT_CATEGORY_EMOJI;
+}
+
+// Category/tier swatches. Vivid enough to scan a transaction list by color at a
+// glance (the previous muted-olive set read as a wall of near-identical gray),
+// but still tuned to the brand's warm-green world. The trailing swatch is a
+// neutral, offered in the picker but never chosen by `categoryColorFor`.
 export const PRESET_COLORS = [
-  '#7a8d6a',
-  '#a3a86b',
-  '#c4a86b',
-  '#b07a6b',
-  '#a36b6b',
-  '#a36b8d',
-  '#8d6ba3',
-  '#6b8da3',
-  '#6ba38d',
-  '#8d8d8d',
+  '#5B8C2A', // leaf green
+  '#3B82C4', // blue
+  '#E08A1E', // amber
+  '#8B5CF6', // violet
+  '#0EA5A5', // teal
+  '#4F6BED', // indigo
+  '#E05252', // red
+  '#D9557F', // rose
+  '#6B8D23', // olive
+  '#8A8A72', // neutral
 ] as const;
 
 export type PresetColor = (typeof PRESET_COLORS)[number];
+
+// The colorful subset (drops the trailing neutral) used for the deterministic
+// fallback, so a colorless / uncategorized row is never the anonymous gray tag.
+const FALLBACK_COLORS = PRESET_COLORS.slice(0, -1);
+
+/**
+ * Deterministic category color from a stable seed (category id, or name when no
+ * id is available). Same seed → same hue across sessions and on both web and
+ * mobile, so a row's color badge stays stable even when the category itself
+ * carries no `color`. Use as the fallback wherever a category color is rendered:
+ * `category.color ?? categoryColorFor(category.id)`.
+ */
+export function categoryColorFor(seed: string): string {
+  let hash = 0;
+  for (let i = 0; i < seed.length; i++) {
+    hash = (hash * 31 + seed.charCodeAt(i)) | 0;
+  }
+  return FALLBACK_COLORS[Math.abs(hash) % FALLBACK_COLORS.length];
+}
 
 // Per-user caps on the spending taxonomy. Kept in sync with the DB triggers in
 // supabase/schemas/10_tiers.sql and 11_categories.sql.

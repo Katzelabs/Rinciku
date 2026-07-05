@@ -260,6 +260,7 @@ export function createDashboardApi(db: TypedSupabaseClient) {
         name: c.name,
         color: c.color ?? FALLBACK_COLOR,
         amount: round2(byCategoryMap[c.id] ?? 0),
+        icon: c.icon,
       }))
       .filter((item) => item.amount > 0)
       .sort((a, b) => b.amount - a.amount);

@@ -10,11 +10,14 @@
  * tokens drive solid content surfaces and the glass tint.
  */
 
-import { Platform, StyleSheet } from 'react-native';
+import { Platform, StyleSheet, type TextStyle } from 'react-native';
 
 export const Colors = {
   light: {
-    background: '#FAFAF7',
+    // Warm, olive-biased paper (was #FAFAF7 — nearly identical to the white
+    // card, so cards dissolved). Nudged warmer/darker so white `card` surfaces
+    // read as raised objects against it.
+    background: '#F2F2EA',
     foreground: '#0C0C09',
     card: '#FFFFFF',
     cardForeground: '#0C0C09',
@@ -22,6 +25,10 @@ export const Colors = {
     popoverForeground: '#0C0C09',
     primary: '#9AE600',
     primaryForeground: '#35530E',
+    // Legible positive-money green — for income amounts / a healthy net. Distinct
+    // from `primary` (the neon lime accent), which was previously overused as a
+    // giant text fill and read as "startup demo" rather than "trusted with money".
+    positive: '#3F7A00',
     secondary: '#F4F4F5',
     secondaryForeground: '#18181B',
     muted: '#F4F4F0',
@@ -54,6 +61,8 @@ export const Colors = {
     popoverForeground: '#FBFBF9',
     primary: '#7CCF00',
     primaryForeground: '#35530E',
+    // Brighter on the dark card so positive amounts stay legible.
+    positive: '#A3E635',
     secondary: '#27272A',
     secondaryForeground: '#FAFAFA',
     muted: '#2B2B22',
@@ -137,6 +146,14 @@ export const Type = {
 } as const;
 
 export type TypeVariant = keyof typeof Type;
+
+/**
+ * Spread onto any money `Text` so digits use tabular (fixed-width) figures —
+ * columns of amounts line up and a number doesn't jitter as it changes. Applied
+ * automatically by `<AppText>` for the money variants (hero / amount /
+ * amountSmall); spread manually onto raw `Text` money styles.
+ */
+export const TabularNums: TextStyle = { fontVariant: ['tabular-nums'] };
 
 /** Spacing scale (px). */
 export const Spacing = {

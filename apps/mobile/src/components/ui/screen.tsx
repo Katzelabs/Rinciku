@@ -10,7 +10,7 @@ import {
   type ViewStyle,
 } from 'react-native';
 
-import { Spacing } from '@/constants/theme';
+import { BottomTabInset, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
 interface ScreenScrollProps extends Omit<ScrollViewProps, 'refreshControl'> {
@@ -70,6 +70,9 @@ const styles = StyleSheet.create({
   screen: { flex: 1 },
   content: {
     padding: Spacing.four,
-    paddingBottom: Spacing.six,
+    // Clear the translucent NativeTabs bar (a flat 64px used to be shorter than
+    // the Android bar, so list/dashboard content slid under it). BottomTabInset
+    // is the bar's height per platform (ios 50 / android 80) + breathing room.
+    paddingBottom: BottomTabInset + Spacing.four,
   },
 });

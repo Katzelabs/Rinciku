@@ -69,7 +69,7 @@ export function TransactionDayGroups<Row>({
             right={
               <AppText
                 variant='amountSmall'
-                color={isIncome ? 'primary' : 'foreground'}
+                color={isIncome ? 'positive' : 'foreground'}
               >
                 {isIncome && group.subtotal > 0 ? '+' : ''}
                 {formatCurrency(group.subtotal, base)}
@@ -89,7 +89,7 @@ export function TransactionDayGroups<Row>({
                     amount={row.amount}
                     currency={row.currency}
                     sign={isIncome ? '+' : undefined}
-                    amountColor={isIncome ? c.primary : undefined}
+                    amountColor={isIncome ? c.positive : undefined}
                     topBorder={i > 0}
                     onPress={row.onPress}
                   />

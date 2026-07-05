@@ -159,6 +159,10 @@ When working with Claude:
 - **Update** the task's status, checklist, and `## Notes` as work progresses on it.
 - **Create** a new task file (and a feature folder + `README.md` if the feature is new to `docs/tasks/`) when the user asks to track new work. Pick the next `NN` prefix for that feature.
 
+## Design system
+
+`docs/design-system.md` is the canonical **rules + rationale** for how the app looks — read it before any UI work. Token *values* live in code (`apps/mobile/src/constants/theme.ts`; web mirror in `apps/web/src/index.css`). Load-bearing rules that are easy to accidentally revert: lime (`primary`) is an accent, never a big-number fill (use `foreground` / the `positive` token for money); `formatCurrency` is **symbol-based** (`packages/core/src/format.ts`) — do not revert to `Intl` `style: 'currency'`; category glyphs are emoji via `categoryEmoji` and colorless categories fall back to `categoryColorFor` (never the gray tag).
+
 ## Code style
 
 - Prettier: single quotes (JSX too), semicolons, trailing-comma `es5`, 2-space indent.

@@ -2,8 +2,8 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { formatCurrency, type CurrencyCode } from '@rinciku/core';
 
-import { Fonts, Radius, Spacing } from '@/constants/theme';
-import { CategoryIcon } from '@/features/categories/components/category-icon';
+import { CategoryBadge } from '@/components/category-badge';
+import { Fonts, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
 // Shared transaction row for the expenses + incomes lists: a tinted category/
@@ -51,14 +51,9 @@ export function TransactionRow({
         { opacity: pressed ? 0.6 : 1 },
       ]}
     >
-      <View
-        style={[
-          styles.iconBadge,
-          { backgroundColor: `${color ?? '#8d8d8d'}22` },
-        ]}
-      >
-        <CategoryIcon name={icon} size={18} color={color ?? c.foreground} />
-      </View>
+      {/* Colorless categories fall back to a stable per-title hue (never gray),
+          so every row is scannable by color. */}
+      <CategoryBadge icon={icon} color={color} seed={title} />
       <View style={styles.text}>
         <Text style={[styles.title, { color: c.foreground }]} numberOfLines={1}>
           {title}
@@ -90,13 +85,6 @@ const styles = StyleSheet.create({
     gap: Spacing.three,
     paddingVertical: Spacing.three,
   },
-  iconBadge: {
-    width: 40,
-    height: 40,
-    borderRadius: Radius.pill,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   text: { flex: 1, gap: 2 },
   title: { fontFamily: Fonts.medium, fontSize: 15 },
   subtitle: { fontFamily: Fonts.regular, fontSize: 13 },
@@ -105,5 +93,6 @@ const styles = StyleSheet.create({
     fontSize: 15,
     flexShrink: 0,
     maxWidth: '42%',
+    fontVariant: ['tabular-nums'],
   },
 });

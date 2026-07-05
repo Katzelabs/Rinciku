@@ -1,26 +1,26 @@
 import { Stack, useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ActivityIndicator, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, StyleSheet } from 'react-native';
 
 import {
-  getCycleLabel,
   getPeriodRange,
   type CurrencyCode,
   type PeriodPreset,
 } from '@rinciku/core';
 
 import { ProfileAvatar } from '@/components/profile-avatar';
-import { AppText, Notice, ScreenScroll, SectionHeader } from '@/components/ui';
+import { AppText, Notice, ScreenScroll } from '@/components/ui';
 import { Spacing } from '@/constants/theme';
 import { useAuth } from '@/features/auth/hooks/use-auth';
+import { BudgetHero } from '@/features/dashboard/components/budget-hero';
 import { CategoryBreakdownChart } from '@/features/dashboard/components/category-breakdown-chart';
 import { ChartCard } from '@/features/dashboard/components/chart-card';
-import { HealthBadge } from '@/features/dashboard/components/health-badge';
 import { IncomeVsExpenseChart } from '@/features/dashboard/components/income-vs-expense-chart';
 import { PeriodPicker } from '@/features/dashboard/components/period-picker';
 import { SpendTrendChart } from '@/features/dashboard/components/spend-trend-chart';
 import { SummaryCards } from '@/features/dashboard/components/summary-cards';
+import { TopCategories } from '@/features/dashboard/components/top-categories';
 import { useAnalytics } from '@/features/dashboard/hooks/use-analytics';
 import { useMonthlySummary } from '@/features/dashboard/hooks/use-monthly-summary';
 import { useTheme } from '@/hooks/use-theme';
@@ -129,6 +129,8 @@ export default function DashboardScreen() {
         }}
       />
 
+      {summary ? <BudgetHero summary={summary} /> : null}
+
       {firstLoad ? (
         <ActivityIndicator color={c.primary} style={styles.loader} />
       ) : analytics.error ? (
@@ -144,6 +146,10 @@ export default function DashboardScreen() {
             days={days}
             base={base}
           />
+
+          {hasBreakdown ? (
+            <TopCategories items={breakdown.byCategory} base={base} />
+          ) : null}
 
           <ChartCard
             title={t('charts.trend.title')}
@@ -171,20 +177,6 @@ export default function DashboardScreen() {
           >
             <IncomeVsExpenseChart data={trend} base={base} />
           </ChartCard>
-
-          {summary ? (
-            <View style={styles.cycleSection}>
-              <SectionHeader
-                title={t('health.sectionTitle')}
-                right={
-                  <AppText variant='caption' color='mutedForeground'>
-                    {getCycleLabel(summary.cycle)}
-                  </AppText>
-                }
-              />
-              <HealthBadge summary={summary} />
-            </View>
-          ) : null}
         </>
       )}
     </ScreenScroll>
@@ -193,5 +185,4 @@ export default function DashboardScreen() {
 
 const styles = StyleSheet.create({
   loader: { marginVertical: Spacing.five },
-  cycleSection: { gap: Spacing.three },
 });

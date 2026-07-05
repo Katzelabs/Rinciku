@@ -16,6 +16,15 @@
     "searchCategories": "Cari kategori…",
     "noCategories": "Tidak ada kategori."
   },
+  "hero": {
+    "safeToSpend": "Aman dibelanjakan",
+    "perDay_one": "≈ {{amount}}/hari · {{count}} hari lagi",
+    "perDay_other": "≈ {{amount}}/hari · {{count}} hari lagi",
+    "spent": "{{amount}} terpakai"
+  },
+  "topCategories": {
+    "title": "Kategori teratas"
+  },
   "summary": {
     "income": "Pemasukan",
     "spent": "Pengeluaran",

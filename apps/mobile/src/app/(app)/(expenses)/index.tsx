@@ -189,7 +189,13 @@ export default function ExpensesScreen() {
               );
               const title =
                 note || name || t('common:categoryTag.uncategorized');
-              const subtitle = note && name ? `${name} • ${dateStr}` : dateStr;
+              // Only prefix the category when it adds information — a note that
+              // just repeats its category ("groceries" / "groceries") shouldn't
+              // show the name twice.
+              const subtitle =
+                note && name && note.toLowerCase() !== name.toLowerCase()
+                  ? `${name} • ${dateStr}`
+                  : dateStr;
               return (
                 <TransactionRow
                   key={expense.id}

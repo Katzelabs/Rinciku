@@ -16,6 +16,15 @@
     "searchCategories": "Search categories…",
     "noCategories": "No categories."
   },
+  "hero": {
+    "safeToSpend": "Safe to spend",
+    "perDay_one": "≈ {{amount}}/day · {{count}} day left",
+    "perDay_other": "≈ {{amount}}/day · {{count}} days left",
+    "spent": "{{amount}} spent"
+  },
+  "topCategories": {
+    "title": "Top categories"
+  },
   "summary": {
     "income": "Income",
     "spent": "Spent",

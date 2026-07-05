@@ -1,15 +1,29 @@
+import { currencyFractionDigits, currencySymbol } from './currency-meta';
 import type { CurrencyCode } from './fx';
 import { activeLocale } from './locale';
 
+/**
+ * Format a money amount as `<symbol><grouped number>` — e.g. `Rp8.096.000`,
+ * `$500.00`. The symbol and decimal count come from the static, ICU-free
+ * `currency-meta` table (`Rp`/`$`/…, IDR→0 decimals), NOT from Intl's
+ * `style: 'currency'`. Intl's currency style is unreliable on React
+ * Native/Hermes (it renders the ISO code `IDR` instead of `Rp` under `en-US`
+ * and drops IDR's zero-decimal rule), which is what made the same amount show as
+ * both `Rp8.096.000,00` and `IDR 430,000.00` across screens. Only the digit
+ * grouping/decimal separators still follow the locale.
+ */
 export function formatCurrency(
   amount: number,
   code: CurrencyCode,
   locale: string = activeLocale()
 ): string {
-  return new Intl.NumberFormat(locale, {
-    style: 'currency',
-    currency: code,
-  }).format(amount);
+  const digits = currencyFractionDigits(code);
+  const number = new Intl.NumberFormat(locale, {
+    minimumFractionDigits: digits,
+    maximumFractionDigits: digits,
+  }).format(Math.abs(amount));
+  const sign = amount < 0 ? '-' : '';
+  return `${sign}${currencySymbol(code)}${number}`;
 }
 
 /**
@@ -39,12 +53,12 @@ export function formatCurrencyCompact(
   code: CurrencyCode,
   locale: string = activeLocale()
 ): string {
-  return new Intl.NumberFormat(locale, {
-    style: 'currency',
-    currency: code,
+  const number = new Intl.NumberFormat(locale, {
     notation: 'compact',
     maximumFractionDigits: 1,
-  }).format(amount);
+  }).format(Math.abs(amount));
+  const sign = amount < 0 ? '-' : '';
+  return `${sign}${currencySymbol(code)}${number}`;
 }
 
 /**

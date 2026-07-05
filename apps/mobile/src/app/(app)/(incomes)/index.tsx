@@ -171,7 +171,11 @@ export default function IncomesScreen() {
               const note = income.note?.trim();
               const dateStr = formatDate(new Date(income.occurred_at), 'MMM d');
               const title = note || name || t('form.uncategorized');
-              const subtitle = note && name ? `${name} • ${dateStr}` : dateStr;
+              // Skip the category prefix when the note just repeats it.
+              const subtitle =
+                note && name && note.toLowerCase() !== name.toLowerCase()
+                  ? `${name} • ${dateStr}`
+                  : dateStr;
               return (
                 <TransactionRow
                   key={income.id}

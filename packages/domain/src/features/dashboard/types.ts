@@ -60,6 +60,9 @@ export type BreakdownItem = {
   name: string;
   color: string;
   amount: number;
+  // Category glyph name (lucide key → emoji via `categoryEmoji`), so surfaces
+  // like the top-categories bento can render the chip. Absent for tier items.
+  icon?: string | null;
 };
 
 export type CategoryBreakdown = {
