@@ -159,7 +159,7 @@ export function EssentialsPage() {
                 estimated_amount: Number(dialog.row.estimated_amount),
                 currency: dialog.row.currency as CurrencyCode,
                 category_id: dialog.row.category_id ?? '',
-                notes: '',
+                notes: dialog.row.notes ?? '',
               }}
               onSuccess={() => {
                 setDialog(null);

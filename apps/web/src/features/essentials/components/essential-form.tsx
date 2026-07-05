@@ -111,6 +111,7 @@ export function EssentialForm({
         estimated_amount: values.estimated_amount,
         currency: values.currency,
         category_id: values.category_id,
+        notes: values.notes?.trim() ? values.notes.trim() : null,
       };
 
       if (mode === 'edit') {

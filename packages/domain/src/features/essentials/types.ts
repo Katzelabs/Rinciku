@@ -18,5 +18,6 @@ export type CreateEssentialInput = {
   estimated_amount: number;
   currency: CurrencyCode;
   category_id: string | null;
+  notes?: string | null;
   is_active?: boolean;
 };

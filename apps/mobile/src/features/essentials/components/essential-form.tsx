@@ -57,13 +57,12 @@ export function EssentialForm({ mode, defaultValues, onSuccess }: Props) {
       Alert.alert(t('toast.signInRequired'));
       return;
     }
-    // `notes` is validated but not persisted — the essentials table has no
-    // notes column (mirrors web behavior).
     const payload = {
       name: values.name,
       estimated_amount: values.estimated_amount,
       currency: values.currency,
       category_id: values.category_id,
+      notes: values.notes?.trim() ? values.notes.trim() : null,
     };
 
     const { error } =

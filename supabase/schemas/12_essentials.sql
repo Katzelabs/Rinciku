@@ -10,6 +10,7 @@ create table public.essentials (
     'IDR','USD','EUR','JPY','GBP','SGD','MYR','AUD',
     'CAD','CNY','KRW','HKD','THB','PHP','INR','VND'
   )),
+  notes            text          check (notes is null or char_length(notes) <= 280),
   is_active        boolean       not null default true,
   created_at       timestamptz   not null default now(),
   updated_at       timestamptz   not null default now()
