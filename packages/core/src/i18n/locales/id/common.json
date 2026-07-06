@@ -84,6 +84,23 @@
     "today": "Hari ini",
     "yesterday": "Kemarin"
   },
+  "relativeTime": {
+    "never": "tidak pernah",
+    "recently": "baru saja",
+    "justNow": "baru saja",
+    "minutes_one": "{{count}} mnt lalu",
+    "minutes_other": "{{count}} mnt lalu",
+    "hours_one": "{{count}} jam lalu",
+    "hours_other": "{{count}} jam lalu",
+    "days_one": "{{count}} hr lalu",
+    "days_other": "{{count}} hr lalu",
+    "weeks_one": "{{count}} mgg lalu",
+    "weeks_other": "{{count}} mgg lalu",
+    "months_one": "{{count}} bln lalu",
+    "months_other": "{{count}} bln lalu",
+    "years_one": "{{count}} thn lalu",
+    "years_other": "{{count}} thn lalu"
+  },
   "fx": {
     "refreshFailed": "Gagal memperbarui kurs",
     "fallbackSnapshot": "Menampilkan data cadangan dari {{date}}."

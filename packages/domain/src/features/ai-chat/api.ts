@@ -21,6 +21,7 @@ import type {
   ChatMessageRowWithImage,
   ChatResponse,
   Conversation,
+  ConversationListItem,
   ImageBlock,
   MessageParam,
   ProposedTransaction,
@@ -89,13 +90,28 @@ export function createAiChatApi(db: TypedSupabaseClient) {
 
   // --- Conversations & messages (RLS-scoped) -------------------------------
 
-  async function listConversations(): Promise<Result<Conversation[]>> {
+  async function listConversations(): Promise<Result<ConversationListItem[]>> {
+    // Embed only the newest message per conversation (limit-1 on the referenced
+    // table) for the history-list preview. `content` is stored as plain display
+    // text, so no block parsing is needed. Portable: web + mobile share this.
     const { data, error } = await db
       .from('conversations')
-      .select('*')
+      .select('*, messages(content, created_at)')
       .order('last_message_at', { ascending: false, nullsFirst: false })
-      .order('created_at', { ascending: false });
-    return { data, error };
+      .order('created_at', { ascending: false })
+      .order('created_at', { referencedTable: 'messages', ascending: false })
+      .limit(1, { referencedTable: 'messages' });
+    if (error || !data) return { data: null, error };
+    const items: ConversationListItem[] = data.map((row) => {
+      const { messages, ...conversation } = row as Conversation & {
+        messages: { content: string; created_at: string }[] | null;
+      };
+      return {
+        ...conversation,
+        last_message_preview: messages?.[0]?.content ?? null,
+      };
+    });
+    return { data: items, error: null };
   }
 
   async function createConversation(

@@ -109,5 +109,15 @@ while keeping the olive/lime identity.
   token; warm ground + card shadow; tabular money figures; symbol-based currency
   formatter; emoji category chips (`categoryEmoji`) + deterministic
   `categoryColorFor` (no more gray); `BottomTabInset` wired into `ScreenScroll`;
-  list subtitle de-dup. **Pending:** dashboard "safe-to-spend" hero + chart
-  legend + top-categories bento; AI-chat composer polish; header consistency.
+  list subtitle de-dup.
+- **2026-07 — Refresh follow-through.** Dashboard "safe-to-spend" hero + chart
+  legend + top-categories bento; AI-chat composer polish. **Header icons unified
+  to one vocabulary:** native header-button icons rasterize Material Design Icons
+  via `apps/mobile/src/lib/header-icons.ts` (`headerIcon.*`) so they render and
+  tint on both iOS + Android — replacing the iOS-only `type: 'sfSymbol'` items
+  that were blank on Android. Add new header icons to that map, not inline.
+  **Conversation-history rows** now carry a one-line last-message preview + a
+  relative timestamp (`formatRelativeTime` in `@rinciku/core`, i18n
+  count-plurals — not `Intl.RelativeTimeFormat`, which Hermes lacks) and a proper
+  `EmptyState`. **Category icon picker:** decision recorded — it stays emoji
+  (mapped from the stored lucide name via `categoryEmoji`); no pure-emoji model.

@@ -58,6 +58,7 @@
     "newChat": "Obrolan baru",
     "options": "Opsi percakapan",
     "empty": "Belum ada percakapan.",
+    "emptyHint": "Mulai obrolan untuk mendapatkan saran berbasis anggaranmu. Percakapanmu akan muncul di sini.",
     "title": "Percakapan",
     "groups": {
       "today": "Hari ini",

@@ -2,10 +2,10 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useFocusEffect } from 'expo-router';
 
 import { listConversations } from '../api';
-import type { Conversation } from '../types';
+import type { ConversationListItem } from '../types';
 
 export type UseConversationsResult = {
-  data: Conversation[] | undefined;
+  data: ConversationListItem[] | undefined;
   isLoading: boolean;
   error: string | null;
   refetch: () => void;
@@ -19,7 +19,9 @@ export type UseConversationsResult = {
 // (there is no window-focus event on mobile), skipping the first focus since the
 // mount effect already loaded the list.
 export function useConversations(): UseConversationsResult {
-  const [data, setData] = useState<Conversation[] | undefined>(undefined);
+  const [data, setData] = useState<ConversationListItem[] | undefined>(
+    undefined
+  );
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [token, setToken] = useState(0);

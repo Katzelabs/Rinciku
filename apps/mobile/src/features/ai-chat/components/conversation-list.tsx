@@ -1,3 +1,5 @@
+import { formatRelativeTime } from '@rinciku/core';
+import { MessagesSquare } from 'lucide-react-native';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
@@ -9,15 +11,16 @@ import {
 } from 'react-native';
 
 import { AppText, Button, Card, InputShell, Sheet } from '@/components/ui';
+import { EmptyState } from '@/components/empty-state';
 import { SwipeRow } from '@/components/swipe-row';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
-import type { Conversation } from '@/features/ai-chat/types';
+import type { ConversationListItem } from '@/features/ai-chat/types';
 
 type Props = {
   visible: boolean;
   onClose: () => void;
-  conversations: Conversation[] | undefined;
+  conversations: ConversationListItem[] | undefined;
   isLoading: boolean;
   activeId: string | null;
   onSelect: (id: string) => void;
@@ -56,8 +59,8 @@ function bucketFor(value: string | null): GroupLabel {
   return 'older';
 }
 
-function groupConversations(items: Conversation[]) {
-  const map = new Map<GroupLabel, Conversation[]>();
+function groupConversations(items: ConversationListItem[]) {
+  const map = new Map<GroupLabel, ConversationListItem[]>();
   for (const c of items) {
     const key = bucketFor(c.last_message_at ?? c.created_at);
     const list = map.get(key);
@@ -86,10 +89,12 @@ export function ConversationList({
 }: Props) {
   const c = useTheme();
   const { t } = useTranslation('aiChat');
-  const [renameTarget, setRenameTarget] = useState<Conversation | null>(null);
+  const [renameTarget, setRenameTarget] = useState<ConversationListItem | null>(
+    null
+  );
   const [draft, setDraft] = useState('');
 
-  function startRename(conversation: Conversation) {
+  function startRename(conversation: ConversationListItem) {
     setDraft(conversation.title?.trim() || t('header.untitled'));
     setRenameTarget(conversation);
   }
@@ -137,6 +142,7 @@ export function ConversationList({
               <Card padding={0} style={styles.card}>
                 {group.items.map((conversation, i) => {
                   const isActive = conversation.id === activeId;
+                  const preview = conversation.last_message_preview?.trim();
                   return (
                     <SwipeRow
                       key={conversation.id}
@@ -146,13 +152,33 @@ export function ConversationList({
                       onLongPress={() => startRename(conversation)}
                       onDelete={() => onDelete(conversation.id)}
                     >
+                      <View style={styles.rowMain}>
+                        <AppText
+                          variant={isActive ? 'bodyMedium' : 'body'}
+                          color={isActive ? 'primary' : 'foreground'}
+                          numberOfLines={1}
+                        >
+                          {conversation.title?.trim() || t('header.untitled')}
+                        </AppText>
+                        {preview ? (
+                          <AppText
+                            variant='caption'
+                            color='mutedForeground'
+                            numberOfLines={1}
+                          >
+                            {preview}
+                          </AppText>
+                        ) : null}
+                      </View>
                       <AppText
-                        variant={isActive ? 'bodyMedium' : 'body'}
-                        color={isActive ? 'primary' : 'foreground'}
-                        numberOfLines={1}
-                        style={styles.rowText}
+                        variant='caption'
+                        color='mutedForeground'
+                        style={styles.rowTime}
                       >
-                        {conversation.title?.trim() || t('header.untitled')}
+                        {formatRelativeTime(
+                          conversation.last_message_at ??
+                            conversation.created_at
+                        )}
                       </AppText>
                     </SwipeRow>
                   );
@@ -163,9 +189,11 @@ export function ConversationList({
         </ScrollView>
       ) : (
         <View style={styles.center}>
-          <AppText variant='label' color='mutedForeground'>
-            {t('list.empty')}
-          </AppText>
+          <EmptyState
+            icon={MessagesSquare}
+            title={t('list.empty')}
+            subtitle={t('list.emptyHint')}
+          />
         </View>
       )}
 
@@ -208,7 +236,10 @@ const styles = StyleSheet.create({
   // overflow hidden so a swiped row's red delete action is clipped to the card's
   // rounded corners; rows own their horizontal padding (SwipeRow).
   card: { overflow: 'hidden' },
-  rowText: { flex: 1 },
+  // Title + one-line preview stack; the relative timestamp sits to the right and
+  // keeps its natural width so long titles/previews truncate instead of it.
+  rowMain: { flex: 1, gap: 2 },
+  rowTime: { flexShrink: 0 },
   input: {
     flex: 1,
     fontSize: 16,

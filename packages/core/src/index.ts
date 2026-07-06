@@ -3,6 +3,7 @@
 // i18next as a side effect and must be imported explicitly, once.
 export * from './format';
 export * from './locale';
+export * from './relative-time';
 export * from './currency-meta';
 export * from './fx';
 export * from './cycle';

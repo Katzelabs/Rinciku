@@ -5,6 +5,14 @@ import type { CurrencyCode } from '@rinciku/core';
 export type Conversation = Tables<'conversations'>;
 export type ChatMessageRow = Tables<'messages'>;
 
+// A conversation plus a preview of its most-recent message, for the history
+// list. `last_message_preview` is the plain-text `content` of the latest message
+// (or null for an empty conversation); derived from a limit-1 embed in
+// `listConversations`, not a stored column.
+export type ConversationListItem = Conversation & {
+  last_message_preview: string | null;
+};
+
 // A message row plus its linked image attachment (if any). The FK
 // messages.attachment_id references expense_attachments, so the embed is a
 // single row or null.

@@ -1,6 +1,7 @@
 // Portable ai-chat types live in @rinciku/domain/ai-chat (shared by web + mobile).
 export type {
   Conversation,
+  ConversationListItem,
   ChatMessageRow,
   ChatMessageRowWithImage,
   ChatItem,

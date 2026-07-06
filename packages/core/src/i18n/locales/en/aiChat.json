@@ -58,6 +58,7 @@
     "newChat": "New chat",
     "options": "Conversation options",
     "empty": "No conversations yet.",
+    "emptyHint": "Start a chat to get budget-grounded advice. Your conversations show up here.",
     "title": "Conversations",
     "groups": {
       "today": "Today",

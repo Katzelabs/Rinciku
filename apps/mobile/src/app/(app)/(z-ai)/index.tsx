@@ -1,4 +1,3 @@
-import MaterialDesignIcons from '@react-native-vector-icons/material-design-icons';
 import { Stack, useRouter } from 'expo-router';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -14,6 +13,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Screen } from '@/components/ui';
 import { Spacing } from '@/constants/theme';
+import { headerIcon } from '@/lib/header-icons';
 import { deleteConversation, touchConversation } from '@/features/ai-chat/api';
 import { ChatThread } from '@/features/ai-chat/components/chat-thread';
 import { ConversationList } from '@/features/ai-chat/components/conversation-list';
@@ -23,21 +23,6 @@ import { useChat } from '@/features/ai-chat/hooks/use-chat';
 import { useConversations } from '@/features/ai-chat/hooks/use-conversations';
 import { Notice } from '@/features/auth/components/notice';
 import { useTheme } from '@/hooks/use-theme';
-
-// Custom header-button icons. The native header items render an ImageSource, not
-// a React node — so (like the NativeTabs bar) we rasterize Material Design Icons
-// via `getImageSourceSync` instead of SF Symbols, keeping the chrome's custom
-// look consistent across platforms. Computed once at module scope (the call is
-// synchronous and must not run per render); baked black and tinted by the header.
-const HEADER_ICON_SIZE = 26;
-type MdiName = Parameters<typeof MaterialDesignIcons.getImageSourceSync>[0];
-const headerIcon = (name: MdiName) =>
-  MaterialDesignIcons.getImageSourceSync(name, HEADER_ICON_SIZE, 'black');
-const headerIcons = {
-  home: headerIcon('home-variant-outline'),
-  history: headerIcon('menu'),
-  newChat: headerIcon('plus'),
-};
 
 // The AI chat tab: budget-grounded consultation + expense/income/change
 // proposal cards, plus multi-conversation management (history sheet, new chat,
@@ -120,7 +105,7 @@ export default function AiScreen() {
               label: t('common:nav.items.home'),
               accessibilityLabel: t('common:nav.items.home'),
               type: 'button',
-              icon: { type: 'image', source: headerIcons.home, tinted: true },
+              icon: headerIcon.home,
               onPress: () => router.navigate('/(app)/(dashboard)'),
             },
           ],
@@ -129,22 +114,14 @@ export default function AiScreen() {
               label: t('header.openHistory'),
               accessibilityLabel: t('header.openHistory'),
               type: 'button',
-              icon: {
-                type: 'image',
-                source: headerIcons.history,
-                tinted: true,
-              },
+              icon: headerIcon.history,
               onPress: () => setHistoryOpen(true),
             },
             {
               label: t('header.newChat'),
               accessibilityLabel: t('header.newChat'),
               type: 'button',
-              icon: {
-                type: 'image',
-                source: headerIcons.newChat,
-                tinted: true,
-              },
+              icon: headerIcon.add,
               onPress: chat.startNew,
             },
           ],

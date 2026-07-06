@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 
 import { ScreenScroll } from '@/components/ui';
 import { Spacing } from '@/constants/theme';
+import { headerIcon } from '@/lib/header-icons';
 import { useTheme } from '@/hooks/use-theme';
 import {
   CategoriesManager,
@@ -23,7 +24,7 @@ export default function CategoriesScreen() {
             {
               label: t('spending.addTier'),
               type: 'button',
-              icon: { type: 'sfSymbol', name: 'plus' },
+              icon: headerIcon.add,
               tintColor: c.primary,
               variant: 'prominent',
               sharesBackground: false,

@@ -19,6 +19,7 @@ import {
   SectionHeader,
 } from '@/components/ui';
 import { Spacing } from '@/constants/theme';
+import { headerIcon } from '@/lib/header-icons';
 import { useAuth } from '@/features/auth/hooks/use-auth';
 import type { ListPeriod } from '@/features/expenses/components/expense-filters';
 import { useExpenses } from '@/features/expenses/hooks/use-expenses';
@@ -116,10 +117,7 @@ export default function ExpensesScreen() {
               label: t('common:nav.scanReceipt'),
               type: 'button',
               sharesBackground: false,
-              icon: {
-                type: 'sfSymbol',
-                name: 'camera',
-              },
+              icon: headerIcon.camera,
               onPress: () => router.push('/(app)/(expenses)/new'),
             },
           ],
