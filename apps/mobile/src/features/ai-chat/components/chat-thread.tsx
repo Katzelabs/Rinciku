@@ -1,8 +1,8 @@
+import { LegendList, type LegendListRef } from '@legendapp/list/react-native';
 import { ChevronDown } from 'lucide-react-native';
-import { useMemo, useRef, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
-  FlatList,
   Pressable,
   StyleSheet,
   View,
@@ -20,43 +20,48 @@ import { ExpenseProposalCard } from './expense-proposal-card';
 import { IncomeProposalCard } from './income-proposal-card';
 import { TypingIndicator } from './typing-indicator';
 
-// Show the scroll-to-latest affordance once the user has scrolled roughly a
-// screenful up from the newest turn (offset 0 on the inverted list).
+// Show the scroll-to-latest affordance once the newest turn is roughly a
+// screenful below the viewport (distance from the list's end).
 const SCROLL_DOWN_THRESHOLD = 240;
 
-// The message list. Rendered inverted so new content sticks to the bottom and
-// the keyboard pushes the latest turn into view without manual scrolling. The
-// live turn extras (typing indicator + the active confirmation card) sit in the
-// list header, which — because the list is inverted — renders just below the
-// most recent message.
+// Stable list callbacks so rows don't re-create their render closure each turn
+// (paired with the `memo`'d ChatMessage).
+const keyExtractor = (item: ChatItem) => item.id;
+const renderItem = ({ item }: { item: ChatItem }) => <ChatMessage item={item} />;
+
+// The message list. Rendered upright (newest at the bottom) with LegendList's
+// chat mode — `alignItemsAtEnd` pins a short conversation to the bottom and
+// `maintainScrollAtEnd` keeps the view stuck to the newest turn as messages
+// arrive. We deliberately avoid an inverted FlatList: the `scaleY: -1` flip it
+// relies on renders a faint overlay artifact on the New Architecture. The live
+// turn extras (typing indicator + active confirmation card) sit in the list
+// footer, which renders just below the most recent message.
 export function ChatThread({
   chat,
   topInset = 0,
 }: {
   chat: UseChatResult;
-  /** Clearance so the newest turn clears the header instead of scrolling under
-   * it. On the inverted list this is the content's *bottom* padding. */
+  /** Clearance so the oldest turn / resting scroll position clears the floating
+   * header instead of starting under it. This is the content's *top* padding. */
   topInset?: number;
 }) {
   const c = useTheme();
   const { t } = useTranslation('aiChat');
-  const listRef = useRef<FlatList<ChatItem>>(null);
+  const listRef = useRef<LegendListRef>(null);
   const [showScrollDown, setShowScrollDown] = useState(false);
 
-  // Inverted list wants newest-first data.
-  const data = useMemo(() => [...chat.messages].reverse(), [chat.messages]);
-
   function handleScroll(e: NativeSyntheticEvent<NativeScrollEvent>) {
-    const next = e.nativeEvent.contentOffset.y > SCROLL_DOWN_THRESHOLD;
+    const { contentOffset, contentSize, layoutMeasurement } = e.nativeEvent;
+    const distanceFromEnd = contentSize.height - layoutMeasurement.height - contentOffset.y;
+    const next = distanceFromEnd > SCROLL_DOWN_THRESHOLD;
     setShowScrollDown((prev) => (prev === next ? prev : next));
   }
 
-  // Newest turn sits at offset 0 on the inverted list.
-  function scrollToLatest() {
-    listRef.current?.scrollToOffset({ offset: 0, animated: true });
-  }
+  const scrollToLatest = useCallback(() => {
+    listRef.current?.scrollToEnd({ animated: true });
+  }, []);
 
-  const header = (
+  const footer = (
     <View style={styles.extras}>
       {chat.sending ? <TypingIndicator /> : null}
       {chat.proposal ? (
@@ -91,26 +96,23 @@ export function ChatThread({
     </View>
   );
 
-  // Inset the *list frame* (not just the scroll content) below the header, so
-  // messages clip at the header's bottom edge instead of scrolling under the
-  // transparent header — the same reason the (non-scrolling) welcome screen
-  // never bleeds. Without this, `style={{ flex: 1 }}` fills the whole screen
-  // beneath the header and content shows through it while scrolling.
   return (
-    <View style={[styles.list]}>
-      <FlatList
+    <View style={styles.list}>
+      <LegendList
         ref={listRef}
-        data={data}
-        inverted
-        keyExtractor={(item: ChatItem) => item.id}
-        renderItem={({ item }) => <ChatMessage item={item} />}
-        ListHeaderComponent={header}
-        contentContainerStyle={[styles.content, { paddingBottom: topInset }]}
+        data={chat.messages}
+        keyExtractor={keyExtractor}
+        renderItem={renderItem}
+        estimatedItemSize={80}
+        recycleItems={false}
+        alignItemsAtEnd
+        maintainScrollAtEnd
+        ListFooterComponent={footer}
+        contentContainerStyle={{ paddingTop: topInset, paddingBottom: Spacing.five }}
         keyboardShouldPersistTaps='handled'
         keyboardDismissMode='interactive'
         showsVerticalScrollIndicator={false}
         onScroll={handleScroll}
-        scrollEventThrottle={64}
       />
       {showScrollDown ? (
         <Pressable
@@ -138,15 +140,7 @@ const styles = StyleSheet.create({
   list: {
     flex: 1,
   },
-  // Grow to full height so a short conversation still anchors to the bottom
-  // (inverted list). Padding gives the bubbles breathing room from both chrome
-  // edges: paddingTop is the visual bottom (space above the composer input),
-  // paddingBottom is the visual top (space below the header).
-  content: {
-    flexGrow: 1,
-    paddingTop: Spacing.five,
-  },
-  extras: { gap: Spacing.two },
+  extras: { gap: Spacing.two, paddingTop: Spacing.two },
   card: { paddingHorizontal: Spacing.four, paddingTop: Spacing.two },
   // Floating pill just above the composer; taps jump back to the newest turn.
   scrollDown: {

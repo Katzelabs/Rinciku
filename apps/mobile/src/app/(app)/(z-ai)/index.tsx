@@ -43,9 +43,9 @@ export default function AiScreen() {
   });
   const [historyOpen, setHistoryOpen] = useState(false);
 
-  // Clearance so the newest turn / welcome hero clears the header. The inverted
-  // message list draws under the floating header items, so we inset content by
-  // the header bar height (~52) plus the safe-area top.
+  // Clearance so content clears the header. The message list draws under the
+  // floating header items, so we inset content by the header bar height (~52)
+  // plus the safe-area top.
   const headerClearance = insets.top + 52;
 
   const showWelcome =
@@ -95,8 +95,8 @@ export default function AiScreen() {
           via the (app) layout). Header: a "home" button on the left returns to
           the tabbed app; the chat-list + prominent "new chat" actions are
           grouped on the right. The header is transparent (floating glass
-          buttons); the inverted list is inset by `headerClearance` so the newest
-          turn rests below the buttons. */}
+          buttons); the message list content is inset by `headerClearance` so the
+          turns rest below the buttons. */}
       <Stack.Screen
         options={{
           headerTitle: '',

@@ -1,30 +1,68 @@
 import { useMemo, type ReactNode } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Linking, ScrollView, StyleSheet, Text, View } from 'react-native';
 
-import { AppText } from '@/components/ui';
-import { Fonts, Spacing, type ThemeColor } from '@/constants/theme';
+import { AppText, Divider } from '@/components/ui';
+import { Fonts, Radius, Spacing, type ThemeColor } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { withAlpha } from '@/lib/color';
 
 // Minimal, dependency-free markdown renderer for assistant replies. Covers the
-// subset the model actually emits — paragraphs, `#`/`##`/`###` headings,
-// ordered + unordered lists, and inline **bold** / *italic* / `code`. We render
-// with the app's own `AppText` type scale + theme tokens instead of pulling a
-// markdown library (which carries React 19 / Expo SDK 56 peer-dep risk under
-// pnpm and wouldn't match the brand typography).
+// full set the model actually emits — paragraphs, `#`..`###` headings, ordered +
+// unordered (and nested) lists, fenced code blocks, blockquotes, horizontal
+// rules, pipe tables, and inline **bold** / *italic* / ~~strike~~ / `code` /
+// [links](url). We render with the app's own `AppText` type scale + theme tokens
+// instead of pulling a markdown library (which carries React 19 / Expo SDK 56
+// peer-dep risk under pnpm and wouldn't match the brand typography).
+
+type ListItem = { ordered: boolean; marker: string; text: string; level: number };
+type TableCell = { text: string; align: 'left' | 'center' | 'right' };
 
 type Block =
   | { kind: 'heading'; level: number; text: string }
-  | { kind: 'ol'; items: { marker: string; text: string }[] }
-  | { kind: 'ul'; items: string[] }
+  | { kind: 'list'; items: ListItem[] }
+  | { kind: 'code'; lang: string | null; code: string }
+  | { kind: 'quote'; text: string }
+  | { kind: 'hr' }
+  | { kind: 'table'; header: TableCell[]; rows: string[][] }
   | { kind: 'p'; text: string };
 
-const HEADING = /^(#{1,3})\s+(.*)$/;
-const ORDERED = /^(\d+)\.\s+(.*)$/;
-const UNORDERED = /^[-*]\s+(.*)$/;
+const HEADING = /^(#{1,6})\s+(.*)$/;
+const ORDERED = /^(\s*)(\d+)\.\s+(.*)$/;
+const UNORDERED = /^(\s*)[-*]\s+(.*)$/;
+const FENCE = /^```(.*)$/;
+const QUOTE = /^>\s?(.*)$/;
+const HR = /^(-{3,}|\*{3,}|_{3,})$/;
+
+// Two spaces (or a tab, normalized to two) of leading indent = one nesting level.
+function indentLevel(spaces: string): number {
+  return Math.min(Math.floor(spaces.replace(/\t/g, '  ').length / 2), 4);
+}
+
+function splitTableRow(line: string): string[] {
+  return line
+    .trim()
+    .replace(/^\||\|$/g, '')
+    .split('|')
+    .map((cell) => cell.trim());
+}
+
+// A `|---|:--:|` style separator row — every cell is dashes with optional colons.
+function isTableSeparator(line: string): boolean {
+  if (!line.includes('-')) return false;
+  const cells = splitTableRow(line);
+  return cells.length > 0 && cells.every((cell) => /^:?-+:?$/.test(cell));
+}
+
+function alignOf(cell: string): TableCell['align'] {
+  const left = cell.startsWith(':');
+  const right = cell.endsWith(':');
+  if (left && right) return 'center';
+  if (right) return 'right';
+  return 'left';
+}
 
 // Split source text into block-level nodes. Blank lines separate paragraphs;
-// runs of list lines coalesce into a single list block.
+// runs of list / quote / table lines coalesce into a single block.
 function parseBlocks(src: string): Block[] {
   const lines = src.replace(/\r\n/g, '\n').split('\n');
   const blocks: Block[] = [];
@@ -38,10 +76,57 @@ function parseBlocks(src: string): Block[] {
   };
 
   for (let i = 0; i < lines.length; i++) {
-    const line = lines[i].trim();
+    const raw = lines[i];
+    const line = raw.trim();
 
     if (line === '') {
       flush();
+      continue;
+    }
+
+    // Fenced code block — parse first so its contents are never re-interpreted.
+    const fence = FENCE.exec(line);
+    if (fence) {
+      flush();
+      const lang = fence[1].trim();
+      const body: string[] = [];
+      let j = i + 1;
+      for (; j < lines.length; j++) {
+        if (FENCE.test(lines[j].trim())) break;
+        body.push(lines[j]);
+      }
+      blocks.push({ kind: 'code', lang: lang || null, code: body.join('\n') });
+      i = j; // skip the closing fence
+      continue;
+    }
+
+    if (HR.test(line)) {
+      flush();
+      blocks.push({ kind: 'hr' });
+      continue;
+    }
+
+    // Pipe table: a `|`-bearing header line immediately followed by a separator.
+    if (
+      line.includes('|') &&
+      i + 1 < lines.length &&
+      isTableSeparator(lines[i + 1].trim())
+    ) {
+      flush();
+      const headerCells = splitTableRow(line);
+      const aligns = splitTableRow(lines[i + 1].trim()).map(alignOf);
+      const header: TableCell[] = headerCells.map((text, k) => ({
+        text,
+        align: aligns[k] ?? 'left',
+      }));
+      const rows: string[][] = [];
+      let j = i + 2;
+      for (; j < lines.length; j++) {
+        if (!lines[j].includes('|') || lines[j].trim() === '') break;
+        rows.push(splitTableRow(lines[j]));
+      }
+      blocks.push({ kind: 'table', header, rows });
+      i = j - 1;
       continue;
     }
 
@@ -52,30 +137,48 @@ function parseBlocks(src: string): Block[] {
       continue;
     }
 
-    if (ORDERED.test(line)) {
+    const quote = QUOTE.exec(line);
+    if (quote) {
       flush();
-      const items: { marker: string; text: string }[] = [];
-      let j = i;
+      const body: string[] = [quote[1]];
+      let j = i + 1;
       for (; j < lines.length; j++) {
-        const m = ORDERED.exec(lines[j].trim());
+        const m = QUOTE.exec(lines[j].trim());
         if (!m) break;
-        items.push({ marker: `${m[1]}.`, text: m[2] });
+        body.push(m[1]);
       }
-      blocks.push({ kind: 'ol', items });
+      blocks.push({ kind: 'quote', text: body.join('\n') });
       i = j - 1;
       continue;
     }
 
-    if (UNORDERED.test(line)) {
+    // Lists — coalesce consecutive ordered/unordered lines (mixed + nested).
+    if (ORDERED.test(raw) || UNORDERED.test(raw)) {
       flush();
-      const items: string[] = [];
+      const items: ListItem[] = [];
       let j = i;
       for (; j < lines.length; j++) {
-        const m = UNORDERED.exec(lines[j].trim());
-        if (!m) break;
-        items.push(m[1]);
+        const o = ORDERED.exec(lines[j]);
+        const u = UNORDERED.exec(lines[j]);
+        if (o) {
+          items.push({
+            ordered: true,
+            marker: `${o[2]}.`,
+            text: o[3],
+            level: indentLevel(o[1]),
+          });
+        } else if (u) {
+          items.push({
+            ordered: false,
+            marker: '•',
+            text: u[2],
+            level: indentLevel(u[1]),
+          });
+        } else {
+          break;
+        }
       }
-      blocks.push({ kind: 'ul', items });
+      blocks.push({ kind: 'list', items });
       i = j - 1;
       continue;
     }
@@ -86,15 +189,14 @@ function parseBlocks(src: string): Block[] {
   return blocks;
 }
 
-// Tokenize inline spans. `**bold**`/`__bold__` win over `*italic*`/`_italic_`
-// (checked first in the alternation), and bold/italic recurse so nesting works.
-const INLINE = /(\*\*|__)(.+?)\1|(\*|_)(.+?)\3|`([^`]+?)`/g;
+type InlineOpts = { codeBg: string; codeColor: string; linkColor: string };
 
-function renderInline(
-  text: string,
-  codeBg: string,
-  codeColor: string
-): ReactNode[] {
+// Tokenize inline spans. `**bold**` wins over `*italic*` (checked first in the
+// alternation); bold/italic/strike/link text recurse so nesting works.
+const INLINE =
+  /(\*\*|__)(.+?)\1|(~~)(.+?)\3|(\*|_)(.+?)\5|`([^`]+?)`|\[([^\]]+)\]\(([^)]+)\)/g;
+
+function renderInline(text: string, opts: InlineOpts): ReactNode[] {
   const nodes: ReactNode[] = [];
   const regex = new RegExp(INLINE.source, 'g');
   let last = 0;
@@ -107,22 +209,39 @@ function renderInline(
     if (m[1] !== undefined) {
       nodes.push(
         <Text key={key++} style={styles.bold}>
-          {renderInline(m[2], codeBg, codeColor)}
+          {renderInline(m[2], opts)}
         </Text>
       );
     } else if (m[3] !== undefined) {
       nodes.push(
-        <Text key={key++} style={styles.italic}>
-          {renderInline(m[4], codeBg, codeColor)}
+        <Text key={key++} style={styles.strike}>
+          {renderInline(m[4], opts)}
         </Text>
       );
     } else if (m[5] !== undefined) {
       nodes.push(
+        <Text key={key++} style={styles.italic}>
+          {renderInline(m[6], opts)}
+        </Text>
+      );
+    } else if (m[7] !== undefined) {
+      nodes.push(
         <Text
           key={key++}
-          style={[styles.code, { backgroundColor: codeBg, color: codeColor }]}
+          style={[styles.code, { backgroundColor: opts.codeBg, color: opts.codeColor }]}
         >
-          {` ${m[5]} `}
+          {` ${m[7]} `}
+        </Text>
+      );
+    } else if (m[8] !== undefined) {
+      const url = m[9];
+      nodes.push(
+        <Text
+          key={key++}
+          style={[styles.link, { color: opts.linkColor }]}
+          onPress={() => Linking.openURL(url).catch(() => {})}
+        >
+          {renderInline(m[8], opts)}
         </Text>
       );
     }
@@ -130,6 +249,12 @@ function renderInline(
   }
   if (last < text.length) nodes.push(<Text key={key}>{text.slice(last)}</Text>);
   return nodes;
+}
+
+function headingVariant(level: number): 'title' | 'heading' | 'bodyMedium' {
+  if (level <= 1) return 'title';
+  if (level === 2) return 'heading';
+  return 'bodyMedium';
 }
 
 export function Markdown({
@@ -142,7 +267,11 @@ export function Markdown({
 }) {
   const c = useTheme();
   const blocks = useMemo(() => parseBlocks(content), [content]);
-  const codeBg = withAlpha(c.muted, 'AA');
+  const inline: InlineOpts = {
+    codeBg: withAlpha(c.muted, 'AA'),
+    codeColor: c.foreground,
+    linkColor: c.primary,
+  };
 
   return (
     <View style={styles.container}>
@@ -151,50 +280,134 @@ export function Markdown({
           return (
             <AppText
               key={i}
-              variant='heading'
+              variant={headingVariant(block.level)}
               color={color}
               selectable
-              style={i > 0 ? styles.headingSpaced : undefined}
+              style={[
+                i > 0 ? styles.headingSpaced : undefined,
+                block.level >= 3 ? styles.subHeading : undefined,
+              ]}
             >
-              {renderInline(block.text, codeBg, c.foreground)}
+              {renderInline(block.text, inline)}
             </AppText>
           );
         }
-        if (block.kind === 'ol') {
+
+        if (block.kind === 'code') {
+          return (
+            <View
+              key={i}
+              style={[
+                styles.codeBlock,
+                { backgroundColor: withAlpha(c.muted, 'AA'), borderColor: c.border },
+              ]}
+            >
+              {block.lang ? (
+                <AppText variant='overline' color='mutedForeground'>
+                  {block.lang}
+                </AppText>
+              ) : null}
+              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                <Text selectable style={[styles.codeText, { color: c.foreground }]}>
+                  {block.code}
+                </Text>
+              </ScrollView>
+            </View>
+          );
+        }
+
+        if (block.kind === 'quote') {
+          return (
+            <View key={i} style={[styles.quote, { borderLeftColor: c.primary }]}>
+              <AppText variant='body' color='mutedForeground' selectable>
+                {renderInline(block.text, inline)}
+              </AppText>
+            </View>
+          );
+        }
+
+        if (block.kind === 'hr') {
+          return (
+            <View key={i} style={styles.hr}>
+              <Divider />
+            </View>
+          );
+        }
+
+        if (block.kind === 'table') {
+          return (
+            <ScrollView
+              key={i}
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              style={styles.tableScroll}
+            >
+              <View style={[styles.table, { borderColor: c.border }]}>
+                <View style={[styles.tableRow, { backgroundColor: withAlpha(c.muted, '66') }]}>
+                  {block.header.map((cell, k) => (
+                    <View key={k} style={[styles.tableCell, { borderColor: c.border }]}>
+                      <AppText
+                        variant='label'
+                        color={color}
+                        selectable
+                        style={{ textAlign: cell.align }}
+                      >
+                        {renderInline(cell.text, inline)}
+                      </AppText>
+                    </View>
+                  ))}
+                </View>
+                {block.rows.map((row, r) => (
+                  <View
+                    key={r}
+                    style={[styles.tableRow, styles.tableBodyRow, { borderColor: c.border }]}
+                  >
+                    {block.header.map((cell, k) => (
+                      <View key={k} style={[styles.tableCell, { borderColor: c.border }]}>
+                        <AppText
+                          variant='body'
+                          color={color}
+                          selectable
+                          style={{ textAlign: cell.align }}
+                        >
+                          {renderInline(row[k] ?? '', inline)}
+                        </AppText>
+                      </View>
+                    ))}
+                  </View>
+                ))}
+              </View>
+            </ScrollView>
+          );
+        }
+
+        if (block.kind === 'list') {
           return (
             <View key={i} style={styles.list}>
               {block.items.map((item, j) => (
-                <View key={j} style={styles.listRow}>
-                  <AppText variant='body' color={color} style={styles.orderedMarker}>
+                <View
+                  key={j}
+                  style={[styles.listRow, { paddingLeft: item.level * Spacing.four }]}
+                >
+                  <AppText
+                    variant='body'
+                    color={color}
+                    style={item.ordered ? styles.orderedMarker : styles.bulletMarker}
+                  >
                     {item.marker}
                   </AppText>
                   <AppText variant='body' color={color} selectable style={styles.listText}>
-                    {renderInline(item.text, codeBg, c.foreground)}
+                    {renderInline(item.text, inline)}
                   </AppText>
                 </View>
               ))}
             </View>
           );
         }
-        if (block.kind === 'ul') {
-          return (
-            <View key={i} style={styles.list}>
-              {block.items.map((item, j) => (
-                <View key={j} style={styles.listRow}>
-                  <AppText variant='body' color={color} style={styles.bulletMarker}>
-                    {'•'}
-                  </AppText>
-                  <AppText variant='body' color={color} selectable style={styles.listText}>
-                    {renderInline(item, codeBg, c.foreground)}
-                  </AppText>
-                </View>
-              ))}
-            </View>
-          );
-        }
+
         return (
           <AppText key={i} variant='body' color={color} selectable>
-            {renderInline(block.text, codeBg, c.foreground)}
+            {renderInline(block.text, inline)}
           </AppText>
         );
       })}
@@ -204,13 +417,46 @@ export function Markdown({
 
 const styles = StyleSheet.create({
   container: { gap: Spacing.two },
-  headingSpaced: { marginTop: Spacing.one },
+  headingSpaced: { marginTop: Spacing.two },
+  subHeading: { fontFamily: Fonts.semibold },
   list: { gap: Spacing.one },
   listRow: { flexDirection: 'row', gap: Spacing.two },
   orderedMarker: { fontFamily: Fonts.semibold, minWidth: 20 },
   bulletMarker: { minWidth: 14 },
   listText: { flex: 1 },
+  codeBlock: {
+    borderRadius: Radius.md,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderCurve: 'continuous',
+    paddingHorizontal: Spacing.three,
+    paddingVertical: Spacing.two,
+    gap: Spacing.one,
+  },
+  codeText: { fontFamily: Fonts.mono, fontSize: 13, lineHeight: 19 },
+  quote: {
+    borderLeftWidth: 3,
+    paddingLeft: Spacing.three,
+    paddingVertical: Spacing.half,
+  },
+  hr: { marginVertical: Spacing.one },
+  tableScroll: { flexGrow: 0 },
+  table: {
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: Radius.md,
+    borderCurve: 'continuous',
+    overflow: 'hidden',
+  },
+  tableRow: { flexDirection: 'row' },
+  tableBodyRow: { borderTopWidth: StyleSheet.hairlineWidth },
+  tableCell: {
+    minWidth: 96,
+    paddingHorizontal: Spacing.three,
+    paddingVertical: Spacing.two,
+    borderRightWidth: StyleSheet.hairlineWidth,
+  },
   bold: { fontFamily: Fonts.bold },
   italic: { fontStyle: 'italic' },
+  strike: { textDecorationLine: 'line-through' },
+  link: { textDecorationLine: 'underline' },
   code: { fontFamily: Fonts.mono, fontSize: 14 },
 });
