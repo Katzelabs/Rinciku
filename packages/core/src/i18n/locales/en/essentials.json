@@ -49,12 +49,23 @@
   "table": {
     "name": "Name",
     "category": "Category",
+    "notes": "Notes",
     "amount": "Amount",
     "actions": "Actions",
     "editLabel": "Edit essential",
     "deleteLabel": "Delete essential",
     "empty": "No essentials yet.",
     "addFirst": "Add your first essential"
+  },
+  "detail": {
+    "title": "Essential details",
+    "description": "Review this essential, then edit or delete it.",
+    "amount": "Estimated amount",
+    "name": "Name",
+    "category": "Category",
+    "notes": "Notes",
+    "noNotes": "No notes",
+    "edit": "Edit"
   },
   "summary": {
     "label": "Monthly baseline",

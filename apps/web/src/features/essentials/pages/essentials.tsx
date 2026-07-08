@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Outlet, useNavigate } from 'react-router';
 import { Plus } from 'lucide-react';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
@@ -26,12 +27,12 @@ import { MonthlyBaselineSummary } from '../components/monthly-baseline-summary';
 
 type DialogState =
   | { kind: 'create' }
-  | { kind: 'edit'; row: EssentialWithCategory }
   | { kind: 'delete'; row: EssentialWithCategory }
   | null;
 
 export function EssentialsPage() {
   const { t } = useTranslation('essentials');
+  const navigate = useNavigate();
   const { profile } = useAuth();
   const baseCurrency = (profile?.base_currency ?? 'IDR') as CurrencyCode;
   const [dialog, setDialog] = useState<DialogState>(null);
@@ -106,7 +107,12 @@ export function EssentialsPage() {
               rows={rows}
               baseCurrency={baseCurrency}
               onAdd={() => setDialog({ kind: 'create' })}
-              onEdit={(row) => setDialog({ kind: 'edit', row })}
+              onView={(row) =>
+                navigate(`/essentials/${row.id}`, { state: { row } })
+              }
+              onEdit={(row) =>
+                navigate(`/essentials/${row.id}/edit`, { state: { row } })
+              }
               onDelete={(row) => setDialog({ kind: 'delete', row })}
               bordered={false}
               isLoading={loading}
@@ -139,36 +145,13 @@ export function EssentialsPage() {
         </DialogContent>
       </Dialog>
 
-      <Dialog
-        open={dialog?.kind === 'edit'}
-        onOpenChange={(open) => !open && setDialog(null)}
-      >
-        <DialogContent className='sm:max-w-lg'>
-          <DialogHeader>
-            <DialogTitle>{t('dialog.edit.title')}</DialogTitle>
-            <DialogDescription>
-              {t('dialog.edit.description')}
-            </DialogDescription>
-          </DialogHeader>
-          {dialog?.kind === 'edit' && (
-            <EssentialForm
-              mode='edit'
-              defaultValues={{
-                id: dialog.row.id,
-                name: dialog.row.name,
-                estimated_amount: Number(dialog.row.estimated_amount),
-                currency: dialog.row.currency as CurrencyCode,
-                category_id: dialog.row.category_id ?? '',
-                notes: dialog.row.notes ?? '',
-              }}
-              onSuccess={() => {
-                setDialog(null);
-                refetch();
-              }}
-            />
-          )}
-        </DialogContent>
-      </Dialog>
+      <Outlet
+        context={{
+          refetch,
+          requestDelete: (row: EssentialWithCategory) =>
+            setDialog({ kind: 'delete', row }),
+        }}
+      />
 
       <Dialog
         open={dialog?.kind === 'delete'}

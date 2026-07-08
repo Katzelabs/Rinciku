@@ -17,6 +17,7 @@ const api = createEssentialsApi(supabase);
 
 export const {
   listEssentials,
+  getEssential,
   createEssential,
   updateEssential,
   deleteEssential,

@@ -30,6 +30,18 @@ export function createEssentialsApi(db: TypedSupabaseClient) {
     return { data, error };
   }
 
+  async function getEssential(
+    id: string
+  ): Promise<Result<EssentialWithCategory>> {
+    const { data, error } = await db
+      .from('essentials')
+      .select(ESSENTIAL_WITH_CATEGORY_SELECT)
+      .eq('id', id)
+      .returns<EssentialWithCategory[]>()
+      .maybeSingle();
+    return { data, error };
+  }
+
   async function createEssential(
     input: CreateEssentialInput
   ): Promise<Result<EssentialRow>> {
@@ -61,6 +73,7 @@ export function createEssentialsApi(db: TypedSupabaseClient) {
 
   return {
     listEssentials,
+    getEssential,
     createEssential,
     updateEssential,
     deleteEssential,

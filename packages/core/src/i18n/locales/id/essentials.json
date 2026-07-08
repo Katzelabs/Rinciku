@@ -49,12 +49,23 @@
   "table": {
     "name": "Nama",
     "category": "Kategori",
+    "notes": "Catatan",
     "amount": "Jumlah",
     "actions": "Aksi",
     "editLabel": "Ubah kebutuhan",
     "deleteLabel": "Hapus kebutuhan",
     "empty": "Belum ada kebutuhan pokok.",
     "addFirst": "Tambahkan kebutuhan pertama Anda"
+  },
+  "detail": {
+    "title": "Detail kebutuhan",
+    "description": "Tinjau kebutuhan ini, lalu ubah atau hapus.",
+    "amount": "Perkiraan jumlah",
+    "name": "Nama",
+    "category": "Kategori",
+    "notes": "Catatan",
+    "noNotes": "Tidak ada catatan",
+    "edit": "Ubah"
   },
   "summary": {
     "label": "Acuan bulanan",

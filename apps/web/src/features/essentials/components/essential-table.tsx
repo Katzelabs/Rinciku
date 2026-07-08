@@ -15,6 +15,7 @@ type Props = {
   rows: EssentialWithCategory[];
   baseCurrency: CurrencyCode;
   onAdd: () => void;
+  onView: (row: EssentialWithCategory) => void;
   onEdit: (row: EssentialWithCategory) => void;
   onDelete: (row: EssentialWithCategory) => void;
   bordered?: boolean;
@@ -25,6 +26,7 @@ export function EssentialTable({
   rows,
   baseCurrency,
   onAdd,
+  onView,
   onEdit,
   onDelete,
   bordered,
@@ -49,6 +51,23 @@ export function EssentialTable({
       ),
       cell: ({ row }) => <CategoryTag category={row.original.category} />,
       sortingFn: 'text',
+    },
+    {
+      accessorKey: 'notes',
+      enableSorting: false,
+      header: t('table.notes'),
+      cell: ({ row }) =>
+        row.original.notes ? (
+          <span className='block max-w-[28ch] truncate text-muted-foreground'>
+            {row.original.notes}
+          </span>
+        ) : (
+          <span className='text-muted-foreground'>—</span>
+        ),
+      meta: {
+        headerClassName: 'hidden md:table-cell',
+        cellClassName: 'hidden md:table-cell',
+      },
     },
     {
       id: 'amount',
@@ -81,12 +100,14 @@ export function EssentialTable({
       enableSorting: false,
       header: t('table.actions'),
       cell: ({ row }) => (
-        <RowActions
-          editLabel={t('table.editLabel')}
-          deleteLabel={t('table.deleteLabel')}
-          onEdit={() => onEdit(row.original)}
-          onDelete={() => onDelete(row.original)}
-        />
+        <div onClick={(event) => event.stopPropagation()}>
+          <RowActions
+            editLabel={t('table.editLabel')}
+            deleteLabel={t('table.deleteLabel')}
+            onEdit={() => onEdit(row.original)}
+            onDelete={() => onDelete(row.original)}
+          />
+        </div>
       ),
       meta: {
         headerClassName: 'w-[120px] text-right',
@@ -111,6 +132,7 @@ export function EssentialTable({
       emptyMessage={emptyMessage}
       bordered={bordered}
       isLoading={isLoading}
+      onRowClick={onView}
     />
   );
 }
