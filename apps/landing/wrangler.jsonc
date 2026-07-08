@@ -1,0 +1,9 @@
+{
+  // Assets-only Worker: serves the Astro static build. No server code.
+  // `directory` is resolved relative to this file → apps/landing/dist.
+  "name": "rinciku-landing",
+  "compatibility_date": "2026-07-08",
+  "assets": {
+    "directory": "./dist"
+  }
+}
