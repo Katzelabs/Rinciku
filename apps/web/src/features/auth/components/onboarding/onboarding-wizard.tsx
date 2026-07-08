@@ -15,27 +15,52 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
+import { Spinner } from '@/components/ui/spinner';
 import { cn } from '@/lib/utils';
 import { CURRENCY_CODES, type CurrencyCode } from '@rinciku/core';
+import { isLanguage } from '@rinciku/core/i18n';
 
 import { upsertProfile } from '../../api';
 import { useAuth } from '../../hooks/use-auth';
-import { makeOnboardingSchema, type OnboardingInput } from '../../schemas';
+import {
+  APP_LANGUAGES,
+  makeOnboardingSchema,
+  type AppLanguage,
+  type OnboardingInput,
+} from '../../schemas';
 import { AccountStep } from './steps/account-step';
+import { AllSetStep } from './steps/all-set-step';
 import { BudgetStep } from './steps/budget-step';
+import { BudgetsReviewStep } from './steps/budgets-review-step';
 import { CategoriesReviewStep } from './steps/categories-review-step';
 import { CurrencyStep } from './steps/currency-step';
+import { EssentialsReviewStep } from './steps/essentials-review-step';
+import { WelcomeStep } from './steps/welcome-step';
 import { WizardProgress } from './wizard-progress';
 
-type StepKey = 'account' | 'currency' | 'budget' | 'review';
+type StepKey =
+  | 'welcome'
+  | 'account'
+  | 'currency'
+  | 'budget'
+  | 'review'
+  | 'essentials'
+  | 'budgets'
+  | 'allSet';
 
 type Step = {
   key: StepKey;
   fields: (keyof OnboardingInput)[];
   Component: () => React.ReactNode;
+  // Skippable data steps render a "Skip for now" action; their rows persist
+  // incrementally through their own feature APIs, so skipping just advances.
+  skippable?: boolean;
+  // Data-heavy steps get a wider card.
+  wide?: boolean;
 };
 
 const STEPS: Step[] = [
+  { key: 'welcome', fields: [], Component: WelcomeStep },
   { key: 'account', fields: ['display_name'], Component: AccountStep },
   { key: 'currency', fields: ['base_currency'], Component: CurrencyStep },
   {
@@ -43,7 +68,22 @@ const STEPS: Step[] = [
     fields: ['expected_monthly_income', 'month_start_day'],
     Component: BudgetStep,
   },
-  { key: 'review', fields: [], Component: CategoriesReviewStep },
+  { key: 'review', fields: [], Component: CategoriesReviewStep, wide: true },
+  {
+    key: 'essentials',
+    fields: [],
+    Component: EssentialsReviewStep,
+    skippable: true,
+    wide: true,
+  },
+  {
+    key: 'budgets',
+    fields: [],
+    Component: BudgetsReviewStep,
+    skippable: true,
+    wide: true,
+  },
+  { key: 'allSet', fields: [], Component: AllSetStep },
 ];
 
 function toCurrencyCode(value: string | null | undefined): CurrencyCode {
@@ -52,8 +92,14 @@ function toCurrencyCode(value: string | null | undefined): CurrencyCode {
     : 'IDR';
 }
 
+function toLanguage(value: string | null | undefined): AppLanguage {
+  return (APP_LANGUAGES as readonly string[]).includes(value ?? '')
+    ? (value as AppLanguage)
+    : 'en';
+}
+
 export function OnboardingWizard() {
-  const { t } = useTranslation('auth');
+  const { t, i18n } = useTranslation('auth');
   const { user, profile, refreshProfile } = useAuth();
   const navigate = useNavigate();
   const [step, setStep] = useState(0);
@@ -64,6 +110,9 @@ export function OnboardingWizard() {
     defaultValues: {
       display_name: profile?.display_name ?? '',
       base_currency: toCurrencyCode(profile?.base_currency),
+      // Language is chosen via the LanguageSelect (i18n) — seed from the profile
+      // or the resolved UI language, then re-read the live value at submit.
+      language: toLanguage(profile?.language ?? i18n.resolvedLanguage),
       expected_monthly_income: profile?.expected_monthly_income ?? 0,
       // Start blank (not a pre-filled 1) so the user types their own day; the
       // schema requires an integer 1–28, so empty/0 fail validation on submit.
@@ -86,7 +135,12 @@ export function OnboardingWizard() {
   async function onFinish(values: OnboardingInput) {
     if (!user) return;
     try {
-      await upsertProfile(user.id, values);
+      // The LanguageSelect drives i18n directly, so read the live UI language
+      // at submit rather than trusting the form's seeded default.
+      const language = isLanguage(i18n.resolvedLanguage)
+        ? i18n.resolvedLanguage
+        : values.language;
+      await upsertProfile(user.id, { ...values, language });
       await refreshProfile();
       navigate('/', { replace: true });
     } catch (error) {
@@ -101,7 +155,7 @@ export function OnboardingWizard() {
     <div
       className={cn(
         'w-full transition-[max-width]',
-        isLast ? 'max-w-2xl' : 'max-w-md'
+        current.wide ? 'max-w-2xl' : 'max-w-md'
       )}
     >
       <div className='mb-2 flex justify-end'>
@@ -133,19 +187,32 @@ export function OnboardingWizard() {
           >
             {t('onboarding.nav.back')}
           </Button>
-          {isLast ? (
-            <Button
-              type='button'
-              onClick={methods.handleSubmit(onFinish)}
-              disabled={isSubmitting}
-            >
-              {t('onboarding.nav.finish')}
-            </Button>
-          ) : (
-            <Button type='button' onClick={handleNext}>
-              {t('onboarding.nav.next')}
-            </Button>
-          )}
+          <div className='flex items-center gap-2'>
+            {current.skippable && !isLast && (
+              <Button
+                type='button'
+                variant='ghost'
+                onClick={() => setStep((s) => s + 1)}
+                disabled={isSubmitting}
+              >
+                {t('onboarding.nav.skip')}
+              </Button>
+            )}
+            {isLast ? (
+              <Button
+                type='button'
+                onClick={methods.handleSubmit(onFinish)}
+                disabled={isSubmitting}
+              >
+                {isSubmitting && <Spinner data-icon='inline-start' />}
+                {t('onboarding.nav.getStarted')}
+              </Button>
+            ) : (
+              <Button type='button' onClick={handleNext}>
+                {t('onboarding.nav.next')}
+              </Button>
+            )}
+          </div>
         </CardFooter>
       </Card>
     </div>

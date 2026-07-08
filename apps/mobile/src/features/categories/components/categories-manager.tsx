@@ -163,7 +163,6 @@ export const CategoriesManager = forwardRef<
         {inlineAdd ? (
           <Pill
             tone='primary'
-            systemImage='plus'
             leading={<Plus size={16} color={c.primaryForeground} />}
             label={t('spending.addTier')}
             onPress={() => setDialog({ kind: 'create-tier' })}

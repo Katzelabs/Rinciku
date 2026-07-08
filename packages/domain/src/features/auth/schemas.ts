@@ -100,6 +100,9 @@ export const makeResetPasswordSchema = makeChangePasswordSchema;
 
 export type ResetPasswordInput = ChangePasswordInput;
 
+export const APP_LANGUAGES = ['en', 'id'] as const;
+export type AppLanguage = (typeof APP_LANGUAGES)[number];
+
 export function makeOnboardingSchema(t: TFunction) {
   return z.object({
     display_name: z
@@ -109,6 +112,9 @@ export function makeOnboardingSchema(t: TFunction) {
       .max(80, t('errors.displayNameMax')),
     base_currency: z.enum(CURRENCY_CODES, {
       message: t('errors.currencyRequired'),
+    }),
+    language: z.enum(APP_LANGUAGES, {
+      message: t('errors.languageRequired'),
     }),
     expected_monthly_income: z
       .number({ message: t('errors.incomeNumber') })

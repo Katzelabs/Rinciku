@@ -8,6 +8,7 @@ export {
   makeResetPasswordSchema,
   makeOnboardingSchema,
   passwordPolicy,
+  APP_LANGUAGES,
 } from '@rinciku/domain/auth';
 
 export type {
@@ -17,4 +18,5 @@ export type {
   ForgotPasswordInput,
   ResetPasswordInput,
   OnboardingInput,
+  AppLanguage,
 } from '@rinciku/domain/auth';
