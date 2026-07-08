@@ -73,12 +73,54 @@ headline changes:
 node scripts/generate-assets.mjs   # writes apple-touch-icon / icon-*/ favicon-32 / og.png into public/
 ```
 
-## Before deploy
+## Deploy — Cloudflare Pages
 
-- Set `PUBLIC_WEB_APP_URL` for the target env (defaults to `https://app.rinciku.com`); the
-  CTA, `/privacy`, and `/terms` links derive from it. Optionally set `PUBLIC_GITHUB_URL`.
-- Add analytics (privacy-friendly, e.g. Plausible) and a host config
-  (`vercel.json` / `netlify.toml`) once the host is chosen.
-- Static output — deploy `dist/` to any static host (Vercel / Netlify; no adapter needed).
+The site is fully static, so **no Astro adapter is needed** (`@astrojs/cloudflare` is only for
+SSR). Deploy the built `dist/` to Cloudflare Pages.
+
+### Recommended: Git integration
+
+In the Cloudflare dashboard → **Workers & Pages → Create → Pages → Connect to Git**, pick this
+repo and set:
+
+| Setting                    | Value                              |
+| -------------------------- | ---------------------------------- |
+| Production branch          | `main`                             |
+| Framework preset           | Astro                              |
+| Root directory             | _(leave blank — repo root)_        |
+| Build command              | `pnpm --filter @rinciku/landing build` |
+| Build output directory     | `apps/landing/dist`                |
+
+Cloudflare auto-detects pnpm from `pnpm-lock.yaml` + the root `packageManager` field and installs
+workspace deps from the repo root (why root directory stays blank — a subdir install can't resolve
+`workspace:*`). This gives automatic production deploys on `main` and preview deploys per PR.
+
+**Environment variables** (Pages → Settings → Variables, set for Production _and_ Preview — Astro
+inlines `PUBLIC_*` at build time):
+
+| Variable             | Value                                                     |
+| -------------------- | --------------------------------------------------------- |
+| `PUBLIC_WEB_APP_URL` | `https://app.rinciku.com`                                 |
+| `NODE_VERSION`       | `24` (or any `>=22.12` — Astro requires it; only needed if the build image defaults to older Node) |
+| `PUBLIC_GITHUB_URL`  | _(optional)_ repo link for the footer                     |
+
+**Custom domain:** Pages → Custom domains → add `rinciku.com` (matches `site` in
+`astro.config.mjs`). The web app stays on its own `app.rinciku.com`.
+
+`public/_headers` (copied to `dist/_headers`) sets immutable caching for `/_astro/*` and baseline
+security headers — Cloudflare Pages applies it automatically.
+
+### Alternative: direct upload (CLI)
+
+```bash
+pnpm --filter @rinciku/landing build
+npx wrangler pages deploy apps/landing/dist --project-name rinciku-landing
+```
+
+### Still optional
+
+- Analytics — Cloudflare Web Analytics (privacy-friendly, no cookie banner) fits well; enable it
+  on the Pages project, or add a Plausible snippet.
+- A custom bilingual 404 page.
 
 See the repo root [`CLAUDE.md`](../../CLAUDE.md) for the full monorepo architecture.
