@@ -32,7 +32,8 @@ Rinciku is a **pnpm + Turborepo** monorepo. The two apps **share a brain, never 
 ```
 apps/
 ├─ web/                 # @rinciku/web — Vite + React + shadcn/ui web app
-└─ mobile/              # @rinciku/mobile — Expo (React Native) app, iOS + Android only
+├─ mobile/              # @rinciku/mobile — Expo (React Native) app, iOS + Android only
+└─ landing/             # @rinciku/landing — Astro static marketing site (bilingual EN/ID)
 
 packages/
 ├─ domain/              # @rinciku/domain — portable per-feature "brain": create<Feature>Api(db), Zod schemas, types
@@ -57,7 +58,9 @@ docs/                   # PROJECT_BRIEF.md, schema.md, design-system.md, tasks/
 | Styling        | Tailwind CSS v4 (CSS-first) + shadcn/ui             | RN `StyleSheet` + design tokens; iOS Liquid Glass      |
 | Optimization   | React Compiler                                      | React Compiler                                         |
 
-**Shared across both:** TypeScript 6 (strict) · Supabase (PostgreSQL, Auth, RLS, Storage, Edge Functions) · react-hook-form 7 + Zod 4 · i18next / react-i18next (EN + ID) · portable `@rinciku/*` domain, core, db, and config packages.
+**Landing** (`apps/landing`): a separate **Astro** static site — same Tailwind v4 brand tokens, bilingual EN/ID via Astro i18n, zero-JS output, drives visitors to the web app.
+
+**Shared across both apps:** TypeScript 6 (strict) · Supabase (PostgreSQL, Auth, RLS, Storage, Edge Functions) · react-hook-form 7 + Zod 4 · i18next / react-i18next (EN + ID) · portable `@rinciku/*` domain, core, db, and config packages.
 
 **Tooling:** Turborepo · ESLint (flat config) + Prettier · **Runtime:** Node `>=24 <26` · **Package manager:** [pnpm](https://pnpm.io)
 
@@ -87,13 +90,14 @@ cp apps/mobile/.env.example apps/mobile/.env   # fill in EXPO_PUBLIC_SUPABASE_*
 
 ### Run
 
-Dev servers are **per-app** — target the workspace (a bare `pnpm dev` runs both at once):
+Dev servers are **per-app** — target the workspace (a bare `pnpm dev` runs them all at once):
 
 ```bash
 pnpm --filter @rinciku/web dev       # Vite dev server (web)
 pnpm --filter @rinciku/mobile start  # Expo dev server (mobile)
 pnpm --filter @rinciku/mobile ios    # native run via local Xcode
 pnpm --filter @rinciku/mobile android
+pnpm --filter @rinciku/landing dev   # Astro dev server (landing) → :4321
 ```
 
 > The database schema is **declarative** — `supabase/schemas/*.sql` is the source of truth and `supabase/migrations/*.sql` are generated artifacts. See [`CLAUDE.md`](CLAUDE.md) for the full schema workflow.
@@ -111,7 +115,7 @@ Root scripts are orchestrated by **Turborepo** and fan out across workspaces:
 | `pnpm format`    | Prettier write across the repo                                 |
 | `pnpm gen:types` | Regenerate `packages/db/src/database.types.ts` from the local DB |
 
-Target a single workspace with `pnpm --filter @rinciku/<web|mobile|core|domain|db|config> <script>`.
+Target a single workspace with `pnpm --filter @rinciku/<web|mobile|landing|core|domain|db|config> <script>`.
 
 ## Environment variables
 
@@ -131,6 +135,13 @@ Client variables are per-app and gitignored. Only the names are shown here — n
 | `EXPO_PUBLIC_SUPABASE_URL`            | Supabase project URL             |
 | `EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY`| Supabase publishable key         |
 
+**Landing** (`apps/landing/.env`):
+
+| Variable             | Purpose                                             |
+| -------------------- | --------------------------------------------------- |
+| `PUBLIC_WEB_APP_URL` | URL the "Try free" CTA links to (web app sign-up)   |
+| `PUBLIC_GITHUB_URL`  | Optional — repo link in the footer                  |
+
 Server-side secrets used by Edge Functions (e.g. `OPENROUTER_API_KEY`, `SUPABASE_SERVICE_ROLE_KEY`) are set via `supabase secrets set …` and **never** reach the client.
 
 ## Architecture notes
@@ -142,7 +153,7 @@ Server-side secrets used by Edge Functions (e.g. `OPENROUTER_API_KEY`, `SUPABASE
 - **AI keys stay server-side** — the `ai-chat` Edge Function proxies model calls so API keys never reach the client.
 - **React Compiler enabled** (both apps) — follow the Rules of React; avoid hand-written `useMemo`/`useCallback`.
 
-For deeper context, see [`docs/PROJECT_BRIEF.md`](docs/PROJECT_BRIEF.md) (product vision & MVP), [`docs/schema.md`](docs/schema.md) (database design), [`docs/design-system.md`](docs/design-system.md) (visual rules), and [`CLAUDE.md`](CLAUDE.md) (full architecture & workflows). App-specific detail lives in [`apps/web`](apps/web) and [`apps/mobile/README.md`](apps/mobile/README.md).
+For deeper context, see [`docs/PROJECT_BRIEF.md`](docs/PROJECT_BRIEF.md) (product vision & MVP), [`docs/schema.md`](docs/schema.md) (database design), [`docs/design-system.md`](docs/design-system.md) (visual rules), and [`CLAUDE.md`](CLAUDE.md) (full architecture & workflows). App-specific detail lives in [`apps/web`](apps/web), [`apps/mobile/README.md`](apps/mobile/README.md), and [`apps/landing/README.md`](apps/landing/README.md).
 
 ## Status & license
 

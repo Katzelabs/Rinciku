@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **Rinciku** ("rincian keuanganku" — my financial details) is an AI-powered, **cross-platform** personal finance app (web + iOS/Android) for users with mixed IDR/USD income and variable monthly expenses. The differentiator vs. typical finance apps is **in-the-moment AI purchase consultation** grounded in the user's real budget state (income, essentials baseline, spending so far, days left in month) — not generic advice. See `docs/PROJECT_BRIEF.md` for the full product brief, MVP feature list, and target user.
 
-The two apps share a **brain, never a face**: portable domain logic (data access, Zod schemas, types, formatting, i18n) lives in `packages/*` and is consumed by both `apps/web` (Vite + React + shadcn) and `apps/mobile` (Expo + React Native). UI, routing, and caching stay per-app.
+The two apps share a **brain, never a face**: portable domain logic (data access, Zod schemas, types, formatting, i18n) lives in `packages/*` and is consumed by both `apps/web` (Vite + React + shadcn) and `apps/mobile` (Expo + React Native). UI, routing, and caching stay per-app. A third app, `apps/landing` (Astro static site), is the public marketing page — it shares the brand tokens but not the domain brain, and drives visitors to the web app.
 
 Ongoing work is tracked in `docs/tasks/` — see the **Task tracking** section.
 
@@ -22,13 +22,14 @@ Package manager is **pnpm** (see `pnpm-workspace.yaml`), orchestrated by **Turbo
 - `pnpm format` — Prettier write across the repo
 - `pnpm gen:types` — regenerate `packages/db/src/database.types.ts` from the local DB
 
-**Dev servers are per-app — target the workspace** (a bare `pnpm dev` runs `turbo run dev`, which now fans out to *both* the web Vite server and the Expo bundler at once):
+**Dev servers are per-app — target the workspace** (a bare `pnpm dev` runs `turbo run dev`, which now fans out to the web Vite server, the Expo bundler, *and* the Astro landing server at once):
 
 - `pnpm --filter @rinciku/web dev` — Vite dev server for the web app
 - `pnpm --filter @rinciku/mobile start` — Expo dev server (needs a dev build, not Expo Go — Liquid Glass UI requires it)
 - `pnpm --filter @rinciku/mobile ios` / `... android` — native run via local Xcode/Gradle (no EAS yet)
+- `pnpm --filter @rinciku/landing dev` — Astro dev server for the landing page (`:4321`)
 
-Target any single workspace with `pnpm --filter @rinciku/<web|mobile> <script>` (or `@rinciku/core`, `@rinciku/domain`, etc. for packages). There is no test runner configured yet. Turborepo **remote** caching is not set up yet (local caching works).
+Target any single workspace with `pnpm --filter @rinciku/<web|mobile|landing> <script>` (or `@rinciku/core`, `@rinciku/domain`, etc. for packages). There is no test runner configured yet. Turborepo **remote** caching is not set up yet (local caching works).
 
 ## Architecture
 
@@ -39,6 +40,7 @@ This is a pnpm + Turborepo monorepo. The two apps and the shared layers are sepa
 ```
 apps/web/                ← @rinciku/web: the Vite React app (everything below was once the root src/)
 apps/mobile/             ← @rinciku/mobile: the Expo (React Native) app — iOS + Android only
+apps/landing/            ← @rinciku/landing: the Astro static marketing site (bilingual EN/ID)
 packages/domain/         ← @rinciku/domain: portable per-feature "brain" — data access (create<Feature>Api(db)), Zod schemas, types
 packages/core/           ← @rinciku/core: format, locale, currency-meta, fx, cycle, csv, attachments, i18n
 packages/db/             ← @rinciku/db: createSupabaseClient() (web/SSR) + createMobileClient() (RN) factories + generated Database types
@@ -49,7 +51,7 @@ supabase/                ← stays at the repo ROOT (CLI config, schemas, migrat
 - **Packages are consumed as TypeScript source** (no build step): each `package.json` `exports` points at `./src/*.ts`; Vite, `tsc`, and Metro transpile them. Import them as `@rinciku/core`, `@rinciku/core/i18n`, `@rinciku/db`, `@rinciku/domain/<feature>`.
 - **`packages/domain` is the shared data/validation layer** (added in the M1/M2/M3 portability work). Each feature exports `create<Feature>Api(db, deps)` — the Supabase client (and any platform-specific values like deep-link redirects) are **dependency-injected**, so the same query/mutation code runs on web and native. See the **Shared domain layer** section below.
 - **Keep shared code portable**: no `import.meta.glob`, no direct env access, no `window`/DOM, no browser- or RN-only APIs inside `packages/*`. Platform-coupled helpers stay in each app's `src/lib` (web `supabase.ts` reads `import.meta.env`; mobile `supabase.ts` reads `process.env.EXPO_PUBLIC_*` + AsyncStorage).
-- **Deferred (manual later):** `apps/landing` (SSG), the GitHub org, remote caching, EAS (mobile builds are local Xcode/Gradle for now).
+- **Deferred (manual later):** the GitHub org, remote caching, EAS (mobile builds are local Xcode/Gradle for now).
 
 ### Shared domain layer (`packages/domain`)
 
@@ -123,6 +125,17 @@ Expo **SDK 56**, React Native 0.85, React 19. **iOS + Android only — the Expo 
 - **Styling — NO Tailwind/NativeWind.** Plain React Native `StyleSheet` + design tokens in `src/constants/theme.ts` (olive palette ported from the web's Tailwind v4 OKLch config to sRGB hex; semantic names match web). Native iOS feel comes from `@expo/ui`, `expo-glass-effect` (`GlassView`, gated by `isLiquidGlassAvailable()`), `expo-symbols` (SF Symbols). **No Material Design kit.** Fonts: Figtree via `@expo-google-fonts/figtree`.
 - **i18n** at `src/lib/i18n.ts` reuses `@rinciku/core/i18n/init` (NOT the browser `@rinciku/core/i18n` entry — it pulls a DOM-only detector). Device language via `expo-localization`, persisted to AsyncStorage. Must be provided through `<I18nextProvider>` in the root layout: under pnpm the app and `@rinciku/core` resolve different physical copies of `react-i18next`, so context bridges them — don't rely on the global instance alone.
 - **Metro** (`metro.config.js`) watches the monorepo root so the symlinked `@rinciku/*` source transpiles; hierarchical `node_modules` lookup stays ON (pnpm requirement — do not disable it). ESLint uses `reactNativeConfig()` from `@rinciku/config/eslint`.
+
+### Landing site (`apps/landing`)
+
+**Astro** static site (SSG) — the public marketing page, **not** a product surface. It shares the brand look but none of the domain brain. `apps/landing/README.md` holds the app-local detail.
+
+- **Routing & i18n — Astro built-in.** Bilingual EN + ID via `i18n: { defaultLocale: 'en', locales: ['en','id'], routing: { prefixDefaultLocale: false } }` in `astro.config.mjs`: English at `/` (`src/pages/index.astro`), Indonesian at `/id/` (`src/pages/id/index.astro`). Both pages are one-liners passing a `locale` to `src/components/LandingPage.astro`, which composes the section components.
+- **Copy is typed, not react-i18next.** Marketing strings live in `src/i18n/{en,id}.ts`, both satisfying one `Copy` type (`src/i18n/types.ts`) so the locales can't drift. This deliberately does **not** reuse `@rinciku/core`'s i18n (that's the app's UI strings; its browser entry also drags a DOM-only detector).
+- **Styling — Tailwind v4** via `@tailwindcss/vite` (same plugin as web). Brand tokens in `src/styles/global.css` are the **light slice** copied from `apps/web/src/index.css` (light-only for v1 — no `.dark` block). Lime stays an accent (highlight/pill), never a text fill. Section components use scoped Astro `<style>`, not utility classes.
+- **Images** are real web-app screenshots in `src/assets/screenshots/`, rendered via `astro:assets` `<Image>` (build-time responsive WebP — needs `sharp`).
+- **CTA** "Try Rinciku free" → the web app sign-up via `PUBLIC_WEB_APP_URL` (Astro `PUBLIC_`-prefixed env). `site` is `https://rinciku.com`; build emits a sitemap + OG/hreflang meta. Static output — deploy `dist/` to any static host (no adapter).
+- **TS/ESLint:** `tsconfig.json` extends `astro/tsconfigs/strict` (NOT `@rinciku/config`'s base — Astro needs its own `astro:*` types); `eslint.config.js` combines `@rinciku/config`'s `baseConfig()` (`.ts`) with `eslint-plugin-astro` (`.astro`). Root `prettier-plugin-astro` formats `.astro` under `pnpm format`.
 
 ### Backend
 
