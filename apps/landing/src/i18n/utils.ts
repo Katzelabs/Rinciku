@@ -19,6 +19,18 @@ export function localeHref(locale: Locale): string {
   return locale === 'en' ? '/' : `/${locale}/`;
 }
 
-/** The web app sign-up URL the CTAs point at. */
-export const webAppUrl: string =
-  import.meta.env.PUBLIC_WEB_APP_URL ?? 'https://app.rinciku.com';
+/** Base URL of the deployed web app (no trailing slash). */
+export const webAppUrl: string = (
+  import.meta.env.PUBLIC_WEB_APP_URL ?? 'https://app.rinciku.com'
+).replace(/\/$/, '');
+
+/** Where the "Try free" CTA sends visitors. */
+export const signUpUrl = `${webAppUrl}/sign-up`;
+
+/** Legal pages live on the web app. */
+export const privacyUrl = `${webAppUrl}/privacy`;
+export const termsUrl = `${webAppUrl}/terms`;
+
+/** Optional public repo link for the footer. */
+export const githubUrl: string =
+  import.meta.env.PUBLIC_GITHUB_URL ?? 'https://github.com/rinciku';

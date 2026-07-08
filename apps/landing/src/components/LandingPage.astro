@@ -7,6 +7,7 @@ import Differentiator from './Differentiator.astro';
 import Features from './Features.astro';
 import HowItWorks from './HowItWorks.astro';
 import Compare from './Compare.astro';
+import FAQ from './FAQ.astro';
 import FinalCTA from './FinalCTA.astro';
 import Footer from './Footer.astro';
 import type { Locale } from '../i18n/types';
@@ -20,14 +21,16 @@ const copy = getCopy(locale);
 ---
 
 <Base locale={locale} meta={copy.meta}>
+  <a class="skip-link" href="#main">{copy.nav.skipToContent}</a>
   <Nav locale={locale} copy={copy} />
-  <main>
+  <main id="main">
     <Hero copy={copy} />
     <Problem copy={copy} />
     <Differentiator copy={copy} />
     <Features copy={copy} />
     <HowItWorks copy={copy} />
     <Compare copy={copy} />
+    <FAQ copy={copy} />
     <FinalCTA copy={copy} />
   </main>
   <Footer copy={copy} />

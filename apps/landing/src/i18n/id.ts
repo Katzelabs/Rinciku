@@ -10,6 +10,7 @@ export const id: Copy = {
   nav: {
     tryFree: 'Coba gratis',
     switchLang: 'EN',
+    skipToContent: 'Lewati ke konten',
   },
   hero: {
     badge: 'Konsultasi belanja dengan AI',
@@ -167,6 +168,36 @@ export const id: Copy = {
       },
     ],
   },
+  faq: {
+    heading: 'Pertanyaan, terjawab',
+    subhead: 'Hal-hal yang biasa ditanya sebelum mulai.',
+    items: [
+      {
+        q: 'Apakah Rinciku gratis?',
+        a: 'Ya — Rinciku gratis dipakai sekarang, tanpa kartu kredit. Paket berbayar dengan AI lebih canggih dan penyimpanan lebih besar mungkin hadir nanti.',
+      },
+      {
+        q: 'Apakah data keuanganku aman?',
+        a: 'Datamu adalah milikmu. Setiap catatan terkunci ke akunmu dengan row-level security, dan AI hanya bekerja pada angka milikmu sendiri. Kamu meninjau dan mengonfirmasi setiap perubahan yang disarankan AI sebelum disimpan — tidak ada yang terjadi diam-diam.',
+      },
+      {
+        q: 'Mata uang apa saja yang didukung?',
+        a: 'IDR dan USD kelas utama. Catat pengeluaran atau pemasukan dalam salah satunya, dan Rinciku menyatukan semuanya ke satu total dasar pakai kurs live atau tetap.',
+      },
+      {
+        q: 'Apakah aku harus mengetik tiap pengeluaran?',
+        a: 'Tidak. Bilang saja ke AI dengan bahasa biasa (“jajan 45rb buat makan siang”) atau foto struk, bukti transfer, atau screenshot e-wallet — AI mengekstrak detailnya dan kamu tinggal konfirmasi.',
+      },
+      {
+        q: 'Apakah ada aplikasi mobile?',
+        a: 'Rinciku jalan di browser sekarang dan nyaman dipakai di HP. Aplikasi native iOS dan Android — dengan otak yang sama — sedang dalam perjalanan.',
+      },
+      {
+        q: 'Apa bedanya saran AI-nya?',
+        a: 'Berdasar data nyata, bukan umum. Saat kamu tanya “boleh nggak aku beli ini?”, AI menimbang penghasilan aslimu, kebutuhan yang masih harus dibayar, pengeluaran sejauh ini, dan sisa hari di bulan ini — lalu memberi jawaban yang jelas.',
+      },
+    ],
+  },
   cta: {
     heading: 'Mulai putuskan dengan percaya diri',
     body: 'Atur budget-mu dalam hitungan menit dan biar AI yang berhitung — jadi kamu selalu tahu posisimu.',
@@ -176,7 +207,9 @@ export const id: Copy = {
   footer: {
     tagline: 'Teman keuangan AI untuk hidup multi-mata uang.',
     madeWith: 'Dibuat untuk anak muda Indonesia — dan siapa pun dengan penghasilan tak menentu.',
-    github: 'Open source di GitHub',
+    github: 'GitHub',
+    privacy: 'Privasi',
+    terms: 'Ketentuan',
     rights: 'Seluruh hak cipta dilindungi.',
   },
 };

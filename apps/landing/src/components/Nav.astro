@@ -2,7 +2,7 @@
 import Logo from './Logo.astro';
 import Button from './Button.astro';
 import type { Copy, Locale } from '../i18n/types';
-import { otherLocale, localeHref, webAppUrl } from '../i18n/utils';
+import { otherLocale, localeHref, signUpUrl } from '../i18n/utils';
 
 interface Props {
   locale: Locale;
@@ -26,7 +26,7 @@ const altHref = localeHref(otherLocale(locale));
         </svg>
         {copy.nav.switchLang}
       </a>
-      <Button href={webAppUrl}>{copy.nav.tryFree}</Button>
+      <Button href={signUpUrl}>{copy.nav.tryFree}</Button>
     </nav>
   </div>
 </header>

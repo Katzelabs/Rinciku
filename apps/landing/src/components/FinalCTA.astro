@@ -1,7 +1,7 @@
 ---
 import Button from './Button.astro';
 import type { Copy } from '../i18n/types';
-import { webAppUrl } from '../i18n/utils';
+import { signUpUrl } from '../i18n/utils';
 interface Props {
   copy: Copy;
 }
@@ -16,7 +16,7 @@ const { cta } = copy;
       <h2 class="title">{cta.heading}</h2>
       <p class="body">{cta.body}</p>
       <div class="btn-row">
-        <Button href={webAppUrl} size="lg">{cta.button}</Button>
+        <Button href={signUpUrl} size="lg">{cta.button}</Button>
       </div>
       <p class="note">{cta.note}</p>
     </div>

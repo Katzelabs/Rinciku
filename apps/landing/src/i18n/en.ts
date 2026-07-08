@@ -10,6 +10,7 @@ export const en: Copy = {
   nav: {
     tryFree: 'Try free',
     switchLang: 'ID',
+    skipToContent: 'Skip to content',
   },
   hero: {
     badge: 'AI purchase consultation',
@@ -167,6 +168,36 @@ export const en: Copy = {
       },
     ],
   },
+  faq: {
+    heading: 'Questions, answered',
+    subhead: 'The things people ask before they start.',
+    items: [
+      {
+        q: 'Is Rinciku free?',
+        a: 'Yes — Rinciku is free to use right now, no credit card needed. A paid tier with advanced AI and more storage may come later.',
+      },
+      {
+        q: 'Is my financial data safe?',
+        a: 'Your data is yours. Every record is scoped to your account with row-level security, and the AI only ever acts on your own numbers. You review and confirm any change the AI suggests before it’s saved — nothing happens behind your back.',
+      },
+      {
+        q: 'Which currencies does it support?',
+        a: 'IDR and USD are first-class. Log an expense or income in either, and Rinciku unifies everything into one base total using a live or fixed exchange rate.',
+      },
+      {
+        q: 'Do I have to type every expense?',
+        a: 'No. Tell the AI in plain language (“spent 45k on lunch”) or snap a photo of a receipt, transfer proof, or e-wallet screenshot — it extracts the details and you confirm.',
+      },
+      {
+        q: 'Is there a mobile app?',
+        a: 'Rinciku runs in your browser today and works great on mobile. Native iOS and Android apps — sharing the same brain — are on the way.',
+      },
+      {
+        q: 'How is the AI’s advice different?',
+        a: 'It’s grounded, not generic. When you ask “can I buy this?”, the AI reasons against your real income, essentials still due, spending so far, and days left in the month — then gives a clear answer.',
+      },
+    ],
+  },
   cta: {
     heading: 'Start deciding with confidence',
     body: 'Set up your budget in minutes and let the AI do the math — so you always know where you stand.',
@@ -176,7 +207,9 @@ export const en: Copy = {
   footer: {
     tagline: 'Your AI money companion for mixed-currency life.',
     madeWith: 'Made for young Indonesians — and anyone with irregular income.',
-    github: 'Open source on GitHub',
+    github: 'GitHub',
+    privacy: 'Privacy',
+    terms: 'Terms',
     rights: 'All rights reserved.',
   },
 };

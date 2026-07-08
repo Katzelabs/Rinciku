@@ -22,6 +22,11 @@ export interface CompareRow {
   typical: string;
 }
 
+export interface QA {
+  q: string;
+  a: string;
+}
+
 /**
  * The full copy shape for one locale. Both `en` and `id` must satisfy this
  * exactly, so TypeScript flags any string that drifts or goes missing.
@@ -36,6 +41,8 @@ export interface Copy {
     tryFree: string;
     /** Label shown on the language toggle for the *other* locale. */
     switchLang: string;
+    /** Skip-to-content link text (keyboard/screen-reader accessibility). */
+    skipToContent: string;
   };
   hero: {
     badge: string;
@@ -75,6 +82,11 @@ export interface Copy {
     colTypical: string;
     rows: CompareRow[];
   };
+  faq: {
+    heading: string;
+    subhead: string;
+    items: QA[];
+  };
   cta: {
     heading: string;
     body: string;
@@ -85,6 +97,8 @@ export interface Copy {
     tagline: string;
     madeWith: string;
     github: string;
+    privacy: string;
+    terms: string;
     rights: string;
   };
 }

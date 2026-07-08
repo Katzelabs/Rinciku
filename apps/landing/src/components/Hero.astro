@@ -3,7 +3,7 @@ import { Image } from 'astro:assets';
 import Button from './Button.astro';
 import aiChat from '../assets/screenshots/ai-chat.png';
 import type { Copy } from '../i18n/types';
-import { webAppUrl } from '../i18n/utils';
+import { signUpUrl } from '../i18n/utils';
 
 interface Props {
   copy: Copy;
@@ -25,7 +25,7 @@ const { hero } = copy;
     </h1>
     <p class="subhead">{hero.subhead}</p>
     <div class="ctas">
-      <Button href={webAppUrl} size="lg">{hero.cta}</Button>
+      <Button href={signUpUrl} size="lg">{hero.cta}</Button>
     </div>
     <p class="note">{hero.ctaNote}</p>
 

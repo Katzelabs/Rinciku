@@ -13,6 +13,27 @@ const canonical = new URL(Astro.url.pathname, site).href;
 const enUrl = new URL('/', site).href;
 const idUrl = new URL('/id/', site).href;
 const ogImage = new URL('/og.png', site).href;
+
+const structuredData = {
+  '@context': 'https://schema.org',
+  '@type': 'SoftwareApplication',
+  name: 'Rinciku',
+  applicationCategory: 'FinanceApplication',
+  operatingSystem: 'Web',
+  description: meta.description,
+  url: site.href,
+  inLanguage: ['en', 'id'],
+  offers: {
+    '@type': 'Offer',
+    price: '0',
+    priceCurrency: 'IDR',
+  },
+  publisher: {
+    '@type': 'Organization',
+    name: 'Rinciku',
+    url: site.href,
+  },
+};
 ---
 
 <!doctype html>
@@ -21,6 +42,9 @@ const ogImage = new URL('/og.png', site).href;
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
     <link rel="canonical" href={canonical} />
     <link rel="alternate" hreflang="en" href={enUrl} />
     <link rel="alternate" hreflang="id" href={idUrl} />
@@ -45,6 +69,8 @@ const ogImage = new URL('/og.png', site).href;
 
     <meta name="theme-color" content="#9ae600" />
     <meta name="generator" content={Astro.generator} />
+
+    <script type="application/ld+json" set:html={JSON.stringify(structuredData)} is:inline />
   </head>
   <body>
     <slot />

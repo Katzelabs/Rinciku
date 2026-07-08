@@ -63,10 +63,22 @@ pnpm format       # prettier --write . (repo root; .astro via prettier-plugin-as
 
 Astro exposes `PUBLIC_`-prefixed vars to the client. Copy `.env.example` → `.env`.
 
+## Generated assets
+
+Favicons, app icons, and the 1200×630 OG card are produced from brand SVGs by
+`scripts/generate-assets.mjs` (uses `sharp`). Re-run it if the brand mark or the OG
+headline changes:
+
+```bash
+node scripts/generate-assets.mjs   # writes apple-touch-icon / icon-*/ favicon-32 / og.png into public/
+```
+
 ## Before deploy
 
-- Confirm the real sign-up URL (`PUBLIC_WEB_APP_URL`) and repo URL (`PUBLIC_GITHUB_URL`).
-- Replace `public/og.png` (currently a screenshot placeholder) with a designed 1200×630 card.
+- Set `PUBLIC_WEB_APP_URL` for the target env (defaults to `https://app.rinciku.com`); the
+  CTA, `/privacy`, and `/terms` links derive from it. Optionally set `PUBLIC_GITHUB_URL`.
+- Add analytics (privacy-friendly, e.g. Plausible) and a host config
+  (`vercel.json` / `netlify.toml`) once the host is chosen.
 - Static output — deploy `dist/` to any static host (Vercel / Netlify; no adapter needed).
 
 See the repo root [`CLAUDE.md`](../../CLAUDE.md) for the full monorepo architecture.
