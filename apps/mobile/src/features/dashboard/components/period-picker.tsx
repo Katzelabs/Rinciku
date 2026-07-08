@@ -1,19 +1,13 @@
+import { MenuView, type MenuAction } from '@expo/ui/community/menu';
+import type { PeriodPreset } from '@rinciku/core';
+import { ChevronDown } from 'lucide-react-native';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import {
-  Modal,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Check, ChevronDown, X } from 'lucide-react-native';
-import type { PeriodPreset } from '@rinciku/core';
+import { StyleSheet, Text, View } from 'react-native';
 
-import { Fonts, Radius, Spacing } from '@/constants/theme';
 import { DateField } from '@/components/date-field';
+import { Sheet } from '@/components/ui';
+import { Fonts, Radius, Spacing } from '@/constants/theme';
 import { Button } from '@/features/auth/components/button';
 import { useTheme } from '@/hooks/use-theme';
 
@@ -32,8 +26,9 @@ interface PeriodPickerProps {
 }
 
 // Dashboard header-right control. A compact pill shows the active period; tapping
-// it opens a page sheet listing the presets. Choosing "Custom" reveals a from–to
-// range (reusing DateField) applied via the footer button.
+// it opens a native pull-down menu (UIMenu on iOS, PopupMenu on Android) listing
+// the presets with a checkmark on the active one. Choosing "Custom" opens a small
+// sheet with a from–to range (reusing DateField) applied via the footer button.
 export function PeriodPicker({
   period,
   customFrom,
@@ -42,9 +37,7 @@ export function PeriodPicker({
 }: PeriodPickerProps) {
   const c = useTheme();
   const { t } = useTranslation('dashboard');
-  const insets = useSafeAreaInsets();
-  const [open, setOpen] = useState(false);
-  const [showCustom, setShowCustom] = useState(period === 'custom');
+  const [customOpen, setCustomOpen] = useState(false);
   const [draftFrom, setDraftFrom] = useState(customFrom);
   const [draftTo, setDraftTo] = useState(customTo);
 
@@ -52,121 +45,72 @@ export function PeriodPicker({
     OPTIONS.find((o) => o.value === period)?.key ?? 'period.thisMonth'
   );
 
-  function openSheet() {
-    setShowCustom(period === 'custom');
-    setDraftFrom(customFrom);
-    setDraftTo(customTo);
-    setOpen(true);
-  }
+  const actions: MenuAction[] = OPTIONS.map((o) => ({
+    id: o.value,
+    title: t(o.key),
+    state: o.value === period ? 'on' : 'off',
+  }));
 
-  function selectPreset(value: PeriodPreset) {
+  function handleAction(value: PeriodPreset) {
     if (value === 'custom') {
-      setShowCustom(true);
+      setDraftFrom(customFrom);
+      setDraftTo(customTo);
+      setCustomOpen(true);
       return;
     }
     onApply(value, customFrom, customTo);
-    setOpen(false);
   }
 
   function applyCustom() {
     onApply('custom', draftFrom, draftTo);
-    setOpen(false);
+    setCustomOpen(false);
   }
 
   return (
     <>
-      <Pressable
-        accessibilityRole='button'
-        accessibilityLabel={t('period.accessibilityLabel')}
-        onPress={openSheet}
-        hitSlop={8}
-        style={({ pressed }) => [
-          styles.pill,
-          { backgroundColor: c.card, opacity: pressed ? 0.7 : 1 },
-        ]}
+      <MenuView
+        title={t('period.title')}
+        actions={actions}
+        onPressAction={({ nativeEvent }) =>
+          handleAction(nativeEvent.event as PeriodPreset)
+        }
       >
-        <Text style={[styles.pillLabel, { color: c.foreground }]}>
-          {activeLabel}
-        </Text>
-        <ChevronDown size={16} color={c.mutedForeground} />
-      </Pressable>
-
-      <Modal
-        visible={open}
-        animationType='slide'
-        presentationStyle='pageSheet'
-        onRequestClose={() => setOpen(false)}
-      >
-        <View style={[styles.sheet, { backgroundColor: c.background }]}>
-          <View style={styles.sheetHeader}>
-            <Text style={[styles.sheetTitle, { color: c.foreground }]}>
-              {t('period.title')}
-            </Text>
-            <Pressable
-              hitSlop={8}
-              accessibilityRole='button'
-              accessibilityLabel={t('common:actions.close')}
-              onPress={() => setOpen(false)}
-            >
-              <X size={22} color={c.mutedForeground} />
-            </Pressable>
-          </View>
-
-          <ScrollView
-            contentContainerStyle={[
-              styles.sheetBody,
-              { paddingBottom: insets.bottom + Spacing.five },
-            ]}
-          >
-            {OPTIONS.map((o) => {
-              const active =
-                o.value === 'custom'
-                  ? showCustom
-                  : !showCustom && o.value === period;
-              return (
-                <Pressable
-                  key={o.value}
-                  onPress={() => selectPreset(o.value)}
-                  style={styles.option}
-                >
-                  <Text style={[styles.optionText, { color: c.foreground }]}>
-                    {t(o.key)}
-                  </Text>
-                  {active ? <Check size={18} color={c.primary} /> : null}
-                </Pressable>
-              );
-            })}
-
-            {showCustom ? (
-              <View style={styles.customWrap}>
-                <View style={styles.dateRow}>
-                  <View style={styles.dateItem}>
-                    <DateField
-                      value={draftFrom}
-                      onChange={setDraftFrom}
-                      maximumDate={draftTo}
-                    />
-                  </View>
-                  <Text style={[styles.dash, { color: c.mutedForeground }]}>
-                    –
-                  </Text>
-                  <View style={styles.dateItem}>
-                    <DateField
-                      value={draftTo}
-                      onChange={setDraftTo}
-                      minimumDate={draftFrom}
-                    />
-                  </View>
-                </View>
-                <Button
-                  label={t('common:actions.apply')}
-                  onPress={applyCustom}
-                />
-              </View>
-            ) : null}
-          </ScrollView>
+        <View
+          accessibilityRole='button'
+          accessibilityLabel={t('period.accessibilityLabel')}
+          style={styles.pill}
+        >
+          <Text style={[styles.pillLabel, { color: c.foreground }]}>
+            {activeLabel}
+          </Text>
+          <ChevronDown size={16} color={c.mutedForeground} />
         </View>
-      </Modal>
+      </MenuView>
+
+      <Sheet
+        visible={customOpen}
+        onClose={() => setCustomOpen(false)}
+        title={t('period.custom')}
+      >
+        <View style={styles.dateRow}>
+          <View style={styles.dateItem}>
+            <DateField
+              value={draftFrom}
+              onChange={setDraftFrom}
+              maximumDate={draftTo}
+            />
+          </View>
+          <Text style={[styles.dash, { color: c.mutedForeground }]}>–</Text>
+          <View style={styles.dateItem}>
+            <DateField
+              value={draftTo}
+              onChange={setDraftTo}
+              minimumDate={draftFrom}
+            />
+          </View>
+        </View>
+        <Button label={t('common:actions.apply')} onPress={applyCustom} />
+      </Sheet>
     </>
   );
 }
@@ -182,28 +126,6 @@ const styles = StyleSheet.create({
     borderCurve: 'continuous',
   },
   pillLabel: { fontFamily: Fonts.semibold, fontSize: 14 },
-  sheet: { flex: 1 },
-  sheetHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: Spacing.four,
-    paddingVertical: Spacing.three,
-  },
-  sheetTitle: { fontFamily: Fonts.bold, fontSize: 20 },
-  sheetBody: {
-    paddingHorizontal: Spacing.four,
-    paddingTop: Spacing.two,
-    gap: Spacing.one,
-  },
-  option: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: Spacing.three,
-  },
-  optionText: { fontFamily: Fonts.medium, fontSize: 16 },
-  customWrap: { gap: Spacing.three, paddingTop: Spacing.two },
   dateRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
   dateItem: { flex: 1 },
   dash: { fontFamily: Fonts.regular, fontSize: 16 },

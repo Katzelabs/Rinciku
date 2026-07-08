@@ -1,56 +1,44 @@
-import { activeLocale, type CurrencyCode } from '@rinciku/core';
+import { activeLocale, currencySymbol, type CurrencyCode } from '@rinciku/core';
 
-// Short, guaranteed-narrow axis label for the chart Y axis — e.g. "Rp 1.5M",
-// "$2K". Uses K/M/B magnitude suffixes rather than Intl's `notation: 'compact'`,
-// which Hermes doesn't render reliably on device (it falls back to the full
-// number, and IDR's many zeros then clip off the left edge of the plot).
+// Localized magnitude suffixes. Indonesian uses rb (ribu), jt (juta), M
+// (miliar); English uses K/M/B. Kept as a small hand-rolled table rather than
+// Intl's `notation: 'compact'`, which Hermes doesn't render reliably on device
+// (it falls back to the full number, and IDR's many zeros then clip off the
+// left edge of the plot). Plain `Intl.NumberFormat` (no compact notation) IS
+// reliable, so we use it only for the locale-correct decimal separator.
+const SUFFIX = {
+  en: { k: 'K', m: 'M', b: 'B' },
+  id: { k: 'rb', m: 'jt', b: 'M' },
+} as const;
+
+// Short, guaranteed-narrow axis label for the chart Y axis — e.g. "$1.5M",
+// "Rp 1,5 jt". The currency symbol comes from @rinciku/core's static table
+// (reliably "Rp"/"$", unlike Intl `style:'currency'` which yields the ISO code
+// "IDR" on Hermes); the magnitude unit follows the active language.
 export function compactAxisAmount(value: number, base: CurrencyCode): string {
+  const locale = activeLocale(); // 'id-ID' | 'en-US'
+  const lang = locale.startsWith('id') ? 'id' : 'en';
+  const s = SUFFIX[lang];
   const sym = currencySymbol(base);
   const abs = Math.abs(value);
 
   let n = value;
-  let suffix = '';
+  let unit = '';
   if (abs >= 1_000_000_000) {
     n = value / 1_000_000_000;
-    suffix = 'B';
+    unit = s.b;
   } else if (abs >= 1_000_000) {
     n = value / 1_000_000;
-    suffix = 'M';
+    unit = s.m;
   } else if (abs >= 1_000) {
     n = value / 1_000;
-    suffix = 'K';
+    unit = s.k;
   }
 
-  const num = suffix ? trimDecimal(Math.round(n * 10) / 10) : String(Math.round(n));
-  return `${sym} ${num}${suffix}`;
-}
-
-// 1.0 -> "1", 1.5 -> "1.5" (drops the trailing .0 so labels stay compact).
-function trimDecimal(n: number): string {
-  return Number.isInteger(n) ? String(n) : n.toFixed(1);
-}
-
-// The bare currency symbol (e.g. "Rp", "$") for the active locale. Cached per
-// locale+currency since it's derived on every gridline. Intl.NumberFormat +
-// formatToParts is supported on Hermes; the try/catch guards older engines.
-const symbolCache = new Map<string, string>();
-function currencySymbol(base: CurrencyCode): string {
-  const locale = activeLocale();
-  const key = `${locale}:${base}`;
-  const cached = symbolCache.get(key);
-  if (cached !== undefined) return cached;
-
-  let sym: string;
-  try {
-    const parts = new Intl.NumberFormat(locale, {
-      style: 'currency',
-      currency: base,
-      maximumFractionDigits: 0,
-    }).formatToParts(0);
-    sym = parts.find((p) => p.type === 'currency')?.value ?? base;
-  } catch {
-    sym = base;
-  }
-  symbolCache.set(key, sym);
-  return sym;
+  const num = new Intl.NumberFormat(locale, {
+    maximumFractionDigits: 1,
+  }).format(n);
+  // Indonesian puts a space before the unit ("Rp 12 jt"); English doesn't ("$12M").
+  const sep = lang === 'id' && unit ? ' ' : '';
+  return `${sym} ${num}${sep}${unit}`;
 }
