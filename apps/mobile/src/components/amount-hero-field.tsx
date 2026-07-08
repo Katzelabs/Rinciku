@@ -31,7 +31,7 @@ export function AmountHeroField({
   error?: string;
 }) {
   const c = useTheme();
-  const accent = tone === 'income' ? c.positive : c.mutedForeground;
+  const accent = tone === 'income' ? c.positive : c.expense;
 
   return (
     <Card

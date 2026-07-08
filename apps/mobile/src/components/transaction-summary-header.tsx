@@ -38,10 +38,10 @@ export function TransactionSummaryHeader({
   const c = useTheme();
   const avgPerDay = days > 0 ? total / days : 0;
 
-  // Direction color: income green; expense a warm-neutral tone so it reads as
-  // "money out" without alarm, and so the screen's lime stays reserved for the
-  // CTA / active tab. The hero number stays ink on the expense side.
-  const accent = tone === 'income' ? c.positive : c.mutedForeground;
+  // Direction color: income green; expense a muted rose so it reads as "money
+  // out" without alarm, and so the screen's lime stays reserved for the CTA /
+  // active tab. The hero number stays ink on the expense side.
+  const accent = tone === 'income' ? c.positive : c.expense;
   const heroColor = tone === 'income' ? c.positive : c.foreground;
 
   return (

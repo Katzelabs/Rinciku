@@ -29,6 +29,11 @@ export const Colors = {
     // from `primary` (the neon lime accent), which was previously overused as a
     // giant text fill and read as "startup demo" rather than "trusted with money".
     positive: '#3F7A00',
+    // "Money out" accent for the expense summary/amount heroes — a calm muted
+    // rose. Reads as spending without the alarm of `destructive`, and stays
+    // clear of both the `positive` green and the lime `primary` CTA. Used only
+    // as a soft wash/border/chip tint; the expense hero number itself stays ink.
+    expense: '#9F4D6E',
     secondary: '#F4F4F5',
     secondaryForeground: '#18181B',
     muted: '#F4F4F0',
@@ -63,6 +68,8 @@ export const Colors = {
     primaryForeground: '#35530E',
     // Brighter on the dark card so positive amounts stay legible.
     positive: '#A3E635',
+    // Lighter rose on the dark card so the expense accent stays legible.
+    expense: '#DC9BB4',
     secondary: '#27272A',
     secondaryForeground: '#FAFAFA',
     muted: '#2B2B22',

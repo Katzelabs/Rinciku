@@ -32,7 +32,7 @@ export type DetailLabels = {
 
 // Shared read view for a single expense / income. A tone-washed hero (emoji
 // category chip → amount → rich date) mirrors the list summary headers: income
-// is green (`positive`), expense a warm-neutral, and the amount is never a lime
+// is green (`positive`), expense a muted rose (`expense`), and the amount is never a lime
 // text fill. The note is a full-width block so long notes wrap naturally instead
 // of getting crushed into a right-aligned row.
 export function TransactionDetailView({
@@ -59,7 +59,7 @@ export function TransactionDetailView({
   onDelete: () => void;
 }) {
   const c = useTheme();
-  const accent = tone === 'income' ? c.positive : c.mutedForeground;
+  const accent = tone === 'income' ? c.positive : c.expense;
   const heroColor = tone === 'income' ? c.positive : c.foreground;
 
   const trimmedNote = note?.trim() ?? '';
