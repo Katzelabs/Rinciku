@@ -1,6 +1,6 @@
-import { useEffect } from 'react';
+import { useEffect, type ReactNode } from 'react';
 import { I18nextProvider } from 'react-i18next';
-import { AppState, useColorScheme } from 'react-native';
+import { AppState } from 'react-native';
 import {
   Figtree_400Regular,
   Figtree_500Medium,
@@ -21,7 +21,9 @@ import { useAuth } from '@/features/auth/hooks/use-auth';
 // physical copies of react-i18next (different react peer hash under pnpm), so
 // the instance @rinciku/core registers globally is invisible to the app's
 // useTranslation — context wins and bridges the gap.
+import { useColorScheme } from '@/hooks/use-color-scheme';
 import { i18n } from '@/lib/i18n';
+import { AppThemeProvider, useThemePreference } from '@/lib/theme-preference';
 import { supabase } from '@/lib/supabase';
 
 SplashScreen.preventAutoHideAsync();
@@ -52,7 +54,6 @@ const navDark = {
 };
 
 export default function RootLayout() {
-  const scheme = useColorScheme();
   const [fontsLoaded] = useFonts({
     Figtree_400Regular,
     Figtree_500Medium,
@@ -77,15 +78,29 @@ export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <I18nextProvider i18n={i18n}>
-        <SafeAreaProvider>
-          <ThemeProvider value={scheme === 'dark' ? navDark : navLight}>
-            <AuthProvider>
-              <RootNavigator fontsLoaded={fontsLoaded} />
-            </AuthProvider>
-          </ThemeProvider>
-        </SafeAreaProvider>
+        <AppThemeProvider>
+          <SafeAreaProvider>
+            <NavChrome>
+              <AuthProvider>
+                <RootNavigator fontsLoaded={fontsLoaded} />
+              </AuthProvider>
+            </NavChrome>
+          </SafeAreaProvider>
+        </AppThemeProvider>
       </I18nextProvider>
     </GestureHandlerRootView>
+  );
+}
+
+// Brands react-navigation's chrome with the olive nav themes, picking light vs
+// dark from the resolved theme preference (not the OS directly). Lives below
+// AppThemeProvider so it can read the context.
+function NavChrome({ children }: { children: ReactNode }) {
+  const scheme = useColorScheme();
+  return (
+    <ThemeProvider value={scheme === 'dark' ? navDark : navLight}>
+      {children}
+    </ThemeProvider>
   );
 }
 
@@ -94,7 +109,8 @@ export default function RootLayout() {
 // resolve, so the first frame is already on the correct guarded branch.
 function RootNavigator({ fontsLoaded }: { fontsLoaded: boolean }) {
   const { session, profile, loading } = useAuth();
-  const ready = fontsLoaded && !loading;
+  const { hydrated: themeHydrated } = useThemePreference();
+  const ready = fontsLoaded && !loading && themeHydrated;
 
   useEffect(() => {
     if (ready) SplashScreen.hideAsync();

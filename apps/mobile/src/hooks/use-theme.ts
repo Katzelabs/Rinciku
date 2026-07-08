@@ -7,17 +7,11 @@ import { Chart, Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 
 export function useTheme() {
-  const scheme = useColorScheme();
-  const theme = scheme === 'unspecified' ? 'light' : scheme;
-
-  return Colors[theme];
+  return Colors[useColorScheme()];
 }
 
 // Scheme-aware chart series palette (spend / income / grid) for the dashboard
 // analytics charts. Mirrors `useTheme()` for the same light/dark resolution.
 export function useChartColors() {
-  const scheme = useColorScheme();
-  const theme = scheme === 'unspecified' ? 'light' : scheme;
-
-  return Chart[theme];
+  return Chart[useColorScheme()];
 }
