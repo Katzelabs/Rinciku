@@ -112,7 +112,9 @@ export function AccountMenu() {
           aria-label={t('account.openMenu')}
         >
           <Avatar size='sm'>
-            <AvatarFallback>{account.initial}</AvatarFallback>
+            <AvatarFallback className='bg-[#6F4E37] font-medium text-[#FBFBF9]'>
+              {account.initial}
+            </AvatarFallback>
           </Avatar>
         </Button>
       </DropdownMenuTrigger>
@@ -138,8 +140,8 @@ export function SidebarAccountMenu() {
               tooltip={account.displayName ?? account.email}
               className='data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground'
             >
-              <Avatar size='sm' className='rounded-lg'>
-                <AvatarFallback className='rounded-lg'>
+              <Avatar className='rounded-lg'>
+                <AvatarFallback className='rounded-lg bg-[#6F4E37] font-medium text-[#FBFBF9]'>
                   {account.initial}
                 </AvatarFallback>
               </Avatar>
