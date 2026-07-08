@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useState } from 'react';
 import { listConversations } from '../api';
-import type { Conversation } from '../types';
+import type { ConversationListItem } from '../types';
 
 export type UseConversationsResult = {
-  data: Conversation[] | undefined;
+  data: ConversationListItem[] | undefined;
   isLoading: boolean;
   error: string | null;
   refetch: () => void;
@@ -12,7 +12,9 @@ export type UseConversationsResult = {
 // Sidebar conversation list, newest activity first. `refetch` is called after a
 // turn so the list re-sorts and a newly created conversation appears.
 export function useConversations(): UseConversationsResult {
-  const [data, setData] = useState<Conversation[] | undefined>(undefined);
+  const [data, setData] = useState<ConversationListItem[] | undefined>(
+    undefined
+  );
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [token, setToken] = useState(0);

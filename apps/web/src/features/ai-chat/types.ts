@@ -3,6 +3,7 @@
 // working.
 export type {
   Conversation,
+  ConversationListItem,
   ChatMessageRow,
   ChatMessageRowWithImage,
   ChatItem,

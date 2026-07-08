@@ -1,7 +1,14 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { differenceInCalendarDays, isToday, isYesterday } from 'date-fns';
-import { MoreHorizontal, Pencil, Plus, Trash2 } from 'lucide-react';
+import {
+  MessagesSquare,
+  MoreHorizontal,
+  Pencil,
+  Plus,
+  Trash2,
+} from 'lucide-react';
+import { formatRelativeTime } from '@rinciku/core';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -19,10 +26,10 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
-import type { Conversation } from '../types';
+import type { ConversationListItem } from '../types';
 
 type Props = {
-  conversations: Conversation[] | undefined;
+  conversations: ConversationListItem[] | undefined;
   isLoading: boolean;
   activeId: string | null;
   onSelect: (id: string) => void;
@@ -54,8 +61,8 @@ function bucketFor(value: string | null): GroupLabel {
   return 'older';
 }
 
-function groupConversations(items: Conversation[]) {
-  const map = new Map<GroupLabel, Conversation[]>();
+function groupConversations(items: ConversationListItem[]) {
+  const map = new Map<GroupLabel, ConversationListItem[]>();
   for (const c of items) {
     const key = bucketFor(c.last_message_at ?? c.created_at);
     const list = map.get(key);
@@ -80,14 +87,15 @@ export function ConversationList({
   const { t } = useTranslation('aiChat');
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [draft, setDraft] = useState('');
-  const [pendingDelete, setPendingDelete] = useState<Conversation | null>(null);
+  const [pendingDelete, setPendingDelete] =
+    useState<ConversationListItem | null>(null);
 
-  function startRename(c: Conversation) {
+  function startRename(c: ConversationListItem) {
     setRenamingId(c.id);
     setDraft(c.title?.trim() || t('header.untitled'));
   }
 
-  function commitRename(original: Conversation) {
+  function commitRename(original: ConversationListItem) {
     const id = original.id;
     const title = draft.trim();
     setRenamingId(null);
@@ -109,7 +117,11 @@ export function ConversationList({
   return (
     <div className='flex h-full flex-col'>
       <div className='p-3'>
-        <Button className='w-full justify-start' onClick={onNew}>
+        <Button
+          variant='outline'
+          className='w-full justify-start rounded-full'
+          onClick={onNew}
+        >
           <Plus className='size-4' />
           {t('list.newChat')}
         </Button>
@@ -159,13 +171,32 @@ export function ConversationList({
                               type='button'
                               onClick={() => onSelect(c.id)}
                               className={cn(
-                                'w-full truncate rounded-md py-2 pr-9 pl-3 text-left text-sm transition-colors',
+                                'flex w-full flex-col gap-0.5 rounded-md py-2 pr-9 pl-3 text-left transition-colors',
                                 isActive
-                                  ? 'bg-sidebar-accent font-medium text-sidebar-accent-foreground'
+                                  ? 'bg-sidebar-accent text-sidebar-accent-foreground'
                                   : 'hover:bg-muted'
                               )}
                             >
-                              {c.title?.trim() || t('header.untitled')}
+                              <span className='flex items-baseline gap-2'>
+                                <span
+                                  className={cn(
+                                    'min-w-0 flex-1 truncate text-sm',
+                                    isActive && 'font-medium'
+                                  )}
+                                >
+                                  {c.title?.trim() || t('header.untitled')}
+                                </span>
+                                <time className='shrink-0 text-[11px] text-muted-foreground'>
+                                  {formatRelativeTime(
+                                    c.last_message_at ?? c.created_at
+                                  )}
+                                </time>
+                              </span>
+                              {c.last_message_preview?.trim() ? (
+                                <span className='truncate text-xs text-muted-foreground'>
+                                  {c.last_message_preview.trim()}
+                                </span>
+                              ) : null}
                             </button>
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
@@ -206,9 +237,15 @@ export function ConversationList({
             ))}
           </div>
         ) : (
-          <p className='px-3 py-4 text-sm text-muted-foreground'>
-            {t('list.empty')}
-          </p>
+          <div className='flex flex-col items-center gap-2 px-6 py-10 text-center'>
+            <div className='flex size-10 items-center justify-center rounded-full bg-muted'>
+              <MessagesSquare className='size-5 text-muted-foreground' />
+            </div>
+            <p className='text-sm font-medium'>{t('list.empty')}</p>
+            <p className='text-xs text-muted-foreground'>
+              {t('list.emptyHint')}
+            </p>
+          </div>
         )}
       </div>
 

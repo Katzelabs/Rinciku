@@ -64,7 +64,7 @@ export function ChatHeader({
   }
 
   return (
-    <header className='flex items-center justify-between gap-2 border-b px-3 py-2'>
+    <header className='flex items-center justify-between gap-2 border-b px-3 py-2.5'>
       <div className='flex min-w-0 items-center gap-1'>
         <Button
           variant='ghost'
@@ -75,7 +75,7 @@ export function ChatHeader({
         >
           <PanelLeft className='size-4' />
         </Button>
-        <span className='truncate text-sm font-medium' title={title}>
+        <span className='truncate text-sm font-semibold' title={title}>
           {title}
         </span>
       </div>

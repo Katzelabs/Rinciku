@@ -83,7 +83,7 @@ export function MessageComposer({ sending, onSend, onSendImage }: Props) {
       />
 
       <div className='mx-auto w-full max-w-3xl'>
-        <div className='flex flex-col gap-2 rounded-3xl border bg-background p-2.5 transition-colors focus-within:border-ring focus-within:ring-[3px] focus-within:ring-ring/50'>
+        <div className='flex flex-col gap-2 rounded-2xl border bg-background p-2.5 transition-colors focus-within:border-ring focus-within:ring-[3px] focus-within:ring-ring/50'>
           {pending ? (
             <div className='flex items-center gap-2 self-start rounded-lg border bg-muted/40 p-1.5 pr-2'>
               <img
@@ -111,7 +111,7 @@ export function MessageComposer({ sending, onSend, onSendImage }: Props) {
               type='button'
               variant='ghost'
               size='icon'
-              className='shrink-0'
+              className='shrink-0 text-muted-foreground hover:text-foreground'
               disabled={sending}
               onClick={() => fileInputRef.current?.click()}
               aria-label={t('composer.attachImage')}
@@ -134,7 +134,7 @@ export function MessageComposer({ sending, onSend, onSendImage }: Props) {
             <Button
               type='button'
               size='icon'
-              className='size-8 shrink-0 rounded-full'
+              className='size-8 shrink-0 rounded-full disabled:bg-muted disabled:text-muted-foreground disabled:opacity-100'
               onClick={submit}
               disabled={!canSend}
               aria-label={t('composer.send')}

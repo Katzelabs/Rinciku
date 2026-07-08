@@ -9,8 +9,8 @@ import { MessageActions } from './message-actions';
 export function AssistantLabel() {
   return (
     <div className='flex items-center gap-2 text-xs font-medium text-muted-foreground'>
-      <span className='flex size-5 items-center justify-center rounded-md bg-gradient-to-br from-primary to-sidebar-primary text-sidebar-primary-foreground shadow-sm shadow-primary/30 ring-1 ring-primary/20'>
-        <Sparkles className='size-3' />
+      <span className='flex size-5 items-center justify-center rounded-md bg-muted'>
+        <Sparkles className='size-3 text-primary' />
       </span>
       Rinciku
     </div>
@@ -39,7 +39,7 @@ export function ChatMessage({ item }: { item: ChatItem }) {
           </a>
         ) : null}
         {item.content ? (
-          <div className='max-w-[80%] rounded-3xl rounded-br-md bg-muted px-4 py-2.5 text-base text-foreground'>
+          <div className='max-w-[80%] rounded-2xl rounded-br-md bg-primary px-4 py-2.5 text-base text-primary-foreground'>
             <p
               className={cn('whitespace-pre-wrap', '[overflow-wrap:anywhere]')}
             >
