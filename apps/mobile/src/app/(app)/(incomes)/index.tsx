@@ -23,6 +23,7 @@ import { useAuth } from '@/features/auth/hooks/use-auth';
 import type { ListPeriod } from '@/features/expenses/components/expense-filters';
 import { useIncomes } from '@/features/incomes/hooks/use-incomes';
 import { useTheme } from '@/hooks/use-theme';
+import { headerIcon } from '@/lib/header-icons';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 // How many recent incomes to preview on the overview before "See all".
@@ -96,16 +97,28 @@ export default function IncomesScreen() {
   const initialLoading = loading && incomes.length === 0;
 
   return (
-    <ScreenScroll gap={Spacing.four} refreshing={refreshing} onRefresh={onRefresh}>
+    <ScreenScroll
+      gap={Spacing.four}
+      refreshing={refreshing}
+      onRefresh={onRefresh}
+    >
       <Stack.Screen
         options={{
           unstable_headerRightItems: () => [
+            {
+              label: t('common:nav.scanReceipt'),
+              type: 'button',
+              sharesBackground: false,
+              icon: headerIcon.camera,
+              onPress: () => router.push('/(app)/(incomes)/new'),
+            },
             {
               label: `+ ${t('common:actions.add')}`,
               type: 'button',
               tintColor: c.primary,
               variant: 'prominent',
               sharesBackground: false,
+              icon: headerIcon.add,
               onPress: () => router.push('/(app)/(incomes)/new'),
             },
           ],

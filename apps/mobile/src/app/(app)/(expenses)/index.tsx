@@ -19,11 +19,11 @@ import {
   SectionHeader,
 } from '@/components/ui';
 import { Spacing } from '@/constants/theme';
-import { headerIcon } from '@/lib/header-icons';
 import { useAuth } from '@/features/auth/hooks/use-auth';
 import type { ListPeriod } from '@/features/expenses/components/expense-filters';
 import { useExpenses } from '@/features/expenses/hooks/use-expenses';
 import { useTheme } from '@/hooks/use-theme';
+import { headerIcon } from '@/lib/header-icons';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 // How many recent expenses to preview on the overview before "See all".
@@ -106,18 +106,19 @@ export default function ExpensesScreen() {
         options={{
           unstable_headerRightItems: () => [
             {
+              label: t('common:nav.scanReceipt'),
+              type: 'button',
+              sharesBackground: false,
+              icon: headerIcon.camera,
+              onPress: () => router.push('/(app)/(expenses)/new'),
+            },
+            {
               label: `+ ${t('common:actions.add')}`,
               type: 'button',
               tintColor: c.primary,
               variant: 'prominent',
               sharesBackground: false,
-              onPress: () => router.push('/(app)/(expenses)/new'),
-            },
-            {
-              label: t('common:nav.scanReceipt'),
-              type: 'button',
-              sharesBackground: false,
-              icon: headerIcon.camera,
+              icon: headerIcon.add,
               onPress: () => router.push('/(app)/(expenses)/new'),
             },
           ],
