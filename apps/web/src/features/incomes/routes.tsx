@@ -15,6 +15,7 @@ async function incomeLoader({ params }: LoaderFunctionArgs) {
 export const incomesRoutes: RouteObject[] = [
   {
     path: 'incomes',
+    handle: { title: 'incomes:page.title' },
     element: protectedRoute(<IncomesPage />),
     children: [
       { path: ':id', loader: incomeLoader, element: <IncomeDetailRoute /> },

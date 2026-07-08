@@ -14,15 +14,21 @@ import { SignUpPage } from './pages/sign-up';
 export const guestRoutes: RouteObject[] = [
   {
     path: '/sign-in',
+    handle: { title: 'auth:signIn.title' },
     element: (
       <RequireGuest>
         <SignInPage />
       </RequireGuest>
     ),
   },
-  { path: '/sign-up', element: <SignUpPage /> },
+  {
+    path: '/sign-up',
+    handle: { title: 'auth:signUp.title' },
+    element: <SignUpPage />,
+  },
   {
     path: '/forgot-password',
+    handle: { title: 'auth:forgotPassword.title' },
     element: (
       <RequireGuest>
         <ForgotPasswordPage />
@@ -37,19 +43,35 @@ export const guestRoutes: RouteObject[] = [
 // guest loader would treat as "already signed in" and redirect away before the
 // page can act. Wired as standalone children of RootLayout in app/router.tsx.
 export const authPublicRoutes: RouteObject[] = [
-  { path: '/reset-password', element: <ResetPasswordPage /> },
-  { path: '/auth/callback', element: <AuthCallbackPage /> },
+  {
+    path: '/reset-password',
+    handle: { title: 'auth:resetPassword.title' },
+    element: <ResetPasswordPage />,
+  },
+  {
+    path: '/auth/callback',
+    handle: { title: 'auth:authCallback.title' },
+    element: <AuthCallbackPage />,
+  },
 ];
 
 // /onboarding — wired under requireAuthLoader in src/app/router.tsx (NOT
 // requireOnboardedLoader; setting onboarded_at is the point of this page).
 export const onboardingRoutes: RouteObject[] = [
-  { path: '/onboarding', element: <OnboardingPage /> },
+  {
+    path: '/onboarding',
+    handle: { title: 'auth:onboarding.title' },
+    element: <OnboardingPage />,
+  },
 ];
 
 // Auth-adjacent routes for already-onboarded users (account settings, etc.).
 // Spread into the AppShell children in src/app/router.tsx so they inherit
 // requireOnboardedLoader alongside the rest of the app.
 export const authRoutes: RouteObject[] = [
-  { path: '/settings', element: <SettingsPage /> },
+  {
+    path: '/settings',
+    handle: { title: 'settings.title' },
+    element: <SettingsPage />,
+  },
 ];

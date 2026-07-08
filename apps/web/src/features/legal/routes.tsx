@@ -6,6 +6,14 @@ import { TermsPage } from './pages/terms';
 // RootLayout in app/router.tsx (NOT under any auth/guest/onboarded guard) so
 // they are reachable by signed-out visitors and signed-in users alike.
 export const legalRoutes: RouteObject[] = [
-  { path: '/terms', element: <TermsPage /> },
-  { path: '/privacy', element: <PrivacyPage /> },
+  {
+    path: '/terms',
+    handle: { title: 'legal:terms.title' },
+    element: <TermsPage />,
+  },
+  {
+    path: '/privacy',
+    handle: { title: 'legal:privacy.title' },
+    element: <PrivacyPage />,
+  },
 ];

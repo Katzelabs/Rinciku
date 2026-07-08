@@ -3,5 +3,9 @@ import { protectedRoute } from '@/features/auth';
 import { DashboardPage } from './pages/dashboard';
 
 export const dashboardRoutes: RouteObject[] = [
-  { index: true, element: protectedRoute(<DashboardPage />) },
+  {
+    index: true,
+    handle: { title: 'dashboard:page.title' },
+    element: protectedRoute(<DashboardPage />),
+  },
 ];

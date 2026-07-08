@@ -3,5 +3,9 @@ import { protectedRoute } from '@/features/auth';
 import { BudgetsPage } from './pages/budgets';
 
 export const budgetsRoutes: RouteObject[] = [
-  { path: 'budgets', element: protectedRoute(<BudgetsPage />) },
+  {
+    path: 'budgets',
+    handle: { title: 'budgets:page.title' },
+    element: protectedRoute(<BudgetsPage />),
+  },
 ];

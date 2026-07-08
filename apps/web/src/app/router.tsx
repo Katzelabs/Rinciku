@@ -46,7 +46,7 @@ export const router = createBrowserRouter([
           ...authRoutes,
         ],
       },
-      { path: '*', element: <NotFound /> },
+      { path: '*', handle: { title: () => '404' }, element: <NotFound /> },
     ],
   },
 ]);

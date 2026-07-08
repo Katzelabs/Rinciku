@@ -15,6 +15,7 @@ async function expenseLoader({ params }: LoaderFunctionArgs) {
 export const expensesRoutes: RouteObject[] = [
   {
     path: 'expenses',
+    handle: { title: 'expenses:page.title' },
     element: protectedRoute(<ExpensesPage />),
     children: [
       { path: ':id', loader: expenseLoader, element: <ExpenseDetailRoute /> },

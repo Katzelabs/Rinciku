@@ -15,6 +15,7 @@ async function essentialLoader({ params }: LoaderFunctionArgs) {
 export const essentialsRoutes: RouteObject[] = [
   {
     path: 'essentials',
+    handle: { title: 'essentials:page.title' },
     element: protectedRoute(<EssentialsPage />),
     children: [
       {
