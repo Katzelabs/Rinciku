@@ -237,5 +237,37 @@ export const Chart = {
   },
 } as const;
 
+/**
+ * Syntax-highlight palette for fenced code blocks in the AI chat, per scheme.
+ * Tokens map highlight.js scopes (keyword / string / number …) to accent hues
+ * that read against the `muted` code surface — rose/green/amber/sky tuned to
+ * the olive brand and legible in both light and dark. Anything unmapped falls
+ * back to `foreground` at the call site. Select via `useCodeSyntax()`.
+ */
+export const CodeSyntax = {
+  light: {
+    comment: '#7C7C67', // mutedForeground
+    keyword: '#9F4D6E', // brand rose
+    string: '#3F7A00', // positive green
+    number: '#B45309', // amber-700
+    title: '#0369A1', // sky-700 — functions / titles
+    type: '#0E7490', // cyan-700 — types / classes
+    attr: '#65A30D', // lime-600 — attributes / variables
+    meta: '#7C7C67',
+  },
+  dark: {
+    comment: '#ABAB9C',
+    keyword: '#DC9BB4', // brand rose (light)
+    string: '#A3E635', // lime / positive
+    number: '#FBBF24', // amber-400
+    title: '#38BDF8', // sky-400
+    type: '#22D3EE', // cyan-400
+    attr: '#BEF264', // lime-300
+    meta: '#ABAB9C',
+  },
+} as const;
+
+export type CodeScope = keyof typeof CodeSyntax.light;
+
 export const BottomTabInset = Platform.select({ ios: 50, android: 80 }) ?? 0;
 export const MaxContentWidth = 800;

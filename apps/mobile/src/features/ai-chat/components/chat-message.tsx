@@ -31,14 +31,17 @@ export const ChatMessage = memo(function ChatMessage({
   if (!isUser) {
     // Assistant: full-width, left-aligned, no bubble. The shared identity marker
     // sits above the markdown so AI turns are instantly distinguishable from the
-    // right-hugging user bubbles.
+    // right-hugging user bubbles, with the copy affordance tucked underneath the
+    // reply (the ChatGPT/Claude reading layout).
     return (
       <View style={styles.assistant}>
-        <View style={styles.markerRow}>
-          <AssistantMarker />
-          {hasText ? <CopyButton value={item.content} /> : null}
-        </View>
+        <AssistantMarker />
         {hasText ? <Markdown content={item.content} /> : null}
+        {hasText ? (
+          <View style={styles.actions}>
+            <CopyButton value={item.content} />
+          </View>
+        ) : null}
       </View>
     );
   }
@@ -86,10 +89,11 @@ const styles = StyleSheet.create({
     marginVertical: Spacing.two,
     gap: Spacing.two,
   },
-  markerRow: {
+  actions: {
     flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    // Pull the button's own horizontal padding back so the copy icon lines up
+    // with the left edge of the reply text.
+    marginLeft: -Spacing.one,
   },
   image: {
     width: '66%',
