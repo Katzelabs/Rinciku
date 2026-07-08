@@ -1,7 +1,7 @@
 ---
 import Logo from './Logo.astro';
 import type { Copy } from '../i18n/types';
-import { githubUrl, privacyUrl, termsUrl } from '../i18n/utils';
+import { githubUrl, privacyUrl, termsUrl, contactUrl } from '../i18n/utils';
 interface Props {
   copy: Copy;
 }
@@ -22,6 +22,8 @@ const year = new Date().getFullYear();
         <a href={privacyUrl} target="_blank" rel="noopener noreferrer">{footer.privacy}</a>
         <span class="dot" aria-hidden="true">·</span>
         <a href={termsUrl} target="_blank" rel="noopener noreferrer">{footer.terms}</a>
+        <span class="dot" aria-hidden="true">·</span>
+        <a href={contactUrl}>{footer.contact}</a>
         <span class="dot" aria-hidden="true">·</span>
         <a class="gh" href={githubUrl} target="_blank" rel="noopener noreferrer">
           <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor" aria-hidden="true">

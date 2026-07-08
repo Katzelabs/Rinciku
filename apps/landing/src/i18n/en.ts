@@ -11,6 +11,9 @@ export const en: Copy = {
     tryFree: 'Try free',
     switchLang: 'ID',
     skipToContent: 'Skip to content',
+    features: 'Features',
+    how: 'How it works',
+    faq: 'FAQ',
   },
   hero: {
     badge: 'AI purchase consultation',
@@ -208,6 +211,7 @@ export const en: Copy = {
     tagline: 'Your AI money companion for mixed-currency life.',
     madeWith: 'Made for young Indonesians — and anyone with irregular income.',
     github: 'GitHub',
+    contact: 'Contact',
     privacy: 'Privacy',
     terms: 'Terms',
     rights: 'All rights reserved.',

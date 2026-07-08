@@ -43,6 +43,10 @@ export interface Copy {
     switchLang: string;
     /** Skip-to-content link text (keyboard/screen-reader accessibility). */
     skipToContent: string;
+    /** In-page anchor links (desktop header). */
+    features: string;
+    how: string;
+    faq: string;
   };
   hero: {
     badge: string;
@@ -97,6 +101,7 @@ export interface Copy {
     tagline: string;
     madeWith: string;
     github: string;
+    contact: string;
     privacy: string;
     terms: string;
     rights: string;

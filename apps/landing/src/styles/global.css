@@ -78,6 +78,14 @@
     color: var(--color-foreground);
   }
 
+  /* Offset anchor targets so the sticky header doesn't cover the heading. */
+  :target,
+  #features,
+  #how,
+  #faq {
+    scroll-margin-top: 5rem;
+  }
+
   /* Visible keyboard-focus ring across interactive elements. */
   a:focus-visible,
   button:focus-visible,

@@ -34,3 +34,7 @@ export const termsUrl = `${webAppUrl}/terms`;
 /** Optional public repo link for the footer. */
 export const githubUrl: string =
   import.meta.env.PUBLIC_GITHUB_URL ?? 'https://github.com/rinciku';
+
+/** Support contact. */
+export const contactEmail = 'help@rinciku.com';
+export const contactUrl = `mailto:${contactEmail}`;

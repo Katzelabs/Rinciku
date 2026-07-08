@@ -11,6 +11,9 @@ export const id: Copy = {
     tryFree: 'Coba gratis',
     switchLang: 'EN',
     skipToContent: 'Lewati ke konten',
+    features: 'Fitur',
+    how: 'Cara kerja',
+    faq: 'FAQ',
   },
   hero: {
     badge: 'Konsultasi belanja dengan AI',
@@ -208,6 +211,7 @@ export const id: Copy = {
     tagline: 'Teman keuangan AI untuk hidup multi-mata uang.',
     madeWith: 'Dibuat untuk anak muda Indonesia — dan siapa pun dengan penghasilan tak menentu.',
     github: 'GitHub',
+    contact: 'Kontak',
     privacy: 'Privasi',
     terms: 'Ketentuan',
     rights: 'Seluruh hak cipta dilindungi.',

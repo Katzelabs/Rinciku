@@ -17,6 +17,11 @@ const altHref = localeHref(otherLocale(locale));
     <a href={localeHref(locale)} class="brand" aria-label="Rinciku home">
       <Logo />
     </a>
+    <nav class="anchors" aria-label="Sections">
+      <a href="#features">{copy.nav.features}</a>
+      <a href="#how">{copy.nav.how}</a>
+      <a href="#faq">{copy.nav.faq}</a>
+    </nav>
     <nav class="actions">
       <a href={altHref} class="lang" aria-label={`Switch language to ${copy.nav.switchLang}`}>
         <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -50,6 +55,26 @@ const altHref = localeHref(otherLocale(locale));
   }
   .brand {
     text-decoration: none;
+  }
+  .anchors {
+    display: none;
+  }
+  @media (min-width: 900px) {
+    .anchors {
+      display: flex;
+      align-items: center;
+      gap: 1.75rem;
+    }
+    .anchors a {
+      font-size: 0.9375rem;
+      font-weight: 500;
+      color: var(--color-muted-foreground);
+      text-decoration: none;
+      transition: color 0.15s ease;
+    }
+    .anchors a:hover {
+      color: var(--color-foreground);
+    }
   }
   .actions {
     display: flex;
