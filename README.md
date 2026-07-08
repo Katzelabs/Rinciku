@@ -157,6 +157,6 @@ For deeper context, see [`docs/PROJECT_BRIEF.md`](docs/PROJECT_BRIEF.md) (produc
 
 ## Status & license
 
-🚧 Early-stage, work in progress. Private repository.
+🚧 Early-stage, work in progress.
 
-**License:** TBD
+**License:** [MIT](LICENSE) © 2026 Katzelabs
