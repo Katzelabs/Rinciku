@@ -1,0 +1,52 @@
+---
+import '../styles/global.css';
+import type { Copy, Locale } from '../i18n/types';
+
+interface Props {
+  locale: Locale;
+  meta: Copy['meta'];
+}
+const { locale, meta } = Astro.props;
+
+const site = Astro.site ?? new URL('https://rinciku.com');
+const canonical = new URL(Astro.url.pathname, site).href;
+const enUrl = new URL('/', site).href;
+const idUrl = new URL('/id/', site).href;
+const ogImage = new URL('/og.png', site).href;
+---
+
+<!doctype html>
+<html lang={locale}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="canonical" href={canonical} />
+    <link rel="alternate" hreflang="en" href={enUrl} />
+    <link rel="alternate" hreflang="id" href={idUrl} />
+    <link rel="alternate" hreflang="x-default" href={enUrl} />
+
+    <title>{meta.title}</title>
+    <meta name="description" content={meta.description} />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Rinciku" />
+    <meta property="og:locale" content={locale === 'id' ? 'id_ID' : 'en_US'} />
+    <meta property="og:title" content={meta.title} />
+    <meta property="og:description" content={meta.description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:image" content={ogImage} />
+    <meta property="og:image:alt" content={meta.ogAlt} />
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={meta.title} />
+    <meta name="twitter:description" content={meta.description} />
+    <meta name="twitter:image" content={ogImage} />
+
+    <meta name="theme-color" content="#9ae600" />
+    <meta name="generator" content={Astro.generator} />
+  </head>
+  <body>
+    <slot />
+  </body>
+</html>

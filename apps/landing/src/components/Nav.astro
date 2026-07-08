@@ -1,0 +1,75 @@
+---
+import Logo from './Logo.astro';
+import Button from './Button.astro';
+import type { Copy, Locale } from '../i18n/types';
+import { otherLocale, localeHref, webAppUrl } from '../i18n/utils';
+
+interface Props {
+  locale: Locale;
+  copy: Copy;
+}
+const { locale, copy } = Astro.props;
+const altHref = localeHref(otherLocale(locale));
+---
+
+<header class="nav">
+  <div class="nav-inner">
+    <a href={localeHref(locale)} class="brand" aria-label="Rinciku home">
+      <Logo />
+    </a>
+    <nav class="actions">
+      <a href={altHref} class="lang" aria-label={`Switch language to ${copy.nav.switchLang}`}>
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="10"></circle>
+          <path d="M2 12h20"></path>
+          <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+        </svg>
+        {copy.nav.switchLang}
+      </a>
+      <Button href={webAppUrl}>{copy.nav.tryFree}</Button>
+    </nav>
+  </div>
+</header>
+
+<style>
+  .nav {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    background-color: color-mix(in oklch, var(--color-background) 80%, transparent);
+    backdrop-filter: saturate(1.4) blur(10px);
+    border-bottom: 1px solid var(--color-border);
+  }
+  .nav-inner {
+    max-width: 72rem;
+    margin: 0 auto;
+    padding: 0.75rem 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .brand {
+    text-decoration: none;
+  }
+  .actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .lang {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.5rem 0.75rem;
+    border-radius: 9999px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--color-muted-foreground);
+    text-decoration: none;
+    transition: color 0.15s ease, background-color 0.15s ease;
+  }
+  .lang:hover {
+    color: var(--color-foreground);
+    background-color: var(--color-muted);
+  }
+</style>

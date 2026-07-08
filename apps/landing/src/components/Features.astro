@@ -1,0 +1,106 @@
+---
+import type { Copy } from '../i18n/types';
+interface Props {
+  copy: Copy;
+}
+const { copy } = Astro.props;
+const { features } = copy;
+---
+
+<section class="section">
+  <div class="inner">
+    <header class="head">
+      <h2 class="title">{features.heading}</h2>
+      <p class="sub">{features.subhead}</p>
+    </header>
+    <ul class="grid">
+      {
+        features.items.map((item) => (
+          <li class="card">
+            <span class="emoji" aria-hidden="true">{item.emoji}</span>
+            <h3 class="card-title">{item.title}</h3>
+            <p class="card-body">{item.body}</p>
+          </li>
+        ))
+      }
+    </ul>
+  </div>
+</section>
+
+<style>
+  .section {
+    padding: 4rem 1.5rem;
+  }
+  .inner {
+    max-width: 72rem;
+    margin: 0 auto;
+  }
+  .head {
+    max-width: 44rem;
+    margin: 0 auto;
+    text-align: center;
+  }
+  .title {
+    font-family: var(--font-heading);
+    font-weight: 700;
+    font-size: clamp(1.75rem, 4vw, 2.5rem);
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+  }
+  .sub {
+    margin-top: 0.875rem;
+    font-size: 1.0625rem;
+    line-height: 1.6;
+    color: var(--color-muted-foreground);
+  }
+  .grid {
+    margin-top: 2.5rem;
+    list-style: none;
+    padding: 0;
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: repeat(1, minmax(0, 1fr));
+  }
+  @media (min-width: 640px) {
+    .grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+  @media (min-width: 1024px) {
+    .grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+  .card {
+    padding: 1.5rem;
+    background-color: var(--color-card);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-xl);
+    transition: box-shadow 0.15s ease, transform 0.15s ease;
+  }
+  .card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 16px 32px -20px color-mix(in oklch, var(--color-foreground) 30%, transparent);
+  }
+  .emoji {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.75rem;
+    height: 2.75rem;
+    font-size: 1.375rem;
+    border-radius: var(--radius-lg);
+    background-color: color-mix(in oklch, var(--color-primary) 14%, transparent);
+  }
+  .card-title {
+    margin-top: 1rem;
+    font-weight: 600;
+    font-size: 1.0625rem;
+  }
+  .card-body {
+    margin-top: 0.4rem;
+    font-size: 0.9375rem;
+    line-height: 1.55;
+    color: var(--color-muted-foreground);
+  }
+</style>

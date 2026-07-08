@@ -1,0 +1,136 @@
+---
+import { Image } from 'astro:assets';
+import dashboard from '../assets/screenshots/dashboard.png';
+import type { Copy } from '../i18n/types';
+interface Props {
+  copy: Copy;
+}
+const { copy } = Astro.props;
+const { differentiator: d } = copy;
+---
+
+<section class="band">
+  <div class="inner">
+    <div class="col text">
+      <span class="eyebrow">{d.badge}</span>
+      <h2 class="title">{d.heading}</h2>
+      <p class="body">{d.body}</p>
+      <ul class="points">
+        {
+          d.points.map((p) => (
+            <li class="point">
+              <span class="check" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M20 6 9 17l-5-5" />
+                </svg>
+              </span>
+              <span>
+                <strong class="point-title">{p.title}</strong>
+                <span class="point-body">{p.body}</span>
+              </span>
+            </li>
+          ))
+        }
+      </ul>
+    </div>
+    <div class="col media">
+      <div class="frame">
+        <Image src={dashboard} alt={d.screenshotAlt} widths={[560, 840, 1120]} sizes="(min-width: 1024px) 560px, 100vw" loading="lazy" class="shot" />
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+  .band {
+    padding: 4rem 1.5rem;
+    background-color: color-mix(in oklch, var(--color-primary) 6%, var(--color-background));
+    border-top: 1px solid var(--color-border);
+    border-bottom: 1px solid var(--color-border);
+  }
+  .inner {
+    max-width: 72rem;
+    margin: 0 auto;
+    display: grid;
+    gap: 2.5rem;
+    align-items: center;
+    grid-template-columns: 1fr;
+  }
+  @media (min-width: 1024px) {
+    .inner {
+      grid-template-columns: 1fr 1fr;
+      gap: 4rem;
+    }
+  }
+  .eyebrow {
+    display: inline-block;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--color-primary-foreground);
+  }
+  .title {
+    margin-top: 0.75rem;
+    font-family: var(--font-heading);
+    font-weight: 700;
+    font-size: clamp(1.75rem, 4vw, 2.5rem);
+    line-height: 1.12;
+    letter-spacing: -0.02em;
+  }
+  .body {
+    margin-top: 1rem;
+    font-size: 1.0625rem;
+    line-height: 1.6;
+    color: var(--color-muted-foreground);
+    max-width: 34rem;
+  }
+  .points {
+    margin-top: 1.75rem;
+    list-style: none;
+    padding: 0;
+    display: grid;
+    gap: 1rem;
+  }
+  .point {
+    display: flex;
+    gap: 0.75rem;
+    align-items: flex-start;
+  }
+  .check {
+    flex: none;
+    margin-top: 0.1rem;
+    width: 1.375rem;
+    height: 1.375rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 9999px;
+    background-color: var(--color-primary);
+    color: var(--color-primary-foreground);
+  }
+  .point-title {
+    display: block;
+    font-weight: 600;
+    font-size: 1rem;
+  }
+  .point-body {
+    display: block;
+    margin-top: 0.15rem;
+    font-size: 0.9375rem;
+    line-height: 1.5;
+    color: var(--color-muted-foreground);
+  }
+  .frame {
+    background-color: var(--color-card);
+    border: 1px solid var(--color-border);
+    border-radius: 1rem;
+    overflow: hidden;
+    box-shadow: 0 24px 50px -24px color-mix(in oklch, var(--color-foreground) 28%, transparent);
+  }
+  .shot {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+</style>

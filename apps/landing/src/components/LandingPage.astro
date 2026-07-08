@@ -1,0 +1,34 @@
+---
+import Base from '../layouts/Base.astro';
+import Nav from './Nav.astro';
+import Hero from './Hero.astro';
+import Problem from './Problem.astro';
+import Differentiator from './Differentiator.astro';
+import Features from './Features.astro';
+import HowItWorks from './HowItWorks.astro';
+import Compare from './Compare.astro';
+import FinalCTA from './FinalCTA.astro';
+import Footer from './Footer.astro';
+import type { Locale } from '../i18n/types';
+import { getCopy } from '../i18n/utils';
+
+interface Props {
+  locale: Locale;
+}
+const { locale } = Astro.props;
+const copy = getCopy(locale);
+---
+
+<Base locale={locale} meta={copy.meta}>
+  <Nav locale={locale} copy={copy} />
+  <main>
+    <Hero copy={copy} />
+    <Problem copy={copy} />
+    <Differentiator copy={copy} />
+    <Features copy={copy} />
+    <HowItWorks copy={copy} />
+    <Compare copy={copy} />
+    <FinalCTA copy={copy} />
+  </main>
+  <Footer copy={copy} />
+</Base>

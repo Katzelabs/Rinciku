@@ -1,0 +1,80 @@
+---
+import Button from './Button.astro';
+import type { Copy } from '../i18n/types';
+import { webAppUrl } from '../i18n/utils';
+interface Props {
+  copy: Copy;
+}
+const { copy } = Astro.props;
+const { cta } = copy;
+---
+
+<section class="section">
+  <div class="panel">
+    <div class="glow" aria-hidden="true"></div>
+    <div class="content">
+      <h2 class="title">{cta.heading}</h2>
+      <p class="body">{cta.body}</p>
+      <div class="btn-row">
+        <Button href={webAppUrl} size="lg">{cta.button}</Button>
+      </div>
+      <p class="note">{cta.note}</p>
+    </div>
+  </div>
+</section>
+
+<style>
+  .section {
+    padding: 2rem 1.5rem 4rem;
+  }
+  .panel {
+    position: relative;
+    overflow: hidden;
+    max-width: 72rem;
+    margin: 0 auto;
+    padding: clamp(2.5rem, 6vw, 4.5rem) 1.5rem;
+    text-align: center;
+    background-color: var(--color-card);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-4xl);
+  }
+  .glow {
+    position: absolute;
+    inset: auto 0 -50% 0;
+    height: 30rem;
+    background: radial-gradient(
+      50% 60% at 50% 100%,
+      color-mix(in oklch, var(--color-primary) 28%, transparent) 0%,
+      transparent 70%
+    );
+    pointer-events: none;
+  }
+  .content {
+    position: relative;
+    z-index: 1;
+  }
+  .title {
+    font-family: var(--font-heading);
+    font-weight: 700;
+    font-size: clamp(1.875rem, 5vw, 3rem);
+    line-height: 1.08;
+    letter-spacing: -0.02em;
+    max-width: 20ch;
+    margin: 0 auto;
+  }
+  .body {
+    margin: 1rem auto 0;
+    max-width: 40rem;
+    font-size: 1.0625rem;
+    line-height: 1.6;
+    color: var(--color-muted-foreground);
+  }
+  .btn-row {
+    margin-top: 1.75rem;
+  }
+  .note {
+    margin-top: 0.875rem;
+    font-size: 0.875rem;
+    color: var(--color-muted-foreground);
+  }
+</style>
