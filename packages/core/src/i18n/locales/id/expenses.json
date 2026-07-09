@@ -142,6 +142,7 @@
   "errors": {
     "amountRequired": "Masukkan jumlah",
     "amountPositive": "Jumlah harus lebih dari 0",
+    "amountMax": "Jumlah terlalu besar",
     "currencyRequired": "Pilih mata uang",
     "categoryRequired": "Pilih kategori",
     "dateRequired": "Pilih tanggal",

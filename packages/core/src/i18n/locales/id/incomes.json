@@ -199,6 +199,7 @@
   "errors": {
     "amountRequired": "Masukkan jumlah",
     "amountPositive": "Jumlah harus lebih dari 0",
+    "amountMax": "Jumlah terlalu besar",
     "dateRequired": "Pilih tanggal",
     "dateFuture": "Tanggal tidak boleh di masa depan",
     "noteTooLong": "Catatan maksimal 280 karakter",

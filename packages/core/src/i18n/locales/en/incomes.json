@@ -199,6 +199,7 @@
   "errors": {
     "amountRequired": "Enter an amount",
     "amountPositive": "Amount must be greater than 0",
+    "amountMax": "Amount is too large",
     "dateRequired": "Pick a date",
     "dateFuture": "Date cannot be in the future",
     "noteTooLong": "Note must be 280 characters or fewer",

@@ -5,9 +5,14 @@
 /_astro/*
   Cache-Control: public, max-age=31536000, immutable
 
-# Security headers for every response.
+# Security headers for every response. CSP: the site is fully static and
+# self-contained (bundled fonts/styles, astro:assets images, no client islands
+# — the ld+json block is a data script CSP doesn't execute). If interactive
+# islands are ever added, re-check dist/ for inline hydration scripts.
 /*
+  Strict-Transport-Security: max-age=31536000; includeSubDomains
   X-Content-Type-Options: nosniff
   Referrer-Policy: strict-origin-when-cross-origin
   X-Frame-Options: DENY
   Permissions-Policy: geolocation=(), microphone=(), camera=(), interest-cohort=()
+  Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'

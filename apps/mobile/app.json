@@ -42,7 +42,8 @@
           "photosPermission": "Rinciku uses your photos to attach receipts to your transactions.",
           "cameraPermission": "Rinciku uses your camera to photograph receipts for your transactions."
         }
-      ]
+      ],
+      "expo-secure-store"
     ],
     "experiments": {
       "typedRoutes": true,

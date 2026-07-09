@@ -141,15 +141,15 @@ Expo **SDK 56**, React Native 0.85, React 19. **iOS + Android only — the Expo 
 
 Supabase (PostgreSQL + Auth + RLS) — local config scaffolded in `supabase/config.toml` (`project_id = "rinciku"`, Postgres 17, API on `:54321`, DB on `:54322`). Data access goes through each feature's `api.ts`.
 
-**Schema is declarative.** `supabase/schemas/*.sql` is the source of truth (registered in `config.toml` under `schema_paths`). `supabase/migrations/*.sql` are generated artifacts — never hand-edit them. The full design lives in `docs/schema.md`.
+**Schema is declarative.** `supabase/schemas/*.sql` is the source of truth (registered in `config.toml` under `schema_paths`). `supabase/migrations/*.sql` are generated artifacts — never hand-edit them, with ONE exception: `20260709130000_role_privileges.sql` is hand-maintained (the diff engine cannot emit `revoke`/`alter default privileges`, so the API-role hardening from `schemas/95_grants.sql` lives there; keep the two in sync). The full design lives in `docs/schema.md`.
 
-Workflow during pre-release dev (no shared/remote DB yet):
+**The app + Supabase are DEPLOYED (since 2026-07): migration history is additive.** Never delete or rewrite existing migrations — the remote's `schema_migrations` already contains them. Workflow for a schema change:
 
 1. Edit the relevant `supabase/schemas/NN_*.sql` file (and `docs/schema.md` if the change is design-level).
-2. Delete the existing migration(s) in `supabase/migrations/` and regenerate a single rolling init with `supabase db diff -f init`. Keeping one migration avoids churn until the schema stabilizes.
-3. `supabase db reset` to wipe local and reapply.
+2. Generate a **new** migration on top of the history with `supabase db diff -f <name>`.
+3. `supabase db reset` locally to replay the full history and verify, then `supabase db push` to apply to the remote (confirm before pushing — it touches prod).
 
-Once the app is deployed or the DB is shared, this rule flips: `db reset` is destructive, so changes must land as *new* additive migrations on top of the existing history (still generated via `supabase db diff -f <name>` against an edited schema).
+Caveat: `db diff` cannot express `revoke`, `alter default privileges`, or function-privilege changes. If a schema edit involves those, they must land in a hand-written migration (see the `role_privileges` exception above for the pattern) — verify the applied state with a grants query after reset, don't trust the diff.
 
 ### AI
 

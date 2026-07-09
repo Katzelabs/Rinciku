@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import type { TFunction } from 'i18next';
 
-import { CURRENCY_CODES } from '@rinciku/core';
+import { CURRENCY_CODES, MAX_AMOUNT } from '@rinciku/core';
 
 export function makeSignInSchema(t: TFunction) {
   return z.object({
@@ -43,6 +43,12 @@ function makePasswordField(t: TFunction) {
   return z.string().superRefine((value, ctx) => {
     if (value.length === 0) {
       ctx.addIssue({ code: 'custom', message: t('errors.passwordRequired') });
+      return;
+    }
+    // bcrypt (GoTrue's hasher) truncates at 72 bytes — beyond that, characters
+    // silently stop contributing to the hash, so reject rather than mislead.
+    if (value.length > 72) {
+      ctx.addIssue({ code: 'custom', message: t('errors.passwordMax') });
       return;
     }
     for (const rule of passwordPolicy) {
@@ -118,7 +124,9 @@ export function makeOnboardingSchema(t: TFunction) {
     }),
     expected_monthly_income: z
       .number({ message: t('errors.incomeNumber') })
-      .nonnegative(t('errors.incomeNonnegative')),
+      .nonnegative(t('errors.incomeNonnegative'))
+      .finite(t('errors.incomeMax'))
+      .max(MAX_AMOUNT, t('errors.incomeMax')),
     month_start_day: z
       .number({ message: t('errors.dayNumber') })
       .int(t('errors.dayInteger'))

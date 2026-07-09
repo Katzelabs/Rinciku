@@ -551,6 +551,27 @@ export type Database = {
         }
         Relationships: []
       }
+      rate_limit_hits: {
+        Row: {
+          bucket: string
+          hits: number
+          user_id: string
+          window_start: string
+        }
+        Insert: {
+          bucket: string
+          hits?: number
+          user_id: string
+          window_start: string
+        }
+        Update: {
+          bucket?: string
+          hits?: number
+          user_id?: string
+          window_start?: string
+        }
+        Relationships: []
+      }
       tier_budgets: {
         Row: {
           amount: number
@@ -647,6 +668,10 @@ export type Database = {
           by_category: Json
           by_tier: Json
         }[]
+      }
+      check_rate_limit: {
+        Args: { p_bucket: string; p_max_hits: number; p_window_seconds: number }
+        Returns: boolean
       }
       dashboard_monthly_summary: {
         Args: {

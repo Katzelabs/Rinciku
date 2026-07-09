@@ -2,7 +2,7 @@ import { z } from 'zod';
 import type { TFunction } from 'i18next';
 
 import { type CurrencyCode } from '@rinciku/core';
-import { isCurrencyCode, parseCsvDate } from '@rinciku/core';
+import { MAX_AMOUNT, isCurrencyCode, parseCsvDate } from '@rinciku/core';
 
 function endOfToday() {
   const d = new Date();
@@ -15,7 +15,9 @@ export function makeIncomeSchema(t: TFunction) {
     amount: z
       .number({ message: t('errors.amountRequired') })
       .refine((v) => !Number.isNaN(v), { message: t('errors.amountRequired') })
-      .positive(t('errors.amountPositive')),
+      .positive(t('errors.amountPositive'))
+      .finite(t('errors.amountMax'))
+      .max(MAX_AMOUNT, t('errors.amountMax')),
     // Optional — income may stay uncategorized. '' represents "no source" in the
     // form; the submit handler maps it to null.
     source_id: z.string().uuid().or(z.literal('')).optional(),
@@ -44,7 +46,7 @@ export function makeIncomeCsvRowSchema(t: TFunction) {
     amount: z
       .string()
       .transform((v) => Number(v.replace(/,/g, '').trim()))
-      .refine((n) => Number.isFinite(n) && n > 0, {
+      .refine((n) => Number.isFinite(n) && n > 0 && n <= MAX_AMOUNT, {
         message: t('errors.csvAmountInvalid'),
       }),
     currency: z

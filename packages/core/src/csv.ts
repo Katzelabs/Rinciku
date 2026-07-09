@@ -10,14 +10,29 @@ import { CURRENCY_CODES, type CurrencyCode } from './fx';
 
 export type CsvCell = string | number;
 
+// OWASP CSV-injection guard: a cell starting with = + - @ (or tab/CR) is
+// executed as a formula when the file opens in Excel/Sheets, so user text like
+// a `=HYPERLINK(...)` note would become live. A leading apostrophe makes
+// spreadsheets read the cell as literal text. Numbers pass through untouched
+// (negative amounts must stay numeric). The apostrophe survives a re-import —
+// accepted trade-off; stripping it on import would create an ambiguity an
+// attacker-crafted file could abuse.
+function escapeFormulaCell(cell: CsvCell): CsvCell {
+  if (typeof cell !== 'string') return cell;
+  return /^[=+\-@\t\r]/.test(cell) ? `'${cell}` : cell;
+}
+
 // Caller passes already-shaped plain rows; `columns` fixes header order. Papa
 // handles quoting/escaping. CRLF + quoted fields keep Excel/Sheets happy.
 export function toCsv<T extends Record<string, CsvCell>>(
   rows: T[],
   columns: readonly (keyof T & string)[]
 ): string {
+  const data = rows.map((row) =>
+    columns.map((col) => escapeFormulaCell(row[col]))
+  );
   return Papa.unparse(
-    { fields: columns as string[], data: rows },
+    { fields: columns as string[], data },
     { quotes: true, newline: '\r\n' }
   );
 }

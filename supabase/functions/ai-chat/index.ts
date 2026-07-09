@@ -1,5 +1,6 @@
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import OpenAI from 'npm:openai';
+import { corsHeaders } from '../_shared/cors.ts';
 
 // Authenticated proxy for the chat LLM, routed through OpenRouter (OpenAI-
 // compatible API). The ai-chat feature builds the grounding system prompt +
@@ -8,12 +9,6 @@ import OpenAI from 'npm:openai';
 // OpenRouter, and translates the reply back so the client stays provider-
 // agnostic. The key never reaches the browser.
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers':
-    'authorization, x-client-info, apikey, content-type',
-};
-
 const OPENROUTER_BASE_URL = 'https://openrouter.ai/api/v1';
 // Model is env-configurable (any OpenRouter slug, Claude or otherwise). Set
 // OPENROUTER_MODEL in supabase/functions/.env and `supabase secrets`.
@@ -21,6 +16,21 @@ const DEFAULT_MODEL = 'google/gemini-3.1-flash-lite';
 // Headroom for the agentic loop: a turn may interleave reasoning, tool calls,
 // and a final summary. Still env-overridable per request via max_tokens.
 const DEFAULT_MAX_TOKENS = 4096;
+// Abuse guards. The clients never send max_tokens today; the cap exists so a
+// crafted request can't turn this proxy into a cost sink. Size limits bound
+// what we forward to the LLM: the client caps attachments at 10 MB, which is
+// ~13.4 MB base64 — 15 MB leaves headroom without allowing arbitrary bodies.
+const MAX_TOKENS_CAP = 8192;
+const MAX_MESSAGES = 60;
+const MAX_BODY_BYTES = 15_000_000;
+const MAX_IMAGE_BLOCKS = 5;
+// Per-user fixed windows via public.check_rate_limit (see 20_rate_limits.sql).
+// One agentic turn is up to 6 invocations (client MAX_STEPS), so 20/min ≈ 3
+// full turns a minute; the daily cap kills sustained proxy abuse.
+const RATE_LIMITS = [
+  { bucket: 'ai-chat-min', maxHits: 20, windowSeconds: 60 },
+  { bucket: 'ai-chat-day', maxHits: 200, windowSeconds: 86_400 },
+];
 
 // --- Internal (client-facing) request shapes -------------------------------
 
@@ -64,10 +74,10 @@ type ChatRequest = {
   max_tokens?: number;
 };
 
-function json(body: unknown, status = 200): Response {
+function json(req: Request, body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {
     status,
-    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    headers: { ...corsHeaders(req), 'Content-Type': 'application/json' },
   });
 }
 
@@ -216,16 +226,16 @@ function toContentBlocks(
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
+    return new Response('ok', { headers: corsHeaders(req) });
   }
   if (req.method !== 'POST') {
-    return json({ error: 'Method not allowed' }, 405);
+    return json(req, { error: 'Method not allowed' }, 405);
   }
 
   // 1. Verify the caller is a signed-in Rinciku user.
   const authHeader = req.headers.get('Authorization');
   if (!authHeader) {
-    return json({ error: 'Unauthorized' }, 401);
+    return json(req, { error: 'Unauthorized' }, 401);
   }
 
   const userClient = createClient(
@@ -238,24 +248,61 @@ Deno.serve(async (req) => {
     error: userErr,
   } = await userClient.auth.getUser();
   if (userErr || !user) {
-    return json({ error: 'Unauthorized' }, 401);
+    return json(req, { error: 'Unauthorized' }, 401);
   }
 
-  // 2. Parse + relay to OpenRouter. The secret comes from env, never the client.
+  // 2. Throttle. The RPC derives the user from the JWT (auth.uid()), so the
+  // caller can't spoof another user's budget. Fail closed on RPC errors.
+  for (const limit of RATE_LIMITS) {
+    const { data: allowed, error: rlErr } = await userClient.rpc(
+      'check_rate_limit',
+      {
+        p_bucket: limit.bucket,
+        p_max_hits: limit.maxHits,
+        p_window_seconds: limit.windowSeconds,
+      }
+    );
+    if (rlErr) {
+      console.error('rate limit check failed', rlErr);
+      return json(req, { error: 'Please try again shortly.' }, 500);
+    }
+    if (!allowed) {
+      return json(req, { error: 'Too many requests. Please slow down.' }, 429);
+    }
+  }
+
+  // 3. Parse + relay to OpenRouter. The secret comes from env, never the client.
+  const rawBody = await req.text();
+  if (rawBody.length > MAX_BODY_BYTES) {
+    return json(req, { error: 'Request body too large' }, 413);
+  }
   let body: ChatRequest;
   try {
-    body = await req.json();
+    body = JSON.parse(rawBody);
   } catch {
-    return json({ error: 'Invalid JSON body' }, 400);
+    return json(req, { error: 'Invalid JSON body' }, 400);
   }
   if (!Array.isArray(body.messages) || body.messages.length === 0) {
-    return json({ error: 'messages must be a non-empty array' }, 400);
+    return json(req, { error: 'messages must be a non-empty array' }, 400);
+  }
+  if (body.messages.length > MAX_MESSAGES) {
+    return json(req, { error: `messages exceeds ${MAX_MESSAGES}` }, 400);
+  }
+  const imageBlocks = body.messages
+    .flatMap((m) => (Array.isArray(m.content) ? m.content : []))
+    .filter((block) => block.type === 'image').length;
+  if (imageBlocks > MAX_IMAGE_BLOCKS) {
+    return json(
+      req,
+      { error: `too many images (max ${MAX_IMAGE_BLOCKS})` },
+      400
+    );
   }
 
   const apiKey = Deno.env.get('OPENROUTER_API_KEY');
   if (!apiKey) {
     console.error('OPENROUTER_API_KEY is not set');
-    return json({ error: 'AI is not configured.' }, 500);
+    return json(req, { error: 'AI is not configured.' }, 500);
   }
 
   const client = new OpenAI({
@@ -267,14 +314,17 @@ Deno.serve(async (req) => {
   try {
     const completion = await client.chat.completions.create({
       model: Deno.env.get('OPENROUTER_MODEL') ?? DEFAULT_MODEL,
-      max_tokens: body.max_tokens ?? DEFAULT_MAX_TOKENS,
+      max_tokens: Math.min(
+        Math.max(1, Math.floor(body.max_tokens ?? DEFAULT_MAX_TOKENS)),
+        MAX_TOKENS_CAP
+      ),
       messages: toOpenAIMessages(body.system, body.messages),
       tools: toOpenAITools(body.tools),
       tool_choice: toOpenAIToolChoice(body.tool_choice),
     });
 
     const choice = completion.choices[0];
-    return json({
+    return json(req, {
       content: choice ? toContentBlocks(choice.message) : [],
       stop_reason: choice?.finish_reason ?? null,
       usage: completion.usage
@@ -292,6 +342,7 @@ Deno.serve(async (req) => {
         ? err.status
         : 502;
     return json(
+      req,
       { error: 'The assistant could not respond. Please try again.' },
       status
     );

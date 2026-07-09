@@ -1,11 +1,12 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createMobileClient } from '@rinciku/db';
+
+import { LargeSecureStore } from './secure-session-storage';
 
 // Expo inlines `EXPO_PUBLIC_*` env vars at build time. The mobile client uses
 // the base supabase-js `createClient` (not the SSR/cookie path) with an
-// AsyncStorage adapter for session persistence — see `createMobileClient` in
-// `@rinciku/db`. `AsyncStorage` already satisfies the `SupportedStorage` shape
-// (get/set/removeItem), so it is passed straight through.
+// injected storage adapter for session persistence — see `createMobileClient`
+// in `@rinciku/db`. Sessions are AES-encrypted at rest with the key in the
+// device keychain (see LargeSecureStore) — never plaintext AsyncStorage.
 const url = process.env.EXPO_PUBLIC_SUPABASE_URL;
 const publishableKey = process.env.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
 
@@ -16,4 +17,8 @@ if (!url || !publishableKey) {
   );
 }
 
-export const supabase = createMobileClient(url, publishableKey, AsyncStorage);
+export const supabase = createMobileClient(
+  url,
+  publishableKey,
+  new LargeSecureStore()
+);
