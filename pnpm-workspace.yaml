@@ -4,3 +4,10 @@ packages:
 
 allowBuilds:
   msw: false
+
+# Security pin: linkify-it <5.0.1 has a ReDoS (GHSA-22p9-wv53-3rq4), pulled in
+# as ^2.x by markdown-it@10 (react-native-markdown-display). 5.x verified
+# compatible with markdown-it@10. Must live HERE — pnpm >=10 ignores the old
+# package.json#pnpm.overrides location.
+overrides:
+  linkify-it: ^5.0.2

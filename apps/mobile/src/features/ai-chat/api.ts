@@ -21,6 +21,7 @@ export const {
   sendChat,
   executeReadTool,
   applyProposedChange,
+  resolveChangeTarget,
   runAgentTurn,
   confirmExpenseProposal,
   confirmIncomeProposal,

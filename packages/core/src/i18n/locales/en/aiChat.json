@@ -87,6 +87,10 @@
       "delete": "Delete"
     },
     "applying": "Applying…",
+    "target": "Applies to",
+    "targetUnnamed": "(no description)",
+    "targetMissing": "This record could not be found — it may have already been deleted. Nothing will be applied.",
+    "targetUnverified": "Could not verify the record this change points at. Cancel and ask again.",
     "entities": {
       "expense": "expense",
       "income": "income",

@@ -1,9 +1,6 @@
 import type { PostgrestError } from '@supabase/supabase-js';
 import type { Json, TypedSupabaseClient } from '@rinciku/db';
-import {
-  formatCurrency,
-  type CurrencyCode,
-} from '@rinciku/core';
+import { formatCurrency, type CurrencyCode } from '@rinciku/core';
 
 import type { Profile } from '../auth';
 import { createDashboardApi, type MonthlySummary } from '../dashboard';
@@ -17,6 +14,8 @@ import { buildSystemPrompt } from './prompt';
 import { runAgentTurn as runAgentTurnPure } from './run-turn';
 import { proposalToolInputSchema } from './schemas';
 import type {
+  ChangeTarget,
+  ChangeTargetRecord,
   ChatMessageRow,
   ChatMessageRowWithImage,
   ChatResponse,
@@ -24,6 +23,7 @@ import type {
   ConversationListItem,
   ImageBlock,
   MessageParam,
+  ProposedChange,
   ProposedTransaction,
   TextBlock,
   ToolChoice,
@@ -287,6 +287,168 @@ export function createAiChatApi(db: TypedSupabaseClient) {
     return { data: { id: data.id }, error: null };
   }
 
+  // --- Change-target resolution (ground truth for the action card) ---------
+
+  // Fetches the actual row an update/delete proposal points at so the
+  // confirmation card shows the real record identity instead of trusting the
+  // model-written summary (the summary could name one record while `id` points
+  // at another). Fails closed: a target that cannot be verified comes back as
+  // 'missing'/'unverified' and the card disables confirm.
+  async function resolveChangeTarget(
+    change: ProposedChange
+  ): Promise<ProposedChange> {
+    if (change.action === 'create') return { ...change, target: null };
+    if (!change.id) return { ...change, target: { status: 'missing' } };
+    try {
+      const target = await fetchChangeTarget(
+        change.entity,
+        change.id,
+        change.data
+      );
+      // Budget deletes often arrive with no data, and applyProposedChange picks
+      // the table (budgets vs tier_budgets) from data.scope/tier_id — pin the
+      // scope the id actually resolved to so apply hits the row the card shows.
+      const data = (() => {
+        if (
+          change.entity !== 'budget' ||
+          change.action !== 'delete' ||
+          target.status !== 'found' ||
+          !target.record.scope
+        )
+          return change.data;
+        const patched: Record<string, unknown> = {
+          ...(change.data ?? {}),
+          scope: target.record.scope,
+        };
+        // A stray tier_id would override scope in the apply dispatcher.
+        if (target.record.scope === 'category') delete patched.tier_id;
+        return patched;
+      })();
+      return { ...change, data, target };
+    } catch {
+      return { ...change, target: { status: 'unverified' } };
+    }
+  }
+
+  async function fetchChangeTarget(
+    entity: ProposedChange['entity'],
+    id: string,
+    data: Record<string, unknown> | null
+  ): Promise<ChangeTarget> {
+    const empty: ChangeTargetRecord = {
+      name: null,
+      amount: null,
+      currency: null,
+      occurred_at: null,
+      period: null,
+    };
+    const found = (record: Partial<ChangeTargetRecord>): ChangeTarget => ({
+      status: 'found',
+      record: { ...empty, ...record },
+    });
+
+    switch (entity) {
+      case 'expense':
+      case 'income': {
+        const { data: row, error } = await db
+          .from(entity === 'expense' ? 'expenses' : 'incomes')
+          .select('note, amount, currency, occurred_at')
+          .eq('id', id)
+          .maybeSingle();
+        if (error) return { status: 'unverified' };
+        if (!row) return { status: 'missing' };
+        return found({
+          name: row.note,
+          amount: Number(row.amount),
+          currency: row.currency,
+          occurred_at: row.occurred_at,
+        });
+      }
+
+      case 'category':
+      case 'income_category':
+      case 'tier': {
+        const table =
+          entity === 'category'
+            ? 'categories'
+            : entity === 'income_category'
+              ? 'income_categories'
+              : 'tiers';
+        const { data: row, error } = await db
+          .from(table)
+          .select('name')
+          .eq('id', id)
+          .maybeSingle();
+        if (error) return { status: 'unverified' };
+        if (!row) return { status: 'missing' };
+        return found({ name: row.name });
+      }
+
+      case 'essential': {
+        const { data: row, error } = await db
+          .from('essentials')
+          .select('name, estimated_amount, currency')
+          .eq('id', id)
+          .maybeSingle();
+        if (error) return { status: 'unverified' };
+        if (!row) return { status: 'missing' };
+        return found({
+          name: row.name,
+          amount: Number(row.estimated_amount),
+          currency: row.currency,
+        });
+      }
+
+      case 'budget': {
+        // A budget id lives in `budgets` (per-category) or `tier_budgets`
+        // (per-tier). The proposal's data may hint the scope, but deletes often
+        // carry no data — check both tables, hinted one first.
+        const period = (y: number, m: number) =>
+          `${y}-${String(m).padStart(2, '0')}`;
+        const fromCategoryBudgets = async (): Promise<ChangeTarget> => {
+          const { data: row, error } = await db
+            .from('budgets')
+            .select(
+              'amount, currency, period_year, period_month, categories(name)'
+            )
+            .eq('id', id)
+            .maybeSingle();
+          if (error) return { status: 'unverified' };
+          if (!row) return { status: 'missing' };
+          return found({
+            name: row.categories?.name ?? null,
+            amount: Number(row.amount),
+            currency: row.currency,
+            period: period(row.period_year, row.period_month),
+            scope: 'category',
+          });
+        };
+        const fromTierBudgets = async (): Promise<ChangeTarget> => {
+          const { data: row, error } = await db
+            .from('tier_budgets')
+            .select('amount, currency, period_year, period_month, tiers(name)')
+            .eq('id', id)
+            .maybeSingle();
+          if (error) return { status: 'unverified' };
+          if (!row) return { status: 'missing' };
+          return found({
+            name: row.tiers?.name ?? null,
+            amount: Number(row.amount),
+            currency: row.currency,
+            period: period(row.period_year, row.period_month),
+            scope: 'tier',
+          });
+        };
+        const tierFirst =
+          data?.scope === 'tier' || typeof data?.tier_id === 'string';
+        const first = tierFirst ? fromTierBudgets : fromCategoryBudgets;
+        const second = tierFirst ? fromCategoryBudgets : fromTierBudgets;
+        const hit = await first();
+        return hit.status === 'missing' ? second() : hit;
+      }
+    }
+  }
+
   return {
     listConversations,
     createConversation,
@@ -299,6 +461,7 @@ export function createAiChatApi(db: TypedSupabaseClient) {
     sendChat,
     executeReadTool,
     applyProposedChange,
+    resolveChangeTarget,
     runAgentTurn,
     confirmExpenseProposal,
     confirmIncomeProposal,

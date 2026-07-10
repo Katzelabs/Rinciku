@@ -23,8 +23,16 @@ export function createAuthApi(
   db: TypedSupabaseClient,
   redirects: AuthRedirects
 ) {
-  async function signInWithPassword(input: SignInInput) {
-    return db.auth.signInWithPassword(input);
+  // `captchaToken` (Turnstile) is optional on every captcha-gated endpoint:
+  // when [auth.captcha] is enabled on the Supabase project, signup / signin /
+  // recover / resend all REQUIRE a token, and callers that render the widget
+  // pass it here. Callers without a widget (mobile, or web without
+  // VITE_TURNSTILE_SITE_KEY) pass nothing — fine while captcha is off.
+  async function signInWithPassword(input: SignInInput, captchaToken?: string) {
+    return db.auth.signInWithPassword({
+      ...input,
+      options: captchaToken ? { captchaToken } : undefined,
+    });
   }
 
   // Email confirmation is enabled (supabase/config.toml), so signUp returns a
@@ -33,31 +41,35 @@ export function createAuthApi(
   //
   // Email normalization (trim + lowercase) is handled by signUpSchema, so the
   // input reaching here is already normalized. Don't re-introduce raw form values.
-  async function signUpWithPassword(input: {
-    email: string;
-    password: string;
-  }) {
+  async function signUpWithPassword(
+    input: {
+      email: string;
+      password: string;
+    },
+    captchaToken?: string
+  ) {
     return db.auth.signUp({
       ...input,
-      options: { emailRedirectTo: redirects.emailConfirm() },
+      options: { emailRedirectTo: redirects.emailConfirm(), captchaToken },
     });
   }
 
   // Resend the signup confirmation email (e.g. the first one didn't arrive).
   // Rate-limited by Supabase (auth.email.max_frequency, rate_limit.email_sent).
-  async function resendConfirmation(email: string) {
+  async function resendConfirmation(email: string, captchaToken?: string) {
     return db.auth.resend({
       type: 'signup',
       email,
-      options: { emailRedirectTo: redirects.emailConfirm() },
+      options: { emailRedirectTo: redirects.emailConfirm(), captchaToken },
     });
   }
 
   // Send a password-reset email. The link lands on the injected passwordReset
   // target, where the recovery session is established and the user sets a new password.
-  async function requestPasswordReset(email: string) {
+  async function requestPasswordReset(email: string, captchaToken?: string) {
     return db.auth.resetPasswordForEmail(email, {
       redirectTo: redirects.passwordReset(),
+      captchaToken,
     });
   }
 

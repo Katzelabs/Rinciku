@@ -239,10 +239,15 @@ web3 = 30
 
 # Configure one of the supported captcha providers: `hcaptcha`, `turnstile`.
 # TODO(launch-blocker): enable with Turnstile keys before public launch.
-# [auth.captcha]
-# enabled = true
-# provider = "turnstile"
-# secret = "env(SUPABASE_AUTH_CAPTCHA_SECRET)"
+# The WEB client is already wired (auth forms render the widget when
+# VITE_TURNSTILE_SITE_KEY is set and pass captchaToken through the domain auth
+# api). DO NOT enable this until the MOBILE app also serves a Turnstile widget
+# — captcha applies to signup/signin/recover/resend for ALL clients, so
+# enabling it now would break mobile sign-in.
+[auth.captcha]
+enabled = true
+provider = "turnstile"
+secret = "env(SUPABASE_AUTH_CAPTCHA_SECRET)"
 
 [auth.email]
 # Allow/disallow new user signups via email to your project.

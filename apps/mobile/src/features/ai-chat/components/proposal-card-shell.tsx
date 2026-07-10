@@ -21,6 +21,7 @@ export function ProposalCardShell({
   onConfirm,
   confirmLabel,
   busy = false,
+  confirmDisabled = false,
 }: {
   tone?: 'primary' | 'destructive';
   title: string;
@@ -30,6 +31,8 @@ export function ProposalCardShell({
   onConfirm: () => void;
   confirmLabel: string;
   busy?: boolean;
+  // Blocks Confirm while Cancel stays available (e.g. unresolved change target).
+  confirmDisabled?: boolean;
 }) {
   const c = useTheme();
   const { t } = useTranslation('aiChat');
@@ -60,6 +63,7 @@ export function ProposalCardShell({
           variant={tone === 'destructive' ? 'destructive' : 'primary'}
           onPress={onConfirm}
           loading={busy}
+          disabled={confirmDisabled}
           style={styles.footerButton}
         />
       </View>

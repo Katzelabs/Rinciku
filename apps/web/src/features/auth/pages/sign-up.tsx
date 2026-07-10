@@ -18,6 +18,7 @@ import { LanguageSelect } from '@/components/shared/language-select';
 import { Spinner } from '@/components/ui/spinner';
 import { resendConfirmation, signUpWithPassword } from '../api';
 import { RESEND_COOLDOWN_SECONDS, useCooldown } from '../hooks/use-cooldown';
+import { useCaptcha } from '../components/captcha';
 import { RequireGuest } from '../components/require-guest';
 import { SignUpForm } from '../components/sign-up-form';
 import type { SignUpInput } from '../schemas';
@@ -56,12 +57,19 @@ export function SignUpPage() {
   const [resend, setResend] = useState<ResendState>('idle');
   const [resendMessage, setResendMessage] = useState<string | null>(null);
   const cooldown = useCooldown();
+  // The resend endpoint is captcha-gated too when [auth.captcha] is on, so the
+  // check-email screen carries its own widget (the form's token is single-use).
+  const resendCaptcha = useCaptcha();
 
   async function handleResend() {
     if (!pendingEmail || resend === 'sending' || cooldown.active) return;
     setResend('sending');
     setResendMessage(null);
-    const { error } = await resendConfirmation(pendingEmail);
+    const { error } = await resendConfirmation(
+      pendingEmail,
+      resendCaptcha.token
+    );
+    resendCaptcha.reset();
     if (error) {
       setResend('error');
       setResendMessage(
@@ -80,9 +88,15 @@ export function SignUpPage() {
 
   async function handleSignUp(
     { email, password }: SignUpInput,
-    { setRootError }: { setRootError: (message: string) => void }
+    {
+      setRootError,
+      captchaToken,
+    }: { setRootError: (message: string) => void; captchaToken?: string }
   ) {
-    const { data, error } = await signUpWithPassword({ email, password });
+    const { data, error } = await signUpWithPassword(
+      { email, password },
+      captchaToken
+    );
 
     if (error) {
       setRootError(mapSignUpError(error, t));
@@ -129,11 +143,16 @@ export function SignUpPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent className='flex flex-col items-center gap-2 text-center'>
+                {resendCaptcha.widget}
                 <Button
                   variant='outline'
                   className='w-full'
                   onClick={handleResend}
-                  disabled={resend === 'sending' || cooldown.active}
+                  disabled={
+                    resend === 'sending' ||
+                    cooldown.active ||
+                    !resendCaptcha.ready
+                  }
                 >
                   {resend === 'sending' && <Spinner data-icon='inline-start' />}
                   {resend === 'sending'

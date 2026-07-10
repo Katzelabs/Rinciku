@@ -20,5 +20,7 @@ export type {
   PendingAttachment,
   ChangeAction,
   ChangeEntity,
+  ChangeTarget,
+  ChangeTargetRecord,
   ProposedChange,
 } from '@rinciku/domain/ai-chat';

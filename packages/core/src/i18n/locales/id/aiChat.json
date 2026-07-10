@@ -87,6 +87,10 @@
       "delete": "Hapus"
     },
     "applying": "Menerapkan…",
+    "target": "Berlaku untuk",
+    "targetUnnamed": "(tanpa keterangan)",
+    "targetMissing": "Data ini tidak ditemukan — mungkin sudah dihapus. Tidak ada yang akan diterapkan.",
+    "targetUnverified": "Tidak dapat memverifikasi data yang dituju perubahan ini. Batalkan dan coba lagi.",
     "entities": {
       "expense": "pengeluaran",
       "income": "pemasukan",

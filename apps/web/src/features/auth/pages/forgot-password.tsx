@@ -15,6 +15,7 @@ import {
 import { LanguageSelect } from '@/components/shared/language-select';
 import { Spinner } from '@/components/ui/spinner';
 import { requestPasswordReset } from '../api';
+import { useCaptcha } from '../components/captcha';
 import { ForgotPasswordForm } from '../components/forgot-password-form';
 import { RequireGuest } from '../components/require-guest';
 import { RESEND_COOLDOWN_SECONDS, useCooldown } from '../hooks/use-cooldown';
@@ -26,11 +27,17 @@ export function ForgotPasswordPage() {
   const [resending, setResending] = useState(false);
   const [resentMessage, setResentMessage] = useState<string | null>(null);
   const cooldown = useCooldown();
+  // The recover endpoint is captcha-gated too when [auth.captcha] is on, so
+  // the check-email screen carries its own widget for the resend button.
+  const resendCaptcha = useCaptcha();
 
-  async function handleRequest({ email }: ForgotPasswordInput) {
+  async function handleRequest(
+    { email }: ForgotPasswordInput,
+    { captchaToken }: { captchaToken?: string }
+  ) {
     // Fire the reset email but always show the same success state regardless of
     // the result, so we never reveal whether an account exists for this email.
-    await requestPasswordReset(email);
+    await requestPasswordReset(email, captchaToken);
     setSentTo(email);
     cooldown.start(RESEND_COOLDOWN_SECONDS);
   }
@@ -39,7 +46,8 @@ export function ForgotPasswordPage() {
     if (!sentTo || resending || cooldown.active) return;
     setResending(true);
     setResentMessage(null);
-    await requestPasswordReset(sentTo);
+    await requestPasswordReset(sentTo, resendCaptcha.token);
+    resendCaptcha.reset();
     setResending(false);
     setResentMessage(t('resend.sentInbox'));
     cooldown.start(RESEND_COOLDOWN_SECONDS);
@@ -71,11 +79,14 @@ export function ForgotPasswordPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent className='flex flex-col items-center gap-2 text-center'>
+                {resendCaptcha.widget}
                 <Button
                   variant='outline'
                   className='w-full'
                   onClick={handleResend}
-                  disabled={resending || cooldown.active}
+                  disabled={
+                    resending || cooldown.active || !resendCaptcha.ready
+                  }
                 >
                   {resending && <Spinner data-icon='inline-start' />}
                   {resending

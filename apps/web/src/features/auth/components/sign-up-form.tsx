@@ -25,12 +25,16 @@ import {
 } from '@/components/ui/input-group';
 import { Spinner } from '@/components/ui/spinner';
 import { cn } from '@/lib/utils';
+import { useCaptcha } from './captcha';
 import { makeSignUpSchema, passwordPolicy, type SignUpInput } from '../schemas';
 
 interface SignUpFormProps {
   onSubmit: (
     values: SignUpInput,
-    helpers: { setRootError: (message: string) => void }
+    helpers: {
+      setRootError: (message: string) => void;
+      captchaToken?: string;
+    }
   ) => Promise<void> | void;
 }
 
@@ -83,12 +87,19 @@ export function SignUpForm({ onSubmit }: SignUpFormProps) {
   });
 
   const passwordValue = useWatch({ control, name: 'password' }) ?? '';
+  const captcha = useCaptcha();
 
   const submit = handleSubmit(async (values) => {
     clearErrors('root');
-    await onSubmit(values, {
-      setRootError: (message) => setError('root', { message }),
-    });
+    try {
+      await onSubmit(values, {
+        setRootError: (message) => setError('root', { message }),
+        captchaToken: captcha.token,
+      });
+    } finally {
+      // Turnstile tokens are single-use — request a fresh one for a retry.
+      captcha.reset();
+    }
   });
 
   return (
@@ -193,7 +204,9 @@ export function SignUpForm({ onSubmit }: SignUpFormProps) {
 
         <FieldError errors={errors.root ? [errors.root] : undefined} />
 
-        <Button type='submit' disabled={isSubmitting}>
+        {captcha.widget}
+
+        <Button type='submit' disabled={isSubmitting || !captcha.ready}>
           {isSubmitting && <Spinner data-icon='inline-start' />}
           {isSubmitting ? t('signUpForm.submitting') : t('signUpForm.submit')}
         </Button>

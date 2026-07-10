@@ -14,6 +14,7 @@
   "dependencies": {
     "@fontsource-variable/figtree": "^5.2.10",
     "@hookform/resolvers": "^5.4.0",
+    "@marsidev/react-turnstile": "^1.5.3",
     "@rinciku/core": "workspace:*",
     "@rinciku/db": "workspace:*",
     "@rinciku/domain": "workspace:*",

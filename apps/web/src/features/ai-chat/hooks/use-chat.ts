@@ -12,6 +12,7 @@ import {
   fileToBase64,
   getMessages,
   parseProposal,
+  resolveChangeTarget,
   runAgentTurn,
   summarizeProposal,
   touchConversation,
@@ -258,7 +259,9 @@ export function useChat(options: UseChatOptions = {}): UseChatResult {
         }
         setProposal({ proposal: txProposal, attachment });
       } else if (change) {
-        setPendingChange(change);
+        // Resolve the actual row the update/delete points at (RLS-scoped) so
+        // the card shows ground truth, not just the model-written summary.
+        setPendingChange(await resolveChangeTarget(change));
       }
 
       await touchConversation(convId, {
@@ -343,6 +346,9 @@ export function useChat(options: UseChatOptions = {}): UseChatResult {
   function confirmChange() {
     const change = pendingChange;
     if (!change || !profile || confirmingChange) return;
+    // Fail closed: never apply against a target that didn't resolve (the card
+    // disables confirm for these; this guards the hook itself).
+    if (change.target && change.target.status !== 'found') return;
     setConfirmingChange(true);
     setError(null);
     const base = (profile.base_currency ?? 'IDR') as CurrencyCode;

@@ -15,6 +15,7 @@ import {
 import { LanguageSelect } from '@/components/shared/language-select';
 import { Spinner } from '@/components/ui/spinner';
 import { resendConfirmation, signInWithPassword } from '../api';
+import { useCaptcha } from '../components/captcha';
 import { RequireGuest } from '../components/require-guest';
 import { SignInForm } from '../components/sign-in-form';
 import { RESEND_COOLDOWN_SECONDS, useCooldown } from '../hooks/use-cooldown';
@@ -43,12 +44,19 @@ export function SignInPage() {
   const [resending, setResending] = useState(false);
   const [resendMessage, setResendMessage] = useState<string | null>(null);
   const cooldown = useCooldown();
+  // The resend endpoint is captcha-gated too when [auth.captcha] is on, so the
+  // banner carries its own widget (the form's token is single-use).
+  const resendCaptcha = useCaptcha();
 
   async function handleResend() {
     if (!unverifiedEmail || resending || cooldown.active) return;
     setResending(true);
     setResendMessage(null);
-    const { error } = await resendConfirmation(unverifiedEmail);
+    const { error } = await resendConfirmation(
+      unverifiedEmail,
+      resendCaptcha.token
+    );
+    resendCaptcha.reset();
     setResending(false);
     if (error) {
       setResendMessage(
@@ -102,13 +110,16 @@ export function SignInPage() {
                 <p className='text-muted-foreground'>
                   {t('signIn.unverifiedMessage')}
                 </p>
+                {resendCaptcha.widget}
                 <Button
                   type='button'
                   variant='outline'
                   size='sm'
                   className='w-full'
                   onClick={handleResend}
-                  disabled={resending || cooldown.active}
+                  disabled={
+                    resending || cooldown.active || !resendCaptcha.ready
+                  }
                 >
                   {resending && <Spinner data-icon='inline-start' />}
                   {resending
@@ -125,8 +136,11 @@ export function SignInPage() {
               </div>
             )}
             <SignInForm
-              onSubmit={async (values, { setRootError }) => {
-                const { error } = await signInWithPassword(values);
+              onSubmit={async (values, { setRootError, captchaToken }) => {
+                const { error } = await signInWithPassword(
+                  values,
+                  captchaToken
+                );
 
                 if (error) {
                   if (

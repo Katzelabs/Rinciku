@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next';
-import { Sparkles, Pencil, Plus, Trash2 } from 'lucide-react';
+import { Sparkles, Pencil, Plus, Trash2, TriangleAlert } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -9,8 +9,13 @@ import {
   CardHeader,
 } from '@/components/ui/card';
 import { Spinner } from '@/components/ui/spinner';
+import { formatCurrency, formatDate, type CurrencyCode } from '@rinciku/core';
 import { cn } from '@/lib/utils';
-import type { ChangeAction, ProposedChange } from '../types';
+import type {
+  ChangeAction,
+  ChangeTargetRecord,
+  ProposedChange,
+} from '../types';
 
 type Props = {
   change: ProposedChange;
@@ -38,6 +43,18 @@ function displayValue(value: unknown): string {
   return String(value);
 }
 
+// One-line identity of the actual row an update/delete points at, e.g.
+// "Coffee · Rp 25.000 · 5 Jul 2026". Built from the DB row, not model output.
+function targetLine(record: ChangeTargetRecord, unnamed: string): string {
+  const parts: string[] = [record.name?.trim() || unnamed];
+  if (record.amount != null && record.currency)
+    parts.push(formatCurrency(record.amount, record.currency as CurrencyCode));
+  if (record.occurred_at)
+    parts.push(formatDate(new Date(record.occurred_at), 'd MMM yyyy'));
+  if (record.period) parts.push(record.period);
+  return parts.join(' · ');
+}
+
 // Generic confirmation card for any non-transaction write (create/update/delete
 // of categories, essentials, budgets, tiers, income sources, plus expense /
 // income edits + deletes). The model resolves real ids first; the user approves
@@ -56,6 +73,10 @@ export function ActionProposalCard({
   const entries = Object.entries(change.data ?? {}).filter(
     ([, v]) => v !== null && v !== undefined && v !== ''
   );
+  // Update/delete proposals carry the resolved target row (ground truth); a
+  // target that didn't resolve blocks confirm — fail closed.
+  const target = change.target ?? null;
+  const targetBlocked = target !== null && target.status !== 'found';
 
   return (
     <Card
@@ -89,6 +110,26 @@ export function ActionProposalCard({
       </CardHeader>
       <CardContent className='space-y-3'>
         <p className='text-sm text-foreground'>{change.summary}</p>
+        {target?.status === 'found' ? (
+          <div className='rounded-md border bg-background/50 p-3 text-sm'>
+            <p className='text-xs text-muted-foreground'>
+              {t('actionCard.target')}
+            </p>
+            <p className='mt-1 font-medium'>
+              {targetLine(target.record, t('actionCard.targetUnnamed'))}
+            </p>
+          </div>
+        ) : null}
+        {targetBlocked ? (
+          <p className='flex items-start gap-2 text-sm font-medium text-destructive'>
+            <TriangleAlert className='mt-0.5 size-4 shrink-0' />
+            {t(
+              target?.status === 'missing'
+                ? 'actionCard.targetMissing'
+                : 'actionCard.targetUnverified'
+            )}
+          </p>
+        ) : null}
         {change.action !== 'delete' && entries.length > 0 ? (
           <dl className='grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 rounded-md border bg-background/50 p-3 text-sm'>
             {entries.map(([key, value]) => (
@@ -115,7 +156,7 @@ export function ActionProposalCard({
           type='button'
           variant={meta.destructive ? 'destructive' : 'default'}
           onClick={onConfirm}
-          disabled={confirming}
+          disabled={confirming || targetBlocked}
         >
           {confirming && <Spinner data-icon='inline-start' />}
           {confirming ? t('actionCard.applying') : actionLabel}

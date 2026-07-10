@@ -136,6 +136,33 @@ export type ChangeEntity =
   | 'budget'
   | 'tier';
 
+// Ground-truth identity of the row an update/delete proposal points at,
+// fetched from the DB (RLS-scoped) via resolveChangeTarget before the
+// confirmation card is shown. The user confirms against the real record, not
+// the model-written summary — the summary could name one record while `id`
+// points at another.
+export type ChangeTargetRecord = {
+  // Display name for named entities; the note for expense/income (nullable);
+  // the category/tier name for budgets.
+  name: string | null;
+  amount: number | null;
+  currency: string | null;
+  // Transactions: the record's date (ISO).
+  occurred_at: string | null;
+  // Budgets: the period as "YYYY-MM".
+  period: string | null;
+  // Budgets: which table the id resolved to. Carried back into the change's
+  // data so applyProposedChange deletes from the same table the card showed.
+  scope?: 'category' | 'tier';
+};
+
+export type ChangeTarget =
+  | { status: 'found'; record: ChangeTargetRecord }
+  // Confirmed absent (already deleted, or an id the user doesn't own).
+  | { status: 'missing' }
+  // Lookup failed (e.g. network) — the card must fail closed on this too.
+  | { status: 'unverified' };
+
 // Normalized output of a propose_change tool call.
 export type ProposedChange = {
   action: ChangeAction;
@@ -146,4 +173,6 @@ export type ProposedChange = {
   data: Record<string, unknown> | null;
   // Human-readable one-liner the model writes for the confirmation card.
   summary: string;
+  // Set by resolveChangeTarget for update/delete; null for create.
+  target?: ChangeTarget | null;
 };
