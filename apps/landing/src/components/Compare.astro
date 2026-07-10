@@ -8,38 +8,49 @@ const { copy } = Astro.props;
 const { compare } = copy;
 ---
 
-<section class="section">
-  <div class="inner">
-    <header class="head">
-      <h2 class="title">{compare.heading}</h2>
-      <p class="sub">{compare.subhead}</p>
+<section class='section'>
+  <div class='inner'>
+    <header class='head'>
+      <h2 class='title'>{compare.heading}</h2>
+      <p class='sub'>{compare.subhead}</p>
     </header>
 
-    <div class="table-wrap">
-      <table class="table">
+    <div class='table-wrap'>
+      <table class='table'>
         <thead>
           <tr>
-            <th class="feat-col"><span class="sr-only">Feature</span></th>
-            <th class="rinciku-col">
-              <Logo class="th-logo" />
+            <th class='feat-col'><span class='sr-only'>Feature</span></th>
+            <th class='rinciku-col'>
+              <Logo class='th-logo' />
             </th>
-            <th class="typical-col">{compare.colTypical}</th>
+            <th class='typical-col'>{compare.colTypical}</th>
           </tr>
         </thead>
         <tbody>
           {
             compare.rows.map((row) => (
               <tr>
-                <th scope="row" class="feat">{row.feature}</th>
-                <td class="rinciku">
-                  <span class="check" aria-hidden="true">
-                    <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-                      <path d="M20 6 9 17l-5-5" />
+                <th scope='row' class='feat'>
+                  {row.feature}
+                </th>
+                <td class='rinciku'>
+                  <span class='check' aria-hidden='true'>
+                    <svg
+                      viewBox='0 0 24 24'
+                      width='13'
+                      height='13'
+                      fill='none'
+                      stroke='currentColor'
+                      stroke-width='3'
+                      stroke-linecap='round'
+                      stroke-linejoin='round'
+                    >
+                      <path d='M20 6 9 17l-5-5' />
                     </svg>
                   </span>
                   {row.rinciku}
                 </td>
-                <td class="typical">{row.typical}</td>
+                <td class='typical'>{row.typical}</td>
               </tr>
             ))
           }

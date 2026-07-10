@@ -1,7 +1,19 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ActivityIndicator, Pressable, StyleSheet, TextInput, View } from 'react-native';
-import { Calendar, Check, ChevronDown, Search, Wallet } from 'lucide-react-native';
+import {
+  ActivityIndicator,
+  Pressable,
+  StyleSheet,
+  TextInput,
+  View,
+} from 'react-native';
+import {
+  Calendar,
+  Check,
+  ChevronDown,
+  Search,
+  Wallet,
+} from 'lucide-react-native';
 
 import { formatDate } from '@rinciku/core';
 
@@ -189,7 +201,11 @@ function SourceMultiSelect({
               onPress={() => toggle(source.id)}
               style={styles.option}
             >
-              <CategoryBadge icon={source.icon} color={source.color} size={32} />
+              <CategoryBadge
+                icon={source.icon}
+                color={source.color}
+                size={32}
+              />
               <AppText variant='bodyMedium' style={styles.optionText}>
                 {source.name}
               </AppText>

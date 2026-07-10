@@ -7,13 +7,15 @@ interface Props {
   size?: 'md' | 'lg';
   class?: string;
 }
-const { href, variant = 'primary', size = 'md', class: className } = Astro.props;
+const {
+  href,
+  variant = 'primary',
+  size = 'md',
+  class: className,
+} = Astro.props;
 ---
 
-<a
-  href={href}
-  class:list={['btn', `btn-${variant}`, `btn-${size}`, className]}
->
+<a href={href} class:list={['btn', `btn-${variant}`, `btn-${size}`, className]}>
   <slot />
 </a>
 
@@ -52,10 +54,12 @@ const { href, variant = 'primary', size = 'md', class: className } = Astro.props
   .btn-primary {
     background-color: var(--color-primary);
     color: var(--color-primary-foreground);
-    box-shadow: 0 6px 20px -8px color-mix(in oklch, var(--color-primary) 70%, transparent);
+    box-shadow: 0 6px 20px -8px
+      color-mix(in oklch, var(--color-primary) 70%, transparent);
   }
   .btn-primary:hover {
-    box-shadow: 0 10px 28px -8px color-mix(in oklch, var(--color-primary) 80%, transparent);
+    box-shadow: 0 10px 28px -8px
+      color-mix(in oklch, var(--color-primary) 80%, transparent);
   }
 
   .btn-ghost {

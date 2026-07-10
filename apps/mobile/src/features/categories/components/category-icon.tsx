@@ -22,7 +22,10 @@ export function CategoryIcon({ name, size = 20 }: CategoryIconProps) {
   return (
     <Text
       allowFontScaling={false}
-      style={[styles.glyph, { fontSize: Math.round(size * 0.9), lineHeight: size }]}
+      style={[
+        styles.glyph,
+        { fontSize: Math.round(size * 0.9), lineHeight: size },
+      ]}
     >
       {categoryEmoji(name)}
     </Text>

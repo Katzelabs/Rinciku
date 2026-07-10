@@ -6,7 +6,10 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import { Appearance, useColorScheme as useDeviceColorScheme } from 'react-native';
+import {
+  Appearance,
+  useColorScheme as useDeviceColorScheme,
+} from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // The user's theme choice. Mirrors the web app (next-themes): `system` follows
@@ -69,13 +72,19 @@ export function AppThemeProvider({ children }: { children: ReactNode }) {
   // OS (and keeps `useDeviceColorScheme` reporting the real device value).
   // `'unspecified'` clears the window override so `system` live-follows the OS.
   useEffect(() => {
-    Appearance.setColorScheme(preference === 'system' ? 'unspecified' : preference);
+    Appearance.setColorScheme(
+      preference === 'system' ? 'unspecified' : preference
+    );
   }, [preference]);
 
   // `device` is `ColorSchemeName` ('light' | 'dark' | 'unspecified' | null);
   // anything that isn't an explicit dark resolves to light.
   const colorScheme: ResolvedScheme =
-    preference === 'system' ? (device === 'dark' ? 'dark' : 'light') : preference;
+    preference === 'system'
+      ? device === 'dark'
+        ? 'dark'
+        : 'light'
+      : preference;
 
   return (
     <ThemePreferenceContext.Provider
@@ -89,7 +98,9 @@ export function AppThemeProvider({ children }: { children: ReactNode }) {
 export function useThemePreference() {
   const ctx = useContext(ThemePreferenceContext);
   if (!ctx) {
-    throw new Error('useThemePreference must be used within <AppThemeProvider>');
+    throw new Error(
+      'useThemePreference must be used within <AppThemeProvider>'
+    );
   }
   return ctx;
 }

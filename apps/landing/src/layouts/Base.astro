@@ -39,38 +39,42 @@ const structuredData = {
 <!doctype html>
 <html lang={locale}>
   <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
-    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
-    <link rel="manifest" href="/site.webmanifest" />
-    <link rel="canonical" href={canonical} />
-    <link rel="alternate" hreflang="en" href={enUrl} />
-    <link rel="alternate" hreflang="id" href={idUrl} />
-    <link rel="alternate" hreflang="x-default" href={enUrl} />
+    <meta charset='utf-8' />
+    <meta name='viewport' content='width=device-width, initial-scale=1' />
+    <link rel='icon' type='image/svg+xml' href='/favicon.svg' />
+    <link rel='icon' type='image/png' sizes='32x32' href='/favicon-32.png' />
+    <link rel='apple-touch-icon' sizes='180x180' href='/apple-touch-icon.png' />
+    <link rel='manifest' href='/site.webmanifest' />
+    <link rel='canonical' href={canonical} />
+    <link rel='alternate' hreflang='en' href={enUrl} />
+    <link rel='alternate' hreflang='id' href={idUrl} />
+    <link rel='alternate' hreflang='x-default' href={enUrl} />
 
     <title>{meta.title}</title>
-    <meta name="description" content={meta.description} />
+    <meta name='description' content={meta.description} />
 
-    <meta property="og:type" content="website" />
-    <meta property="og:site_name" content="Rinciku" />
-    <meta property="og:locale" content={locale === 'id' ? 'id_ID' : 'en_US'} />
-    <meta property="og:title" content={meta.title} />
-    <meta property="og:description" content={meta.description} />
-    <meta property="og:url" content={canonical} />
-    <meta property="og:image" content={ogImage} />
-    <meta property="og:image:alt" content={meta.ogAlt} />
+    <meta property='og:type' content='website' />
+    <meta property='og:site_name' content='Rinciku' />
+    <meta property='og:locale' content={locale === 'id' ? 'id_ID' : 'en_US'} />
+    <meta property='og:title' content={meta.title} />
+    <meta property='og:description' content={meta.description} />
+    <meta property='og:url' content={canonical} />
+    <meta property='og:image' content={ogImage} />
+    <meta property='og:image:alt' content={meta.ogAlt} />
 
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content={meta.title} />
-    <meta name="twitter:description" content={meta.description} />
-    <meta name="twitter:image" content={ogImage} />
+    <meta name='twitter:card' content='summary_large_image' />
+    <meta name='twitter:title' content={meta.title} />
+    <meta name='twitter:description' content={meta.description} />
+    <meta name='twitter:image' content={ogImage} />
 
-    <meta name="theme-color" content="#9ae600" />
-    <meta name="generator" content={Astro.generator} />
+    <meta name='theme-color' content='#9ae600' />
+    <meta name='generator' content={Astro.generator} />
 
-    <script type="application/ld+json" set:html={JSON.stringify(structuredData)} is:inline />
+    <script
+      type='application/ld+json'
+      set:html={JSON.stringify(structuredData)}
+      is:inline
+    />
   </head>
   <body>
     <slot />

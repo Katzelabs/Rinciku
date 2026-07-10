@@ -134,9 +134,7 @@ export function EssentialForm({ mode, defaultValues, onSuccess }: Props) {
 
       <Button
         label={
-          mode === 'create'
-            ? t('form.submit.add')
-            : t('form.submit.update')
+          mode === 'create' ? t('form.submit.add') : t('form.submit.update')
         }
         loading={isSubmitting}
         onPress={onSubmit}

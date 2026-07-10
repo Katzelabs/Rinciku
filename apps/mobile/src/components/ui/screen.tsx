@@ -63,7 +63,12 @@ export function ScreenScroll({
 /** Non-scrolling screen container — just the themed background + flex. */
 export function Screen({ style, ...rest }: ViewProps) {
   const c = useTheme();
-  return <View style={[styles.screen, { backgroundColor: c.background }, style]} {...rest} />;
+  return (
+    <View
+      style={[styles.screen, { backgroundColor: c.background }, style]}
+      {...rest}
+    />
+  );
 }
 
 const styles = StyleSheet.create({

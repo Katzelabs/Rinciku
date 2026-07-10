@@ -179,7 +179,11 @@ export default function SignInScreen() {
 
 const styles = StyleSheet.create({
   form: { gap: Spacing.three },
-  footerRow: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center' },
+  footerRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   muted: { fontFamily: Fonts.regular, fontSize: 14 },
   resendBox: { gap: Spacing.two },
   passwordHeader: {

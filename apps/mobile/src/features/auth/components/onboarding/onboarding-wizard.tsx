@@ -202,7 +202,9 @@ export function OnboardingWizard() {
           {current.key === 'currency' ? <CurrencyStep /> : null}
           {current.key === 'budget' ? <BudgetStep /> : null}
           {current.key === 'review' ? <CategoriesManager /> : null}
-          {current.key === 'essentials' ? <EssentialsManager inlineAdd /> : null}
+          {current.key === 'essentials' ? (
+            <EssentialsManager inlineAdd />
+          ) : null}
           {current.key === 'budgets' ? <BudgetsManager /> : null}
           {current.key === 'allSet' ? <AllSetStep /> : null}
         </View>
@@ -539,7 +541,9 @@ function WelcomeStep() {
             key={key}
             Icon={Icon}
             title={t(`onboarding.steps.welcome.points.${key}.title`)}
-            description={t(`onboarding.steps.welcome.points.${key}.description`)}
+            description={t(
+              `onboarding.steps.welcome.points.${key}.description`
+            )}
           />
         ))}
       </View>

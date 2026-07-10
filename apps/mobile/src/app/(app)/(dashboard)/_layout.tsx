@@ -13,7 +13,10 @@ export default function DashboardLayout() {
         headerBackButtonDisplayMode: 'minimal',
       }}
     >
-      <Stack.Screen name='index' options={{ title: t('nav.items.dashboard') }} />
+      <Stack.Screen
+        name='index'
+        options={{ title: t('nav.items.dashboard') }}
+      />
       {/* Settings hub + pages live directly in this stack (not a nested one) so
           each is a pushed screen with a real native back button — same as the
           expense detail screen. The hub is reached from the avatar on the left

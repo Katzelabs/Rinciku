@@ -7,18 +7,18 @@ const { copy } = Astro.props;
 const { problem } = copy;
 ---
 
-<section class="section">
-  <div class="inner">
-    <header class="head">
-      <h2 class="title">{problem.heading}</h2>
-      <p class="sub">{problem.subhead}</p>
+<section class='section'>
+  <div class='inner'>
+    <header class='head'>
+      <h2 class='title'>{problem.heading}</h2>
+      <p class='sub'>{problem.subhead}</p>
     </header>
-    <ul class="grid">
+    <ul class='grid'>
       {
         problem.items.map((item) => (
-          <li class="card">
-            <h3 class="card-title">{item.title}</h3>
-            <p class="card-body">{item.body}</p>
+          <li class='card'>
+            <h3 class='card-title'>{item.title}</h3>
+            <p class='card-body'>{item.body}</p>
           </li>
         ))
       }

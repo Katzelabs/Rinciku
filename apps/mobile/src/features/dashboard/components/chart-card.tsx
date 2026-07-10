@@ -47,7 +47,9 @@ export function ChartCard({
       {loading ? (
         <View style={[styles.placeholder, { backgroundColor: c.muted }]} />
       ) : empty ? (
-        <View style={[styles.placeholder, styles.empty, { borderColor: c.border }]}>
+        <View
+          style={[styles.placeholder, styles.empty, { borderColor: c.border }]}
+        >
           <AppText variant='caption' color='mutedForeground'>
             {emptyText ?? t('charts.emptyDefault')}
           </AppText>

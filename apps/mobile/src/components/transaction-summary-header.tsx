@@ -58,7 +58,9 @@ export function TransactionSummaryHeader({
         <AppText variant='amountSmall' color='mutedForeground'>
           {labels.total}
         </AppText>
-        <View style={[styles.chip, { backgroundColor: withAlpha(accent, '26') }]}>
+        <View
+          style={[styles.chip, { backgroundColor: withAlpha(accent, '26') }]}
+        >
           <AppText variant='amountSmall' style={{ color: accent }}>
             {labels.count}
           </AppText>
@@ -78,7 +80,9 @@ export function TransactionSummaryHeader({
         {labels.overDays}
       </AppText>
 
-      <View style={[styles.divider, { backgroundColor: withAlpha(accent, '33') }]} />
+      <View
+        style={[styles.divider, { backgroundColor: withAlpha(accent, '33') }]}
+      />
 
       <View style={styles.statRow}>
         <AppText variant='label' color='mutedForeground'>

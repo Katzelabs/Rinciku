@@ -24,7 +24,9 @@ type Tone = 'muted' | 'primary' | 'outline';
 
 /** SF Symbol name (derived from the native Button's prop type — no direct
  * `sf-symbols-typescript` import, which isn't linked under pnpm). */
-type SystemImage = NonNullable<ComponentProps<typeof SwiftButton>['systemImage']>;
+type SystemImage = NonNullable<
+  ComponentProps<typeof SwiftButton>['systemImage']
+>;
 
 interface PillProps {
   label: string;
@@ -79,7 +81,10 @@ function NativePill({
   const glass = isLiquidGlassAvailable();
   const tintColor = tone === 'primary' ? c.primary : c.secondaryForeground;
   return (
-    <Host matchContents={{ vertical: true }} style={[fill && styles.fill, style]}>
+    <Host
+      matchContents={{ vertical: true }}
+      style={[fill && styles.fill, style]}
+    >
       <SwiftButton
         label={label}
         systemImage={systemImage}

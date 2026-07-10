@@ -16,7 +16,11 @@ import type { Tables } from '@rinciku/db';
 import { Fonts, Radius, Spacing } from '@/constants/theme';
 import { listCategories, listTiers } from '@/features/categories/api';
 import { CategoryIcon } from '@/features/categories/components/category-icon';
-import { groupByTier, type Tier, type TierGroup } from '@/features/categories/types';
+import {
+  groupByTier,
+  type Tier,
+  type TierGroup,
+} from '@/features/categories/types';
 import { InputShell } from '@/features/auth/components/text-field';
 import { Notice } from '@/features/auth/components/notice';
 import { useTheme } from '@/hooks/use-theme';
@@ -95,9 +99,7 @@ export function CategorySelect({
                 </Text>
               </>
             ) : (
-              <Text
-                style={[styles.triggerText, { color: c.mutedForeground }]}
-              >
+              <Text style={[styles.triggerText, { color: c.mutedForeground }]}>
                 {placeholder ?? t('tier.selectCategory', 'Pick a category')}
               </Text>
             )}
@@ -169,7 +171,9 @@ export function CategorySelect({
                           <View
                             style={[
                               styles.iconBadge,
-                              { backgroundColor: `${cat.color ?? '#8d8d8d'}22` },
+                              {
+                                backgroundColor: `${cat.color ?? '#8d8d8d'}22`,
+                              },
                             ]}
                           >
                             <CategoryIcon
@@ -215,7 +219,11 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.three,
   },
   sheetTitle: { fontFamily: Fonts.bold, fontSize: 20 },
-  sheetBody: { paddingHorizontal: Spacing.four, paddingTop: Spacing.two, gap: Spacing.three },
+  sheetBody: {
+    paddingHorizontal: Spacing.four,
+    paddingTop: Spacing.two,
+    gap: Spacing.three,
+  },
   loader: { marginVertical: Spacing.four },
   group: { gap: Spacing.one },
   groupLabel: {

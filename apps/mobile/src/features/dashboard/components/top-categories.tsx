@@ -53,9 +53,16 @@ function Tile({
   const c = useTheme();
   const percent = total > 0 ? Math.round((item.amount / total) * 100) : 0;
   return (
-    <View style={[styles.tile, { backgroundColor: withAlpha(item.color, '14') }]}>
+    <View
+      style={[styles.tile, { backgroundColor: withAlpha(item.color, '14') }]}
+    >
       <View style={styles.tileHeader}>
-        <CategoryBadge icon={item.icon} color={item.color} seed={item.id} size={32} />
+        <CategoryBadge
+          icon={item.icon}
+          color={item.color}
+          seed={item.id}
+          size={32}
+        />
         <AppText variant='caption' style={{ color: item.color }}>
           {percent}%
         </AppText>
@@ -63,7 +70,11 @@ function Tile({
       <AppText variant='label' numberOfLines={1} style={styles.name}>
         {item.name}
       </AppText>
-      <AppText variant='amountSmall' style={{ color: c.foreground }} numberOfLines={1}>
+      <AppText
+        variant='amountSmall'
+        style={{ color: c.foreground }}
+        numberOfLines={1}
+      >
         {formatCurrency(item.amount, base)}
       </AppText>
     </View>

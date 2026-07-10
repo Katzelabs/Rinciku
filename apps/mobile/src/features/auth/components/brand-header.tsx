@@ -39,7 +39,9 @@ export function BrandHeader({
       ) : showBrand ? (
         <View style={styles.lockup}>
           <LogoMark size={44} />
-          <Text style={[styles.wordmark, { color: c.foreground }]}>Rinciku</Text>
+          <Text style={[styles.wordmark, { color: c.foreground }]}>
+            Rinciku
+          </Text>
         </View>
       ) : null}
 

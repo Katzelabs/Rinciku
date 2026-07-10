@@ -8,7 +8,9 @@ import type { TFunction } from 'i18next';
  * bundled namespaces, e.g. `'expenses:page.title'`) or a function that derives
  * a title from the route's loader `data` (for dynamic pages).
  */
-type TitleValue = string | ((data: unknown, t: TFunction) => string | undefined);
+type TitleValue =
+  | string
+  | ((data: unknown, t: TFunction) => string | undefined);
 
 interface TitleHandle {
   title?: TitleValue;

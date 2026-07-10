@@ -11,7 +11,12 @@ import {
 import type { Profile } from '../auth/types';
 import { createCategoriesApi, groupByTier, type Tier } from '../categories';
 import { createBudgetsApi } from './api';
-import { budgetStatus, cycleToPeriod, type BudgetStatus, type Period } from './period';
+import {
+  budgetStatus,
+  cycleToPeriod,
+  type BudgetStatus,
+  type Period,
+} from './period';
 
 type Category = Tables<'categories'>;
 

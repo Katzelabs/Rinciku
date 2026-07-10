@@ -327,10 +327,7 @@ export function createIncomesApi(db: TypedSupabaseClient) {
   }
 
   async function deleteIncomeAttachment(id: string): Promise<Result<null>> {
-    const { error } = await db
-      .from('income_attachments')
-      .delete()
-      .eq('id', id);
+    const { error } = await db.from('income_attachments').delete().eq('id', id);
     return { data: null, error };
   }
 

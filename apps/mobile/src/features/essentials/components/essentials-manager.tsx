@@ -92,11 +92,7 @@ export const EssentialsManager = forwardRef<
       {loading ? (
         <ActivityIndicator color={c.primary} style={styles.loader} />
       ) : essentials.length === 0 ? (
-        <AppText
-          variant='label'
-          color='mutedForeground'
-          style={styles.empty}
-        >
+        <AppText variant='label' color='mutedForeground' style={styles.empty}>
           {t('table.empty')}
         </AppText>
       ) : (

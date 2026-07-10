@@ -12,28 +12,35 @@ const { copy } = Astro.props;
 const { hero } = copy;
 ---
 
-<section class="hero">
-  <div class="glow" aria-hidden="true"></div>
-  <div class="inner">
-    <span class="eyebrow">
-      <span class="dot" aria-hidden="true"></span>
+<section class='hero'>
+  <div class='glow' aria-hidden='true'></div>
+  <div class='inner'>
+    <span class='eyebrow'>
+      <span class='dot' aria-hidden='true'></span>
       {hero.badge}
     </span>
-    <h1 class="headline">
+    <h1 class='headline'>
       {hero.headline}
-      <span class="accent">{hero.headlineAccent}</span>
+      <span class='accent'>{hero.headlineAccent}</span>
     </h1>
-    <p class="subhead">{hero.subhead}</p>
-    <div class="ctas">
-      <Button href={signUpUrl} size="lg">{hero.cta}</Button>
+    <p class='subhead'>{hero.subhead}</p>
+    <div class='ctas'>
+      <Button href={signUpUrl} size='lg'>{hero.cta}</Button>
     </div>
-    <p class="note">{hero.ctaNote}</p>
+    <p class='note'>{hero.ctaNote}</p>
 
-    <div class="frame">
-      <div class="frame-bar" aria-hidden="true">
+    <div class='frame'>
+      <div class='frame-bar' aria-hidden='true'>
         <span></span><span></span><span></span>
       </div>
-      <Image src={aiChat} alt={hero.screenshotAlt} widths={[640, 960, 1280]} sizes="(min-width: 1024px) 960px, 100vw" loading="eager" class="shot" />
+      <Image
+        src={aiChat}
+        alt={hero.screenshotAlt}
+        widths={[640, 960, 1280]}
+        sizes='(min-width: 1024px) 960px, 100vw'
+        loading='eager'
+        class='shot'
+      />
     </div>
   </div>
 </section>
@@ -74,7 +81,11 @@ const { hero } = copy;
     gap: 0.5rem;
     padding: 0.375rem 0.875rem;
     border-radius: 9999px;
-    background-color: color-mix(in oklch, var(--color-primary) 16%, transparent);
+    background-color: color-mix(
+      in oklch,
+      var(--color-primary) 16%,
+      transparent
+    );
     color: var(--color-primary-foreground);
     font-size: 0.8125rem;
     font-weight: 600;
@@ -127,7 +138,8 @@ const { hero } = copy;
     border-radius: 1rem;
     box-shadow:
       0 1px 0 0 color-mix(in oklch, var(--color-foreground) 4%, transparent),
-      0 30px 60px -25px color-mix(in oklch, var(--color-foreground) 30%, transparent);
+      0 30px 60px -25px
+        color-mix(in oklch, var(--color-foreground) 30%, transparent);
     overflow: hidden;
   }
   .frame-bar {

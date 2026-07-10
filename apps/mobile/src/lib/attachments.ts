@@ -106,7 +106,13 @@ export async function pickImage(source: PickSource): Promise<PickOutcome> {
 
   return {
     ok: true,
-    asset: { uri: asset.uri, base64: asset.base64, mimeType, fileSize, fileName },
+    asset: {
+      uri: asset.uri,
+      base64: asset.base64,
+      mimeType,
+      fileSize,
+      fileName,
+    },
   };
 }
 
@@ -128,7 +134,8 @@ export async function pickDocument(): Promise<PickOutcome> {
   if (!MIME_TO_EXT[mimeType]) return { ok: false, reason: 'invalid' };
 
   // Reject early on the reported size before reading the whole file.
-  if (asset.size && asset.size > MAX_BYTES) return { ok: false, reason: 'tooLarge' };
+  if (asset.size && asset.size > MAX_BYTES)
+    return { ok: false, reason: 'tooLarge' };
 
   let base64: string;
   try {

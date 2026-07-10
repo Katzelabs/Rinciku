@@ -70,7 +70,10 @@ const jobs = [
 ];
 
 for (const [svg, name, size] of jobs) {
-  await sharp(Buffer.from(svg)).resize(size, size).png().toFile(resolve(pub, name));
+  await sharp(Buffer.from(svg))
+    .resize(size, size)
+    .png()
+    .toFile(resolve(pub, name));
   console.log(`✓ ${name} (${size}×${size})`);
 }
 

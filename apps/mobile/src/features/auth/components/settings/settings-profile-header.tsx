@@ -39,7 +39,11 @@ export function SettingsProfileHeader({ onPress }: Props) {
             {name}
           </AppText>
           {email ? (
-            <AppText variant='caption' color='mutedForeground' numberOfLines={1}>
+            <AppText
+              variant='caption'
+              color='mutedForeground'
+              numberOfLines={1}
+            >
               {email}
             </AppText>
           ) : null}

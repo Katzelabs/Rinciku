@@ -24,13 +24,22 @@ interface CategoryBadgeProps {
  * screen. Never renders the old anonymous gray: a colorless category falls back
  * to a stable per-category hue via `categoryColorFor`.
  */
-export function CategoryBadge({ icon, color, size = 40, seed }: CategoryBadgeProps) {
+export function CategoryBadge({
+  icon,
+  color,
+  size = 40,
+  seed,
+}: CategoryBadgeProps) {
   const resolved = color ?? categoryColorFor(seed ?? icon ?? '');
   return (
     <View
       style={[
         styles.badge,
-        { width: size, height: size, backgroundColor: withAlpha(resolved, '22') },
+        {
+          width: size,
+          height: size,
+          backgroundColor: withAlpha(resolved, '22'),
+        },
       ]}
     >
       <CategoryIcon name={icon} size={Math.round(size * 0.5)} />

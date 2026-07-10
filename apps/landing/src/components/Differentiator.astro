@@ -9,33 +9,49 @@ const { copy } = Astro.props;
 const { differentiator: d } = copy;
 ---
 
-<section class="band">
-  <div class="inner">
-    <div class="col text">
-      <span class="eyebrow">{d.badge}</span>
-      <h2 class="title">{d.heading}</h2>
-      <p class="body">{d.body}</p>
-      <ul class="points">
+<section class='band'>
+  <div class='inner'>
+    <div class='col text'>
+      <span class='eyebrow'>{d.badge}</span>
+      <h2 class='title'>{d.heading}</h2>
+      <p class='body'>{d.body}</p>
+      <ul class='points'>
         {
           d.points.map((p) => (
-            <li class="point">
-              <span class="check" aria-hidden="true">
-                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M20 6 9 17l-5-5" />
+            <li class='point'>
+              <span class='check' aria-hidden='true'>
+                <svg
+                  viewBox='0 0 24 24'
+                  width='14'
+                  height='14'
+                  fill='none'
+                  stroke='currentColor'
+                  stroke-width='3'
+                  stroke-linecap='round'
+                  stroke-linejoin='round'
+                >
+                  <path d='M20 6 9 17l-5-5' />
                 </svg>
               </span>
               <span>
-                <strong class="point-title">{p.title}</strong>
-                <span class="point-body">{p.body}</span>
+                <strong class='point-title'>{p.title}</strong>
+                <span class='point-body'>{p.body}</span>
               </span>
             </li>
           ))
         }
       </ul>
     </div>
-    <div class="col media">
-      <div class="frame">
-        <Image src={dashboard} alt={d.screenshotAlt} widths={[560, 840, 1120]} sizes="(min-width: 1024px) 560px, 100vw" loading="lazy" class="shot" />
+    <div class='col media'>
+      <div class='frame'>
+        <Image
+          src={dashboard}
+          alt={d.screenshotAlt}
+          widths={[560, 840, 1120]}
+          sizes='(min-width: 1024px) 560px, 100vw'
+          loading='lazy'
+          class='shot'
+        />
       </div>
     </div>
   </div>
@@ -44,7 +60,11 @@ const { differentiator: d } = copy;
 <style>
   .band {
     padding: 4rem 1.5rem;
-    background-color: color-mix(in oklch, var(--color-primary) 6%, var(--color-background));
+    background-color: color-mix(
+      in oklch,
+      var(--color-primary) 6%,
+      var(--color-background)
+    );
     border-top: 1px solid var(--color-border);
     border-bottom: 1px solid var(--color-border);
   }
@@ -126,7 +146,8 @@ const { differentiator: d } = copy;
     border: 1px solid var(--color-border);
     border-radius: 1rem;
     overflow: hidden;
-    box-shadow: 0 24px 50px -24px color-mix(in oklch, var(--color-foreground) 28%, transparent);
+    box-shadow: 0 24px 50px -24px
+      color-mix(in oklch, var(--color-foreground) 28%, transparent);
   }
   .shot {
     display: block;

@@ -19,7 +19,12 @@ export function PlaceholderScreen({ title, subtitle }: PlaceholderScreenProps) {
       contentInsetAdjustmentBehavior='automatic'
       contentContainerStyle={styles.content}
     >
-      <View style={[styles.card, { backgroundColor: c.card, borderColor: c.border }]}>
+      <View
+        style={[
+          styles.card,
+          { backgroundColor: c.card, borderColor: c.border },
+        ]}
+      >
         <Text style={[styles.title, { color: c.foreground }]}>{title}</Text>
         <Text style={[styles.subtitle, { color: c.mutedForeground }]}>
           {subtitle ?? 'Coming soon.'}

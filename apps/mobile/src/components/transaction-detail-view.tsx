@@ -114,7 +114,10 @@ export function TransactionDetailView({
           <AppText variant='label' color='mutedForeground'>
             {labels.note}
           </AppText>
-          <AppText variant='body' color={hasNote ? 'foreground' : 'mutedForeground'}>
+          <AppText
+            variant='body'
+            color={hasNote ? 'foreground' : 'mutedForeground'}
+          >
             {hasNote ? trimmedNote : labels.noteEmpty}
           </AppText>
         </View>

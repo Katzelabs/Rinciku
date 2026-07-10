@@ -5,7 +5,8 @@ export const id: Copy = {
     title: 'Rinciku — Tahu kamu mampu beli atau nggak, sebelum belanja',
     description:
       'Teman keuangan AI untuk penghasilan campur IDR/USD. Catat pengeluaran lewat chat atau foto, lihat budget aslimu, lalu tanya AI “boleh nggak aku beli ini?” — berdasar angka nyatamu.',
-    ogAlt: 'Rinciku — keuangan pribadi bertenaga AI untuk penghasilan multi-mata uang',
+    ogAlt:
+      'Rinciku — keuangan pribadi bertenaga AI untuk penghasilan multi-mata uang',
   },
   nav: {
     tryFree: 'Coba gratis',
@@ -209,7 +210,8 @@ export const id: Copy = {
   },
   footer: {
     tagline: 'Teman keuangan AI untuk hidup multi-mata uang.',
-    madeWith: 'Dibuat untuk anak muda Indonesia — dan siapa pun dengan penghasilan tak menentu.',
+    madeWith:
+      'Dibuat untuk anak muda Indonesia — dan siapa pun dengan penghasilan tak menentu.',
     github: 'GitHub',
     contact: 'Kontak',
     privacy: 'Privasi',

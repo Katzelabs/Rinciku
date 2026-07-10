@@ -66,7 +66,9 @@ export function ChangePasswordForm() {
       <FieldError message={errors.root?.message} />
       <Button
         label={
-          isSubmitting ? t('changePassword.submitting') : t('changePassword.submit')
+          isSubmitting
+            ? t('changePassword.submitting')
+            : t('changePassword.submit')
         }
         loading={isSubmitting}
         onPress={onSubmit}

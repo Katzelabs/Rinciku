@@ -10,7 +10,10 @@ import { Spacing } from '@/constants/theme';
 import { AmountHeroField } from '@/components/amount-hero-field';
 import { CategorySelect } from '@/components/category-select';
 import { DateField } from '@/components/date-field';
-import { ReceiptField, type ExistingAttachment } from '@/components/receipt-field';
+import {
+  ReceiptField,
+  type ExistingAttachment,
+} from '@/components/receipt-field';
 import { Button } from '@/features/auth/components/button';
 import { Notice } from '@/features/auth/components/notice';
 import {

@@ -89,7 +89,9 @@ const DEFAULT_CATEGORY_EMOJI = '🏷️';
 
 /** Emoji for a category's stored icon name (🏷️ for unknown/empty). */
 export function categoryEmoji(name?: string | null): string {
-  return (name && CATEGORY_EMOJI[name as CategoryIconName]) || DEFAULT_CATEGORY_EMOJI;
+  return (
+    (name && CATEGORY_EMOJI[name as CategoryIconName]) || DEFAULT_CATEGORY_EMOJI
+  );
 }
 
 // Category/tier swatches. Vivid enough to scan a transaction list by color at a

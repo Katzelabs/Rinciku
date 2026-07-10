@@ -60,12 +60,7 @@ export function CategoryBreakdownChart({
           </View>
           <View style={styles.legend}>
             {items.map((item) => (
-              <LegendRow
-                key={item.id}
-                item={item}
-                total={total}
-                base={base}
-              />
+              <LegendRow key={item.id} item={item} total={total} base={base} />
             ))}
           </View>
         </>

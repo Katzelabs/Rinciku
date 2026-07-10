@@ -1,6 +1,12 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ActivityIndicator, Alert, Pressable, StyleSheet, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Alert,
+  Pressable,
+  StyleSheet,
+  View,
+} from 'react-native';
 
 import { getCycleLabel, type CurrencyCode } from '@rinciku/core';
 
@@ -118,7 +124,9 @@ export function BudgetsManager() {
                       size={32}
                     />
                     <View style={styles.rowBody}>
-                      <AppText variant='bodyMedium'>{row.category.name}</AppText>
+                      <AppText variant='bodyMedium'>
+                        {row.category.name}
+                      </AppText>
                       <BudgetMeter
                         spent={row.spent}
                         target={row.target}

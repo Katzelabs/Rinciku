@@ -4,12 +4,7 @@
 // live one level up in `@/components/*`, not in this barrel.
 
 export { Button } from './button';
-export {
-  TextField,
-  InputShell,
-  FieldLabel,
-  FieldError,
-} from './text-field';
+export { TextField, InputShell, FieldLabel, FieldError } from './text-field';
 export { PasswordField } from './password-field';
 export { Notice } from './notice';
 export { AppText } from './text';

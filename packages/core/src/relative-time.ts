@@ -31,7 +31,8 @@ export function formatRelativeTime(
 
   const days = Math.round(hours / 24);
   if (days < 7) return t('relativeTime.days', { count: days });
-  if (days < 30) return t('relativeTime.weeks', { count: Math.round(days / 7) });
+  if (days < 30)
+    return t('relativeTime.weeks', { count: Math.round(days / 7) });
   if (days < 365)
     return t('relativeTime.months', { count: Math.round(days / 30) });
   return t('relativeTime.years', { count: Math.round(days / 365) });

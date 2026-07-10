@@ -9,16 +9,16 @@ const { copy } = Astro.props;
 const { cta } = copy;
 ---
 
-<section class="section">
-  <div class="panel">
-    <div class="glow" aria-hidden="true"></div>
-    <div class="content">
-      <h2 class="title">{cta.heading}</h2>
-      <p class="body">{cta.body}</p>
-      <div class="btn-row">
-        <Button href={signUpUrl} size="lg">{cta.button}</Button>
+<section class='section'>
+  <div class='panel'>
+    <div class='glow' aria-hidden='true'></div>
+    <div class='content'>
+      <h2 class='title'>{cta.heading}</h2>
+      <p class='body'>{cta.body}</p>
+      <div class='btn-row'>
+        <Button href={signUpUrl} size='lg'>{cta.button}</Button>
       </div>
-      <p class="note">{cta.note}</p>
+      <p class='note'>{cta.note}</p>
     </div>
   </div>
 </section>

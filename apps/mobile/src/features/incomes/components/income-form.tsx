@@ -9,7 +9,10 @@ import { type CurrencyCode } from '@rinciku/core';
 import { Spacing } from '@/constants/theme';
 import { AmountHeroField } from '@/components/amount-hero-field';
 import { DateField } from '@/components/date-field';
-import { ReceiptField, type ExistingAttachment } from '@/components/receipt-field';
+import {
+  ReceiptField,
+  type ExistingAttachment,
+} from '@/components/receipt-field';
 import { Button } from '@/features/auth/components/button';
 import { Notice } from '@/features/auth/components/notice';
 import {
@@ -197,7 +200,10 @@ export function IncomeForm({
       await deleteIncomeAttachmentObject(storage_path);
       throw relink.error;
     }
-    await updateIncomeAttachment(newId, { income_id: incomeId, confirmed: true });
+    await updateIncomeAttachment(newId, {
+      income_id: incomeId,
+      confirmed: true,
+    });
   }
 
   return (

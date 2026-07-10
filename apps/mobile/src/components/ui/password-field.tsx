@@ -19,11 +19,10 @@ import { Icon } from '@/components/icon';
 import { useTheme } from '@/hooks/use-theme';
 import { FieldError, FieldLabel, InputShell } from './text-field';
 
-interface PasswordFieldProps<T extends FieldValues>
-  extends Omit<
-    TextInputProps,
-    'value' | 'onChangeText' | 'onBlur' | 'style' | 'secureTextEntry'
-  > {
+interface PasswordFieldProps<T extends FieldValues> extends Omit<
+  TextInputProps,
+  'value' | 'onChangeText' | 'onBlur' | 'style' | 'secureTextEntry'
+> {
   control: Control<T>;
   name: FieldPath<T>;
   label?: string;

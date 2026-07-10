@@ -79,7 +79,9 @@ export function AuthScreenShell({
         <Animated.View style={[styles.column, animatedStyle]}>
           <BrandHeader title={title} description={description} badge={badge} />
           {children}
-          {footer ? <Animated.View style={styles.footer}>{footer}</Animated.View> : null}
+          {footer ? (
+            <Animated.View style={styles.footer}>{footer}</Animated.View>
+          ) : null}
         </Animated.View>
       </ScrollView>
     </KeyboardAvoidingView>

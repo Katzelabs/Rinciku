@@ -129,7 +129,9 @@ export function ReceiptImage({
   }, [isImage, storagePath, getSignedUrl]);
 
   if (!isImage || failed) {
-    return <ReceiptPreview storagePath={storagePath} getSignedUrl={getSignedUrl} />;
+    return (
+      <ReceiptPreview storagePath={storagePath} getSignedUrl={getSignedUrl} />
+    );
   }
 
   function open() {

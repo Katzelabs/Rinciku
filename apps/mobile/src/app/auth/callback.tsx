@@ -75,5 +75,9 @@ export default function AuthCallbackScreen() {
 
 const styles = StyleSheet.create({
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  footerRow: { flexDirection: 'row', justifyContent: 'center', gap: Spacing.four },
+  footerRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: Spacing.four,
+  },
 });

@@ -1,12 +1,7 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { StyleSheet, View, type LayoutChangeEvent } from 'react-native';
-import Svg, {
-  G,
-  Line,
-  Rect,
-  Text as SvgText,
-} from 'react-native-svg';
+import Svg, { G, Line, Rect, Text as SvgText } from 'react-native-svg';
 
 import type { CurrencyCode } from '@rinciku/core';
 import type { TrendPoint } from '@rinciku/domain/dashboard';

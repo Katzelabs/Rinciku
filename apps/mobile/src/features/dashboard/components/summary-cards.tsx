@@ -44,7 +44,11 @@ export function SummaryCards({
         value={formatCurrency(net, base)}
         valueColor={net < 0 ? c.destructive : c.positive}
       />
-      <AppText variant='caption' color='mutedForeground' style={styles.footnote}>
+      <AppText
+        variant='caption'
+        color='mutedForeground'
+        style={styles.footnote}
+      >
         {t('summary.over', { count: days })}
       </AppText>
     </Card>

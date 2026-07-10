@@ -7,19 +7,21 @@ const { copy } = Astro.props;
 const { howItWorks } = copy;
 ---
 
-<section id="how" class="section">
-  <div class="inner">
-    <header class="head">
-      <h2 class="title">{howItWorks.heading}</h2>
-      <p class="sub">{howItWorks.subhead}</p>
+<section id='how' class='section'>
+  <div class='inner'>
+    <header class='head'>
+      <h2 class='title'>{howItWorks.heading}</h2>
+      <p class='sub'>{howItWorks.subhead}</p>
     </header>
-    <ol class="steps">
+    <ol class='steps'>
       {
         howItWorks.steps.map((step, i) => (
-          <li class="step">
-            <span class="num" aria-hidden="true">{i + 1}</span>
-            <h3 class="step-title">{step.title}</h3>
-            <p class="step-body">{step.body}</p>
+          <li class='step'>
+            <span class='num' aria-hidden='true'>
+              {i + 1}
+            </span>
+            <h3 class='step-title'>{step.title}</h3>
+            <p class='step-body'>{step.body}</p>
           </li>
         ))
       }

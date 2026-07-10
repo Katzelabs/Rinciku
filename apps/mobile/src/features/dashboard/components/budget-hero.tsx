@@ -46,14 +46,19 @@ export function BudgetHero({ summary }: { summary: MonthlySummary }) {
     <Card
       style={[
         styles.card,
-        { backgroundColor: withAlpha(accent, '14'), borderColor: withAlpha(accent, '33') },
+        {
+          backgroundColor: withAlpha(accent, '14'),
+          borderColor: withAlpha(accent, '33'),
+        },
       ]}
     >
       <View style={styles.headerRow}>
         <AppText variant='amountSmall' color='mutedForeground'>
           {t('hero.safeToSpend')}
         </AppText>
-        <View style={[styles.chip, { backgroundColor: withAlpha(accent, '26') }]}>
+        <View
+          style={[styles.chip, { backgroundColor: withAlpha(accent, '26') }]}
+        >
           <AppText variant='amountSmall' style={{ color: accent }}>
             {t(`health.status.${STATUS_KEY[status]}`)}
           </AppText>
@@ -80,7 +85,9 @@ export function BudgetHero({ summary }: { summary: MonthlySummary }) {
       ) : null}
 
       <View style={styles.meter}>
-        <View style={[styles.track, { backgroundColor: withAlpha(accent, '26') }]}>
+        <View
+          style={[styles.track, { backgroundColor: withAlpha(accent, '26') }]}
+        >
           <View
             style={[
               styles.fill,
@@ -90,7 +97,9 @@ export function BudgetHero({ summary }: { summary: MonthlySummary }) {
         </View>
         <View style={styles.meterEnds}>
           <AppText variant='caption' color='mutedForeground' numberOfLines={1}>
-            {t('hero.spent', { amount: formatCurrency(summary.spent_total, base) })}
+            {t('hero.spent', {
+              amount: formatCurrency(summary.spent_total, base),
+            })}
           </AppText>
           <AppText variant='caption' color='mutedForeground' numberOfLines={1}>
             {formatCurrency(summary.expected_monthly_income, base)}

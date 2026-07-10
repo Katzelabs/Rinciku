@@ -7,7 +7,13 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { Calendar, Check, ChevronDown, Search, Shapes } from 'lucide-react-native';
+import {
+  Calendar,
+  Check,
+  ChevronDown,
+  Search,
+  Shapes,
+} from 'lucide-react-native';
 import type { Tables } from '@rinciku/db';
 
 import { formatDate } from '@rinciku/core';
@@ -225,7 +231,11 @@ function CategoryMultiSelect({
                     onPress={() => toggle(cat.id)}
                     style={styles.option}
                   >
-                    <CategoryBadge icon={cat.icon} color={cat.color} size={32} />
+                    <CategoryBadge
+                      icon={cat.icon}
+                      color={cat.color}
+                      size={32}
+                    />
                     <AppText variant='bodyMedium' style={styles.optionText}>
                       {cat.name}
                     </AppText>
