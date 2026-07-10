@@ -163,9 +163,7 @@ export function createExpensesApi(db: TypedSupabaseClient) {
     return { data, error };
   }
 
-  async function getExpense(
-    id: string
-  ): Promise<Result<ExpenseWithRelations>> {
+  async function getExpense(id: string): Promise<Result<ExpenseWithRelations>> {
     const { data, error } = await db
       .from('expenses')
       .select(EXPENSE_WITH_RELATIONS_SELECT)
@@ -285,6 +283,29 @@ export function createExpensesApi(db: TypedSupabaseClient) {
     return { data: { signedUrl: data.signedUrl }, error: null };
   }
 
+  // Batch variant: one storage round-trip for any number of paths. Returns a
+  // path → signedUrl map; paths that failed to sign are simply omitted, so a
+  // broken attachment never blocks the rest of the batch.
+  async function getAttachmentSignedUrls(
+    storage_paths: string[],
+    expiresIn = 60
+  ): Promise<StorageResult<Map<string, string>>> {
+    if (storage_paths.length === 0) {
+      return { data: new Map(), error: null };
+    }
+    const { data, error } = await db.storage
+      .from(ATTACHMENTS_BUCKET)
+      .createSignedUrls(storage_paths, expiresIn);
+    if (error) return { data: null, error };
+    const urls = new Map<string, string>();
+    for (const entry of data) {
+      if (!entry.error && entry.path && entry.signedUrl) {
+        urls.set(entry.path, entry.signedUrl);
+      }
+    }
+    return { data: urls, error: null };
+  }
+
   async function deleteAttachment(id: string): Promise<Result<null>> {
     const { error } = await db
       .from('expense_attachments')
@@ -309,6 +330,7 @@ export function createExpensesApi(db: TypedSupabaseClient) {
     createAttachment,
     updateAttachment,
     getAttachmentSignedUrl,
+    getAttachmentSignedUrls,
     deleteAttachment,
     deleteAttachmentObject,
   };

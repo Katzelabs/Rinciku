@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams } from 'react-router';
 import { toast } from 'sonner';
@@ -9,6 +10,10 @@ import {
   SheetTitle,
 } from '@/components/ui/sheet';
 import { deleteConversation, touchConversation } from '../api';
+import {
+  patchConversationInCache,
+  removeConversationFromCache,
+} from '../lib/conversation-cache';
 import { ChatHeader } from '../components/chat-header';
 import { ChatThread } from '../components/chat-thread';
 import { ConversationList } from '../components/conversation-list';
@@ -21,14 +26,16 @@ export function ChatPage() {
   const { conversationId } = useParams();
   const navigate = useNavigate();
 
+  const queryClient = useQueryClient();
   const {
     data: conversations,
     isLoading: conversationsLoading,
-    refetch,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
   } = useConversations();
 
   const chat = useChat({
-    onConversationsChanged: refetch,
     // First send creates the conversation lazily — reflect its id in the URL.
     // Replace so the empty /ai-chat doesn't linger in the back stack.
     onConversationCreated: (id) =>
@@ -67,7 +74,7 @@ export function ChatPage() {
       toast.error(t('toast.renameError'));
       return;
     }
-    refetch();
+    patchConversationInCache(queryClient, id, { title });
   }
 
   async function handleDelete(id: string) {
@@ -77,7 +84,7 @@ export function ChatPage() {
       return;
     }
     if (chat.activeId === id) navigate('/ai-chat');
-    refetch();
+    removeConversationFromCache(queryClient, id);
     toast.success(t('toast.chatDeleted'));
   }
 
@@ -92,6 +99,9 @@ export function ChatPage() {
           onNew={handleNew}
           onRename={handleRename}
           onDelete={handleDelete}
+          hasNextPage={hasNextPage}
+          isFetchingNextPage={isFetchingNextPage}
+          onLoadMore={fetchNextPage}
         />
       </aside>
 
@@ -114,6 +124,9 @@ export function ChatPage() {
           messages={chat.messages}
           isLoading={chat.isLoading}
           sending={chat.sending}
+          hasOlderMessages={chat.hasOlderMessages}
+          isLoadingOlder={chat.isLoadingOlder}
+          onLoadOlder={chat.loadOlderMessages}
           proposal={chat.proposal}
           pendingChange={chat.pendingChange}
           confirmingChange={chat.confirmingChange}
@@ -144,6 +157,9 @@ export function ChatPage() {
             onNew={handleNew}
             onRename={handleRename}
             onDelete={handleDelete}
+            hasNextPage={hasNextPage}
+            isFetchingNextPage={isFetchingNextPage}
+            onLoadMore={fetchNextPage}
           />
         </SheetContent>
       </Sheet>

@@ -10,8 +10,12 @@ import { createCategoriesApi } from '../categories';
 import { createEssentialsApi } from '../essentials';
 import { createBudgetsApi } from '../budgets';
 import { createAgentTools } from './agent-tools';
-import { buildSystemPrompt } from './prompt';
-import { runAgentTurn as runAgentTurnPure } from './run-turn';
+import {
+  buildSummaryUserMessage,
+  buildSystemPrompt,
+  SUMMARY_SYSTEM_PROMPT,
+} from './prompt';
+import { HISTORY_WINDOW, runAgentTurn as runAgentTurnPure } from './run-turn';
 import { proposalToolInputSchema } from './schemas';
 import type {
   ChangeTarget,
@@ -34,6 +38,37 @@ import type {
 type Result<T> = {
   data: T | null;
   error: PostgrestError | Error | null;
+};
+
+// Newest-first page size for thread loading; one page always covers the LLM
+// history window (HISTORY_WINDOW in run-turn.ts).
+export const MESSAGES_PAGE_SIZE = 50;
+export const CONVERSATIONS_PAGE_SIZE = 30;
+
+// Refresh the running summary once this many messages sit beyond its anchor —
+// the newest HISTORY_WINDOW stay verbatim, so it re-triggers only every ~5
+// turns rather than on each one.
+export const SUMMARY_TRIGGER = 40;
+export const SUMMARY_MAX_TOKENS = 1024;
+
+// Keyset cursor into a conversation's messages: created_at with the row id as
+// tiebreaker (timestamps can collide under rapid inserts).
+export type MessageCursor = { created_at: string; id: string };
+
+export type MessagesPage = {
+  // Ascending within the page (oldest → newest), for direct rendering.
+  data: ChatMessageRowWithImage[] | null;
+  // Total messages in the conversation (count: 'exact').
+  count: number | null;
+  // Pass as `before` to fetch the next OLDER page; null = no more.
+  nextCursor: MessageCursor | null;
+  error: PostgrestError | null;
+};
+
+export type ConversationsPage = {
+  data: ConversationListItem[] | null;
+  count: number | null;
+  error: PostgrestError | null;
 };
 
 export type AppendMessageInput = {
@@ -90,18 +125,24 @@ export function createAiChatApi(db: TypedSupabaseClient) {
 
   // --- Conversations & messages (RLS-scoped) -------------------------------
 
-  async function listConversations(): Promise<Result<ConversationListItem[]>> {
+  async function listConversations(
+    params: { limit?: number; offset?: number } = {}
+  ): Promise<ConversationsPage> {
+    const { limit = CONVERSATIONS_PAGE_SIZE, offset = 0 } = params;
     // Embed only the newest message per conversation (limit-1 on the referenced
     // table) for the history-list preview. `content` is stored as plain display
     // text, so no block parsing is needed. Portable: web + mobile share this.
-    const { data, error } = await db
+    // Offset paging (mirrors listExpenses) — the list is low-churn and the
+    // consumer dedupes by id, absorbing rows that shift between pages.
+    const { data, error, count } = await db
       .from('conversations')
-      .select('*, messages(content, created_at)')
+      .select('*, messages(content, created_at)', { count: 'exact' })
       .order('last_message_at', { ascending: false, nullsFirst: false })
       .order('created_at', { ascending: false })
       .order('created_at', { referencedTable: 'messages', ascending: false })
-      .limit(1, { referencedTable: 'messages' });
-    if (error || !data) return { data: null, error };
+      .limit(1, { referencedTable: 'messages' })
+      .range(offset, offset + limit - 1);
+    if (error || !data) return { data: null, count: null, error };
     const items: ConversationListItem[] = data.map((row) => {
       const { messages, ...conversation } = row as Conversation & {
         messages: { content: string; created_at: string }[] | null;
@@ -111,7 +152,7 @@ export function createAiChatApi(db: TypedSupabaseClient) {
         last_message_preview: messages?.[0]?.content ?? null,
       };
     });
-    return { data: items, error: null };
+    return { data: items, count, error: null };
   }
 
   async function createConversation(
@@ -126,15 +167,40 @@ export function createAiChatApi(db: TypedSupabaseClient) {
     return { data, error };
   }
 
+  // Newest-first keyset pagination over (created_at desc, id desc) — served by
+  // the (conversation_id, created_at) index. Pages are returned ascending so
+  // the caller can render (or prepend) them directly.
   async function getMessages(
-    conversationId: string
-  ): Promise<Result<ChatMessageRowWithImage[]>> {
-    const { data, error } = await db
+    conversationId: string,
+    opts: { limit?: number; before?: MessageCursor } = {}
+  ): Promise<MessagesPage> {
+    const { limit = MESSAGES_PAGE_SIZE, before } = opts;
+    let query = db
       .from('messages')
-      .select('*, attachment:expense_attachments(storage_path)')
+      .select('*, attachment:expense_attachments(storage_path)', {
+        count: 'exact',
+      })
       .eq('conversation_id', conversationId)
-      .order('created_at', { ascending: true });
-    return { data: data as ChatMessageRowWithImage[] | null, error };
+      .order('created_at', { ascending: false })
+      .order('id', { ascending: false })
+      .limit(limit);
+    if (before) {
+      // Strictly-older-than-cursor. Values are double-quoted: ISO timestamps
+      // contain `+`/`:` which PostgREST's or= parser mangles unquoted.
+      query = query.or(
+        `created_at.lt."${before.created_at}",and(created_at.eq."${before.created_at}",id.lt."${before.id}")`
+      );
+    }
+    const { data, error, count } = await query;
+    if (error || !data)
+      return { data: null, count: null, nextCursor: null, error };
+    const rows = (data as ChatMessageRowWithImage[]).reverse();
+    const oldest = rows[0];
+    const nextCursor =
+      rows.length === limit && oldest
+        ? { created_at: oldest.created_at, id: oldest.id }
+        : null;
+    return { data: rows, count, nextCursor, error: null };
   }
 
   // Resolves a time-limited URL the client can render for a stored chat image.
@@ -145,6 +211,23 @@ export function createAiChatApi(db: TypedSupabaseClient) {
       60 * 60
     );
     return data?.signedUrl ?? null;
+  }
+
+  // Batch counterpart: one storage round-trip per page of messages. Paths that
+  // fail to sign map to null so a broken attachment never blocks the thread.
+  async function chatImageUrls(
+    storagePaths: string[]
+  ): Promise<Map<string, string | null>> {
+    const urls = new Map<string, string | null>();
+    if (storagePaths.length === 0) return urls;
+    const { data } = await expenses.getAttachmentSignedUrls(
+      storagePaths,
+      60 * 60
+    );
+    for (const path of storagePaths) {
+      urls.set(path, data?.get(path) ?? null);
+    }
+    return urls;
   }
 
   async function appendMessage(
@@ -176,6 +259,94 @@ export function createAiChatApi(db: TypedSupabaseClient) {
     return { data: null, error };
   }
 
+  // --- Running summary -------------------------------------------------------
+
+  async function getConversationSummary(
+    id: string
+  ): Promise<
+    Result<{ summary: string | null; summary_message_count: number }>
+  > {
+    const { data, error } = await db
+      .from('conversations')
+      .select('summary, summary_message_count')
+      .eq('id', id)
+      .single();
+    return { data, error };
+  }
+
+  async function updateConversationSummary(
+    id: string,
+    patch: { summary: string; summary_message_count: number }
+  ): Promise<Result<null>> {
+    const { error } = await db.from('conversations').update(patch).eq('id', id);
+    return { data: null, error };
+  }
+
+  // Conversations with a summary refresh already running this session; a
+  // overlapping call for the same thread is a no-op instead of a duplicate
+  // LLM request.
+  const summarizing = new Set<string>();
+
+  // Folds messages older than the verbatim window into the conversation's
+  // running summary. Fire-and-forget: called after a turn completes, never
+  // throws — a failed refresh just retries after the next turn.
+  async function maybeSummarizeConversation(
+    conversationId: string
+  ): Promise<void> {
+    if (summarizing.has(conversationId)) return;
+    summarizing.add(conversationId);
+    try {
+      const { data: current } = await getConversationSummary(conversationId);
+      if (!current) return;
+
+      const { count } = await db
+        .from('messages')
+        .select('id', { count: 'exact', head: true })
+        .eq('conversation_id', conversationId);
+      if (count == null) return;
+
+      // Only refresh once enough un-summarized messages sit beyond the anchor;
+      // the newest HISTORY_WINDOW always stay verbatim.
+      if (count - current.summary_message_count <= SUMMARY_TRIGGER) return;
+      const summarizeUpto = count - HISTORY_WINDOW;
+
+      // The delta since the last anchor. Messages are immutable + append-only,
+      // so ascending offsets are stable.
+      const { data: delta, error: deltaError } = await db
+        .from('messages')
+        .select('role, content')
+        .eq('conversation_id', conversationId)
+        .order('created_at', { ascending: true })
+        .order('id', { ascending: true })
+        .range(current.summary_message_count, summarizeUpto - 1);
+      if (deltaError || !delta || delta.length === 0) return;
+
+      const res = await sendChat({
+        system: SUMMARY_SYSTEM_PROMPT,
+        messages: [
+          {
+            role: 'user',
+            content: buildSummaryUserMessage(current.summary, delta),
+          },
+        ],
+        max_tokens: SUMMARY_MAX_TOKENS,
+      });
+      if (res.error) return;
+      const summary = extractText(res);
+      if (!summary) return;
+
+      await updateConversationSummary(conversationId, {
+        summary,
+        summary_message_count: summarizeUpto,
+      });
+    } catch (err) {
+      // Never surface: the turn already succeeded; the next turn retries.
+      console.error('ai-chat summary refresh failed', err);
+    } finally {
+      summarizing.delete(conversationId);
+    }
+  }
+
   // --- Grounding -----------------------------------------------------------
 
   // Reuses the dashboard's cycle- & FX-aware summary, then formats it into the
@@ -204,6 +375,7 @@ export function createAiChatApi(db: TypedSupabaseClient) {
     messages: MessageParam[];
     tools?: ToolDef[];
     tool_choice?: ToolChoice;
+    max_tokens?: number;
   }): Promise<ChatResponse> {
     const { data, error } = await db.functions.invoke<ChatResponse>('ai-chat', {
       body: req,
@@ -223,6 +395,7 @@ export function createAiChatApi(db: TypedSupabaseClient) {
       apiContent: Array<TextBlock | ImageBlock>;
       toolChoice: ToolChoice;
       profile: Profile;
+      summary?: string | null;
     },
     opts?: { noResponseMessage?: string }
   ): Promise<ChatResponse> {
@@ -454,9 +627,13 @@ export function createAiChatApi(db: TypedSupabaseClient) {
     createConversation,
     getMessages,
     chatImageUrl,
+    chatImageUrls,
     appendMessage,
     touchConversation,
     deleteConversation,
+    getConversationSummary,
+    updateConversationSummary,
+    maybeSummarizeConversation,
     buildBudgetContext,
     sendChat,
     executeReadTool,

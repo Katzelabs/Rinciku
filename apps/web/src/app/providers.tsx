@@ -1,4 +1,5 @@
 import { useEffect, useRef, type ReactNode } from 'react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ThemeProvider } from 'next-themes';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
@@ -13,6 +14,12 @@ interface ProvidersProps {
   children: ReactNode;
 }
 
+// Module-level so the cache survives provider re-renders (recreated only on a
+// full reload).
+const queryClient = new QueryClient({
+  defaultOptions: { queries: { staleTime: 30_000, retry: 1 } },
+});
+
 export function Providers({ children }: ProvidersProps) {
   return (
     <ThemeProvider
@@ -21,14 +28,16 @@ export function Providers({ children }: ProvidersProps) {
       enableSystem
       disableTransitionOnChange
     >
-      <AuthProvider>
-        <LanguageSync />
-        <TooltipProvider>
-          <FxBootstrapper />
-          {children}
-          <Toaster />
-        </TooltipProvider>
-      </AuthProvider>
+      <QueryClientProvider client={queryClient}>
+        <AuthProvider>
+          <LanguageSync />
+          <TooltipProvider>
+            <FxBootstrapper />
+            {children}
+            <Toaster />
+          </TooltipProvider>
+        </AuthProvider>
+      </QueryClientProvider>
     </ThemeProvider>
   );
 }

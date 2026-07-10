@@ -19,9 +19,12 @@ export const {
   createConversation,
   getMessages,
   chatImageUrl,
+  chatImageUrls,
   appendMessage,
   touchConversation,
   deleteConversation,
+  getConversationSummary,
+  maybeSummarizeConversation,
   buildBudgetContext,
   sendChat,
   executeReadTool,
@@ -39,11 +42,18 @@ export {
   summarizeProposal,
   conversationTitleFrom,
 } from '@rinciku/domain/ai-chat';
+export {
+  CONVERSATIONS_PAGE_SIZE,
+  MESSAGES_PAGE_SIZE,
+} from '@rinciku/domain/ai-chat';
 export type {
   AppendMessageInput,
   ConfirmAttachment,
   ConfirmBase,
   ChatMessageRowWithImage,
+  ConversationsPage,
+  MessageCursor,
+  MessagesPage,
 } from '@rinciku/domain/ai-chat';
 
 type Result<T> = {

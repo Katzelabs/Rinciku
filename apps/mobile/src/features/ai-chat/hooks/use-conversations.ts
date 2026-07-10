@@ -1,7 +1,10 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useMemo, useRef } from 'react';
 import { useFocusEffect } from 'expo-router';
+import { useInfiniteQuery } from '@tanstack/react-query';
 
-import { listConversations } from '../api';
+import { aiChatKeys, type ConversationPage } from '@rinciku/domain/ai-chat';
+
+import { CONVERSATIONS_PAGE_SIZE, listConversations } from '../api';
 import type { ConversationListItem } from '../types';
 
 export type UseConversationsResult = {
@@ -9,58 +12,88 @@ export type UseConversationsResult = {
   isLoading: boolean;
   error: string | null;
   refetch: () => void;
+  fetchNextPage: () => void;
+  hasNextPage: boolean;
+  isFetchingNextPage: boolean;
 };
 
-// Backs the conversation-history sheet, newest activity first (the domain
-// `listConversations` query sorts by last_message_at desc). Ported from the web
-// hook: the same integer-`token` refetch pattern with a `cancelled` cleanup
-// guard. `refetch` is called by useChat after every turn so a new/renamed
-// conversation surfaces and the list re-sorts. Native addition: a focus refresh
-// (there is no window-focus event on mobile), skipping the first focus since the
-// mount effect already loaded the list.
+// Flattens the page cache into one list, deduping by id: offset paging can
+// briefly show a row on two pages when the list re-sorts between fetches.
+function flattenPages(pages: ConversationPage[]): ConversationListItem[] {
+  const seen = new Set<string>();
+  const items: ConversationListItem[] = [];
+  for (const page of pages) {
+    for (const item of page.items) {
+      if (!seen.has(item.id)) {
+        seen.add(item.id);
+        items.push(item);
+      }
+    }
+  }
+  return items;
+}
+
+// Backs the conversation-history sheet, newest activity first, one page at a
+// time. Writes (turn / rename / delete) patch the react-query cache directly
+// via the conversation-pages helpers instead of refetching. Native addition: a
+// focus refresh (there is no window-focus event on mobile), skipping the first
+// focus since mount already loaded the list.
 export function useConversations(): UseConversationsResult {
-  const [data, setData] = useState<ConversationListItem[] | undefined>(
-    undefined
-  );
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [token, setToken] = useState(0);
-
-  useEffect(() => {
-    let cancelled = false;
-    listConversations()
-      .then(({ data, error }) => {
-        if (cancelled) return;
-        if (error) {
-          setError(error.message);
-          setData(undefined);
-        } else {
-          setError(null);
-          setData(data ?? []);
-        }
-      })
-      .finally(() => {
-        if (!cancelled) setIsLoading(false);
+  const query = useInfiniteQuery({
+    queryKey: aiChatKeys.conversations,
+    queryFn: async ({ pageParam }) => {
+      const { data, count, error } = await listConversations({
+        limit: CONVERSATIONS_PAGE_SIZE,
+        offset: pageParam,
       });
-    return () => {
-      cancelled = true;
-    };
-  }, [token]);
+      if (error || !data) {
+        throw error ?? new Error('Could not load conversations');
+      }
+      return { items: data, count: count ?? 0 } satisfies ConversationPage;
+    },
+    initialPageParam: 0,
+    getNextPageParam: (last, all) => {
+      const loaded = all.reduce((n, p) => n + p.items.length, 0);
+      return loaded < last.count ? loaded : undefined;
+    },
+    // Bounds the cost of refetch-all-pages on invalidate/foreground focus.
+    maxPages: 5,
+  });
 
-  const refetch = useCallback(() => setToken((t) => t + 1), []);
+  const data = useMemo(
+    () => (query.data ? flattenPages(query.data.pages) : undefined),
+    [query.data]
+  );
 
+  const refetch = () => void query.refetch();
+  const fetchNextPage = () => {
+    if (query.hasNextPage && !query.isFetchingNextPage) {
+      void query.fetchNextPage();
+    }
+  };
+
+  // react-query returns a stable refetch reference, safe as an effect dep.
+  const queryRefetch = query.refetch;
   const didFocus = useRef(false);
   useFocusEffect(
     useCallback(() => {
-      // Skip the initial focus — the mount effect above already loaded the list,
-      // so refetching here would just double-fetch on first render.
+      // Skip the initial focus — the query itself loads on mount, so refetching
+      // here would just double-fetch on first render.
       if (!didFocus.current) {
         didFocus.current = true;
         return;
       }
-      refetch();
-    }, [refetch])
+      void queryRefetch();
+    }, [queryRefetch])
   );
 
-  return { data, isLoading, error, refetch };
+  return {
+    data,
+    isLoading: query.isPending,
+    error: query.error ? query.error.message : null,
+    refetch,
+    fetchNextPage,
+    hasNextPage: query.hasNextPage,
+    isFetchingNextPage: query.isFetchingNextPage,
+  };
 }

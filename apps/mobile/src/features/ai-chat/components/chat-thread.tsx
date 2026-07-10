@@ -3,6 +3,7 @@ import { ChevronDown } from 'lucide-react-native';
 import { useCallback, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
+  ActivityIndicator,
   Pressable,
   StyleSheet,
   View,
@@ -64,6 +65,13 @@ export function ChatThread({
     listRef.current?.scrollToEnd({ animated: true });
   }, []);
 
+  // Spinner row above the oldest loaded message while an older page loads.
+  const header = chat.isLoadingOlder ? (
+    <View style={styles.olderSpinner}>
+      <ActivityIndicator color={c.mutedForeground} />
+    </View>
+  ) : null;
+
   const footer = (
     <View style={styles.extras}>
       {chat.sending ? <TypingIndicator /> : null}
@@ -110,6 +118,13 @@ export function ChatThread({
         recycleItems={false}
         alignItemsAtEnd
         maintainScrollAtEnd
+        // Scroll-up pagination: the list is upright (oldest at the top), so
+        // nearing the START loads the next OLDER page; keeping the visible
+        // content anchored prevents a jump when the page prepends.
+        onStartReached={chat.loadOlderMessages}
+        onStartReachedThreshold={0.2}
+        maintainVisibleContentPosition
+        ListHeaderComponent={header}
         ListFooterComponent={footer}
         contentContainerStyle={{
           paddingTop: topInset,
@@ -147,6 +162,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   extras: { gap: Spacing.two, paddingTop: Spacing.two },
+  olderSpinner: { paddingVertical: Spacing.three, alignItems: 'center' },
   card: { paddingHorizontal: Spacing.four, paddingTop: Spacing.two },
   // Floating pill just above the composer; taps jump back to the newest turn.
   scrollDown: {

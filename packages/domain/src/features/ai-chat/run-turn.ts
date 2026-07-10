@@ -15,6 +15,12 @@ import type {
 // step is one model round-trip; reads in between are auto-executed.
 export const MAX_STEPS = 6;
 
+// Verbatim history sent per turn. 30 history + 1 new user message + up to
+// 2 × MAX_STEPS tool-loop messages = 43, safely under the edge function's
+// 60-message cap. Older context arrives via the running conversation summary
+// (params.summary). Always ≤ the thread page size, so the loaded tail suffices.
+export const HISTORY_WINDOW = 30;
+
 export type RunAgentTurnDeps = {
   // The LLM proxy (createAiChatApi binds this to `db.functions.invoke`).
   sendChat: (req: {
@@ -36,12 +42,16 @@ export type RunAgentTurnDeps = {
 export type RunAgentTurnParams = {
   system: string;
   // Prior thread as text-only messages (tool/image blocks are never replayed).
+  // Windowed to the last HISTORY_WINDOW entries inside the loop.
   history: MessageParam[];
   // This turn's user content (text and/or a base64 image block).
   apiContent: Array<TextBlock | ImageBlock>;
   // First-step tool choice; images force a tool for a clean extraction.
   toolChoice: ToolChoice;
   profile: Profile;
+  // Running summary of messages older than the window (conversations.summary);
+  // appended to the system prompt so long threads keep their context.
+  summary?: string | null;
 };
 
 // The agentic loop, extracted UI-free so web + mobile share it. The model may
@@ -53,16 +63,21 @@ export async function runAgentTurn(
   params: RunAgentTurnParams,
   deps: RunAgentTurnDeps
 ): Promise<ChatResponse> {
+  // Window here (not in the callers) so the ≤ edge-cap invariant holds no
+  // matter how much history a caller loads.
   const apiMessages: MessageParam[] = [
-    ...params.history,
+    ...params.history.slice(-HISTORY_WINDOW),
     { role: 'user', content: params.apiContent },
   ];
+  const system = params.summary?.trim()
+    ? `${params.system}\n\n## Earlier conversation (summary)\nOlder messages in this conversation are not shown verbatim. Summary of what came before:\n${params.summary.trim()}`
+    : params.system;
   let toolChoice = params.toolChoice;
   let res: ChatResponse | null = null;
 
   for (let step = 0; step < MAX_STEPS; step++) {
     res = await deps.sendChat({
-      system: params.system,
+      system,
       messages: apiMessages,
       tools: AGENT_TOOLS,
       tool_choice: toolChoice,

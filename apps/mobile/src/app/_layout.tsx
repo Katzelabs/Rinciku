@@ -2,6 +2,11 @@ import { useEffect, type ReactNode } from 'react';
 import { I18nextProvider } from 'react-i18next';
 import { AppState } from 'react-native';
 import {
+  focusManager,
+  QueryClient,
+  QueryClientProvider,
+} from '@tanstack/react-query';
+import {
   Figtree_400Regular,
   Figtree_500Medium,
   Figtree_600SemiBold,
@@ -27,6 +32,11 @@ import { AppThemeProvider, useThemePreference } from '@/lib/theme-preference';
 import { supabase } from '@/lib/supabase';
 
 SplashScreen.preventAutoHideAsync();
+
+// Module-level so the cache survives re-renders (recreated only on reload).
+const queryClient = new QueryClient({
+  defaultOptions: { queries: { staleTime: 30_000, retry: 1 } },
+});
 
 // Brand the navigation chrome (background between screens, header tint) with the
 // olive tokens instead of the stock react-navigation themes.
@@ -62,12 +72,14 @@ export default function RootLayout() {
   });
 
   // Supabase pauses token auto-refresh in the background; drive it off AppState
-  // so a foregrounded app keeps the session fresh.
+  // so a foregrounded app keeps the session fresh. React Query has no window
+  // focus on native, so the same listener feeds its focusManager.
   useEffect(() => {
     supabase.auth.startAutoRefresh();
     const sub = AppState.addEventListener('change', (state) => {
       if (state === 'active') supabase.auth.startAutoRefresh();
       else supabase.auth.stopAutoRefresh();
+      focusManager.setFocused(state === 'active');
     });
     return () => {
       sub.remove();
@@ -78,15 +90,17 @@ export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <I18nextProvider i18n={i18n}>
-        <AppThemeProvider>
-          <SafeAreaProvider>
-            <NavChrome>
-              <AuthProvider>
-                <RootNavigator fontsLoaded={fontsLoaded} />
-              </AuthProvider>
-            </NavChrome>
-          </SafeAreaProvider>
-        </AppThemeProvider>
+        <QueryClientProvider client={queryClient}>
+          <AppThemeProvider>
+            <SafeAreaProvider>
+              <NavChrome>
+                <AuthProvider>
+                  <RootNavigator fontsLoaded={fontsLoaded} />
+                </AuthProvider>
+              </NavChrome>
+            </SafeAreaProvider>
+          </AppThemeProvider>
+        </QueryClientProvider>
       </I18nextProvider>
     </GestureHandlerRootView>
   );

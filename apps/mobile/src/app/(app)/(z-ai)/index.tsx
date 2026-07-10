@@ -10,11 +10,16 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useQueryClient } from '@tanstack/react-query';
 
 import { Screen } from '@/components/ui';
 import { Spacing } from '@/constants/theme';
 import { headerIcon } from '@/lib/header-icons';
 import { deleteConversation, touchConversation } from '@/features/ai-chat/api';
+import {
+  patchConversationInCache,
+  removeConversationFromCache,
+} from '@/features/ai-chat/lib/conversation-cache';
 import { ChatThread } from '@/features/ai-chat/components/chat-thread';
 import { ConversationList } from '@/features/ai-chat/components/conversation-list';
 import { MessageComposer } from '@/features/ai-chat/components/message-composer';
@@ -33,14 +38,12 @@ export default function AiScreen() {
   const { t } = useTranslation('aiChat');
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const queryClient = useQueryClient();
   const conversations = useConversations();
-  const chat = useChat({
-    // Re-sort/refresh the history list after every turn so a new or bumped
-    // conversation surfaces. Mobile has no URL, so onConversationCreated just
-    // refreshes too (activeId is already set inside the hook).
-    onConversationsChanged: conversations.refetch,
-    onConversationCreated: () => conversations.refetch(),
-  });
+  // The hook patches the cached history list directly after every turn (new or
+  // bumped conversations surface without a refetch); mobile has no URL to sync,
+  // so no onConversationCreated either.
+  const chat = useChat();
   const [historyOpen, setHistoryOpen] = useState(false);
 
   // Clearance so content clears the header. The message list draws under the
@@ -66,7 +69,7 @@ export default function AiScreen() {
       Alert.alert(t('toast.renameError'));
       return;
     }
-    conversations.refetch();
+    patchConversationInCache(queryClient, id, { title });
   }
 
   function handleDelete(id: string) {
@@ -83,7 +86,7 @@ export default function AiScreen() {
           }
           // If the open thread was deleted, drop back to a fresh chat.
           if (id === chat.activeId) chat.startNew();
-          conversations.refetch();
+          removeConversationFromCache(queryClient, id);
         },
       },
     ]);
@@ -169,6 +172,9 @@ export default function AiScreen() {
         onSelect={handleSelect}
         onRename={handleRename}
         onDelete={handleDelete}
+        hasNextPage={conversations.hasNextPage}
+        isFetchingNextPage={conversations.isFetchingNextPage}
+        onLoadMore={conversations.fetchNextPage}
       />
     </Screen>
   );

@@ -640,7 +640,9 @@ export function createAgentTools(apis: AgentToolApis) {
         const month =
           typeof input.month === 'number' ? input.month : now.getMonth() + 1;
         const startISO = new Date(Date.UTC(year, month - 1, 1)).toISOString();
-        const endExclusiveISO = new Date(Date.UTC(year, month, 1)).toISOString();
+        const endExclusiveISO = new Date(
+          Date.UTC(year, month, 1)
+        ).toISOString();
         const [budgetsRes, tierBudgetsRes, actualsRes, catsRes, tiersRes] =
           await Promise.all([
             budgets.listBudgets(year, month),

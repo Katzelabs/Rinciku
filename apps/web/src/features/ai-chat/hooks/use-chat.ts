@@ -1,16 +1,28 @@
-import { useRef, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
+import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
+import { aiChatKeys } from '@rinciku/domain/ai-chat';
 import i18n from '@rinciku/core/i18n';
 import { useAuth } from '@/features/auth';
+import { upsertConversationInCache } from '../lib/conversation-cache';
+import {
+  appendToThread,
+  replaceThreadItemId,
+  seedEmptyThread,
+  type ThreadPage,
+} from '../lib/thread-cache';
 import {
   appendMessage,
   buildBudgetContext,
-  chatImageUrl,
+  chatImageUrls,
   conversationTitleFrom,
   createConversation,
   createImageAttachment,
   extractText,
   fileToBase64,
+  getConversationSummary,
   getMessages,
+  maybeSummarizeConversation,
+  MESSAGES_PAGE_SIZE,
   parseProposal,
   resolveChangeTarget,
   runAgentTurn,
@@ -18,6 +30,7 @@ import {
   touchConversation,
   uploadChatImage,
   type ChatMessageRowWithImage,
+  type MessageCursor,
 } from '../api';
 import { applyProposedChange, parseChange } from '../agent-tools';
 import type { CurrencyCode } from '@rinciku/core';
@@ -38,8 +51,6 @@ export type ActiveProposal = {
 };
 
 export type UseChatOptions = {
-  // Called after any write so the page can re-sort / refresh the sidebar list.
-  onConversationsChanged?: () => void;
   // Called once a conversation is lazily created on the first send, so the page
   // can reflect the new id in the URL (/ai-chat/:conversationId).
   onConversationCreated?: (id: string) => void;
@@ -51,6 +62,10 @@ export type UseChatResult = {
   isLoading: boolean;
   sending: boolean;
   error: string | null;
+  // Scroll-up pagination over the thread (older pages, newest loaded first).
+  hasOlderMessages: boolean;
+  isLoadingOlder: boolean;
+  loadOlderMessages: () => void;
   proposal: ActiveProposal | null;
   pendingChange: ProposedChange | null;
   confirmingChange: boolean;
@@ -68,22 +83,24 @@ function tempId(): string {
   return crypto.randomUUID();
 }
 
-// Resolves a signed URL for each message that carries an image attachment so
-// reloaded threads render their images. Text-only rows resolve to null.
+// Resolves signed URLs for messages that carry an image attachment so reloaded
+// threads render their images — one batched storage call per page of rows.
 async function rowsToItems(
   rows: ChatMessageRowWithImage[]
 ): Promise<ChatItem[]> {
-  return Promise.all(
-    rows.map(async (row) => {
-      const storagePath = row.attachment?.storage_path ?? null;
-      return {
-        id: row.id,
-        role: row.role === 'assistant' ? 'assistant' : 'user',
-        content: row.content,
-        imageUrl: storagePath ? await chatImageUrl(storagePath) : null,
-      } satisfies ChatItem;
-    })
-  );
+  const paths = rows
+    .map((row) => row.attachment?.storage_path)
+    .filter((p): p is string => !!p);
+  const urls = await chatImageUrls(paths);
+  return rows.map((row) => {
+    const storagePath = row.attachment?.storage_path ?? null;
+    return {
+      id: row.id,
+      role: row.role === 'assistant' ? 'assistant' : 'user',
+      content: row.content,
+      imageUrl: storagePath ? (urls.get(storagePath) ?? null) : null,
+    } satisfies ChatItem;
+  });
 }
 
 // Owns the active thread. Loading is driven by explicit handlers (select / new)
@@ -93,9 +110,8 @@ async function rowsToItems(
 // turn flow (setActiveId is async and can't be read back mid-turn).
 export function useChat(options: UseChatOptions = {}): UseChatResult {
   const { profile } = useAuth();
+  const queryClient = useQueryClient();
   const [activeId, setActiveId] = useState<string | null>(null);
-  const [messages, setMessages] = useState<ChatItem[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [proposal, setProposal] = useState<ActiveProposal | null>(null);
@@ -106,15 +122,57 @@ export function useChat(options: UseChatOptions = {}): UseChatResult {
 
   const currentIdRef = useRef<string | null>(null);
 
+  // The thread lives in the react-query cache: pages[0] is the newest page,
+  // fetchNextPage pulls OLDER pages on scroll-up. Messages are immutable, so
+  // loaded pages never go stale; gcTime bounds how long cached signed image
+  // URLs (1h TTL) can be served.
+  const messagesQuery = useInfiniteQuery({
+    queryKey: aiChatKeys.messages(activeId ?? 'none'),
+    enabled: !!activeId,
+    queryFn: async ({ pageParam }): Promise<ThreadPage> => {
+      const { data, count, nextCursor, error } = await getMessages(
+        activeId as string,
+        { limit: MESSAGES_PAGE_SIZE, before: pageParam ?? undefined }
+      );
+      if (error || !data) {
+        throw error ?? new Error(i18n.t('aiChat:chat.somethingWrong'));
+      }
+      return {
+        items: await rowsToItems(data),
+        nextCursor,
+        count: count ?? 0,
+      };
+    },
+    initialPageParam: null as MessageCursor | null,
+    getNextPageParam: (page) => page.nextCursor,
+    staleTime: Infinity,
+    gcTime: 30 * 60_000,
+  });
+
+  const messages = useMemo<ChatItem[]>(() => {
+    const pages = messagesQuery.data?.pages;
+    if (!pages) return [];
+    return [...pages].reverse().flatMap((p) => p.items);
+  }, [messagesQuery.data]);
+
+  const isLoading = !!activeId && messagesQuery.isPending;
+
+  function loadOlderMessages() {
+    if (messagesQuery.hasNextPage && !messagesQuery.isFetchingNextPage) {
+      void messagesQuery.fetchNextPage();
+    }
+  }
+
   function startNew() {
     currentIdRef.current = null;
     setActiveId(null);
-    setMessages([]);
     setProposal(null);
     setPendingChange(null);
     setError(null);
   }
 
+  // Loading is owned by the query (keyed on the id), so switching threads is
+  // just a state reset — no imperative fetch, no stale-load races.
   function selectConversation(id: string) {
     if (currentIdRef.current === id) return;
     currentIdRef.current = id;
@@ -122,22 +180,6 @@ export function useChat(options: UseChatOptions = {}): UseChatResult {
     setProposal(null);
     setPendingChange(null);
     setError(null);
-    setIsLoading(true);
-    getMessages(id)
-      .then(async ({ data, error }) => {
-        if (currentIdRef.current !== id) return; // switched away mid-load
-        if (error) {
-          setError(error.message);
-          setMessages([]);
-        } else {
-          const items = await rowsToItems(data ?? []);
-          if (currentIdRef.current !== id) return; // switched away mid-resolve
-          setMessages(items);
-        }
-      })
-      .finally(() => {
-        if (currentIdRef.current === id) setIsLoading(false);
-      });
   }
 
   async function runTurn(params: {
@@ -174,30 +216,39 @@ export function useChat(options: UseChatOptions = {}): UseChatResult {
           throw error ?? new Error(i18n.t('aiChat:chat.startError'));
         convId = data.id;
         currentIdRef.current = convId;
+        // Seed an empty page cache BEFORE activating the id: the mounting
+        // query (staleTime: Infinity) then renders the optimistic items below
+        // instead of refetching over them.
+        seedEmptyThread(queryClient, convId);
         setActiveId(convId);
         options.onConversationCreated?.(convId);
       }
 
-      // 2. Optimistic user bubble + persist.
-      setMessages((m) => [
-        ...m,
-        {
-          id: tempId(),
-          role: 'user',
-          content: params.displayText,
-          imageUrl: params.image?.previewUrl ?? null,
-        },
-      ]);
-      await appendMessage({
+      // 2. Optimistic user bubble + persist (swap in the real row id after).
+      const userTempId = tempId();
+      appendToThread(queryClient, convId, {
+        id: userTempId,
+        role: 'user',
+        content: params.displayText,
+        imageUrl: params.image?.previewUrl ?? null,
+      });
+      const savedUser = await appendMessage({
         conversation_id: convId,
         user_id: profile.id,
         role: 'user',
         content: params.displayText,
         attachment_id: params.image?.attachmentId ?? null,
       });
+      if (savedUser.data) {
+        replaceThreadItemId(queryClient, convId, userTempId, savedUser.data.id);
+      }
 
-      // 3. Ground in the current budget state.
-      const ctx = await buildBudgetContext(profile);
+      // 3. Ground in the current budget state, plus the running summary of any
+      //    messages older than the verbatim history window.
+      const [ctx, summaryRes] = await Promise.all([
+        buildBudgetContext(profile),
+        getConversationSummary(convId),
+      ]);
       if (ctx.error || !ctx.data) {
         throw ctx.error ?? new Error(i18n.t('aiChat:chat.budgetError'));
       }
@@ -214,6 +265,7 @@ export function useChat(options: UseChatOptions = {}): UseChatResult {
           apiContent: params.apiContent,
           toolChoice: params.toolChoice,
           profile,
+          summary: summaryRes.data?.summary ?? null,
         },
         { noResponseMessage: i18n.t('aiChat:chat.noResponse') }
       );
@@ -230,11 +282,13 @@ export function useChat(options: UseChatOptions = {}): UseChatResult {
             ? change.summary
             : i18n.t('aiChat:chat.genericResponse'));
 
-      setMessages((m) => [
-        ...m,
-        { id: tempId(), role: 'assistant', content: text },
-      ]);
-      await appendMessage({
+      const assistantTempId = tempId();
+      appendToThread(queryClient, convId, {
+        id: assistantTempId,
+        role: 'assistant',
+        content: text,
+      });
+      const savedAssistant = await appendMessage({
         conversation_id: convId,
         user_id: profile.id,
         role: 'assistant',
@@ -243,6 +297,14 @@ export function useChat(options: UseChatOptions = {}): UseChatResult {
         tokens_input: res.usage?.input_tokens ?? null,
         tokens_output: res.usage?.output_tokens ?? null,
       });
+      if (savedAssistant.data) {
+        replaceThreadItemId(
+          queryClient,
+          convId,
+          assistantTempId,
+          savedAssistant.data.id
+        );
+      }
 
       // 6. Stage a confirmation card. Transaction proposals keep the rich
       //    editable card (and store the image now that we know expense/income);
@@ -264,10 +326,21 @@ export function useChat(options: UseChatOptions = {}): UseChatResult {
         setPendingChange(await resolveChangeTarget(change));
       }
 
-      await touchConversation(convId, {
+      // Re-sort the cached sidebar list in place (no refetch): the touched
+      // conversation moves to the top with the fresh preview.
+      const touched = await touchConversation(convId, {
         last_message_at: new Date().toISOString(),
       });
-      options.onConversationsChanged?.();
+      if (touched.data) {
+        upsertConversationInCache(queryClient, {
+          ...touched.data,
+          last_message_preview: text,
+        });
+      }
+
+      // Fold older messages into the running summary in the background once
+      // the thread outgrows the window (fire-and-forget; never throws).
+      void maybeSummarizeConversation(convId);
     } catch (err) {
       setError(
         err instanceof Error
@@ -369,22 +442,37 @@ export function useChat(options: UseChatOptions = {}): UseChatResult {
   // Appends + persists a short confirmation note after a proposal is saved.
   function noteConfirmation(text: string) {
     setProposal(null);
-    setMessages((m) => [
-      ...m,
-      { id: tempId(), role: 'assistant', content: text },
-    ]);
     const convId = currentIdRef.current;
     if (convId && profile) {
+      const noteTempId = tempId();
+      appendToThread(queryClient, convId, {
+        id: noteTempId,
+        role: 'assistant',
+        content: text,
+      });
       void appendMessage({
         conversation_id: convId,
         user_id: profile.id,
         role: 'assistant',
         content: text,
-      }).then(() => {
-        void touchConversation(convId, {
+      }).then(async (savedNote) => {
+        if (savedNote.data) {
+          replaceThreadItemId(
+            queryClient,
+            convId,
+            noteTempId,
+            savedNote.data.id
+          );
+        }
+        const touched = await touchConversation(convId, {
           last_message_at: new Date().toISOString(),
         });
-        options.onConversationsChanged?.();
+        if (touched.data) {
+          upsertConversationInCache(queryClient, {
+            ...touched.data,
+            last_message_preview: text,
+          });
+        }
       });
     }
   }
@@ -394,7 +482,10 @@ export function useChat(options: UseChatOptions = {}): UseChatResult {
     messages,
     isLoading,
     sending,
-    error,
+    error: error ?? (messagesQuery.error ? messagesQuery.error.message : null),
+    hasOlderMessages: messagesQuery.hasNextPage,
+    isLoadingOlder: messagesQuery.isFetchingNextPage,
+    loadOlderMessages,
     proposal,
     pendingChange,
     confirmingChange,

@@ -44,3 +44,32 @@ function isoDate(d: Date): string {
   const day = String(d.getDate()).padStart(2, '0');
   return `${y}-${m}-${day}`;
 }
+
+// --- Running conversation summary ------------------------------------------
+// Long threads are windowed to the last HISTORY_WINDOW messages (run-turn.ts);
+// everything older is folded into a running summary stored on the conversation
+// row and prepended to the system prompt each turn.
+
+export const SUMMARY_SYSTEM_PROMPT = [
+  'You maintain a running summary of a conversation between a user and Rinciku, a personal-finance assistant.',
+  'Merge the previous summary (if any) with the new transcript into ONE updated summary of at most 300 words, plain text (no markdown, no preamble).',
+  'Preserve exactly: amounts with their currencies, dates, category/budget/essential names, decisions the user made (confirmed transactions, accepted/declined advice), and any open questions or pending follow-ups.',
+  'Drop pleasantries and repetition. Write in the third person ("the user asked…", "the assistant advised…").',
+].join('\n');
+
+export function buildSummaryUserMessage(
+  previousSummary: string | null,
+  transcript: { role: string; content: string }[]
+): string {
+  const lines = transcript.map((m) => `${m.role}: ${m.content}`).join('\n');
+  return [
+    previousSummary?.trim()
+      ? `Previous summary:\n${previousSummary.trim()}`
+      : 'Previous summary: (none — this is the first summary)',
+    '',
+    'New transcript to fold in:',
+    lines,
+    '',
+    'Reply with the updated summary only.',
+  ].join('\n');
+}

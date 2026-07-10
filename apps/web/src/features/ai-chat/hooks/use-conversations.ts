@@ -1,5 +1,7 @@
-import { useCallback, useEffect, useState } from 'react';
-import { listConversations } from '../api';
+import { useMemo } from 'react';
+import { useInfiniteQuery } from '@tanstack/react-query';
+import { aiChatKeys, type ConversationPage } from '@rinciku/domain/ai-chat';
+import { CONVERSATIONS_PAGE_SIZE, listConversations } from '../api';
 import type { ConversationListItem } from '../types';
 
 export type UseConversationsResult = {
@@ -7,40 +9,71 @@ export type UseConversationsResult = {
   isLoading: boolean;
   error: string | null;
   refetch: () => void;
+  fetchNextPage: () => void;
+  hasNextPage: boolean;
+  isFetchingNextPage: boolean;
 };
 
-// Sidebar conversation list, newest activity first. `refetch` is called after a
-// turn so the list re-sorts and a newly created conversation appears.
+// Flattens the page cache into one list, deduping by id: offset paging can
+// briefly show a row on two pages when the list re-sorts between fetches.
+function flattenPages(pages: ConversationPage[]): ConversationListItem[] {
+  const seen = new Set<string>();
+  const items: ConversationListItem[] = [];
+  for (const page of pages) {
+    for (const item of page.items) {
+      if (!seen.has(item.id)) {
+        seen.add(item.id);
+        items.push(item);
+      }
+    }
+  }
+  return items;
+}
+
+// Sidebar conversation list, newest activity first, one page at a time.
+// Writes (turn / rename / delete) patch the cache directly via the
+// conversation-pages helpers instead of refetching — see use-chat / chat-page.
 export function useConversations(): UseConversationsResult {
-  const [data, setData] = useState<ConversationListItem[] | undefined>(
-    undefined
-  );
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [token, setToken] = useState(0);
-
-  useEffect(() => {
-    let cancelled = false;
-    listConversations()
-      .then(({ data, error }) => {
-        if (cancelled) return;
-        if (error) {
-          setError(error.message);
-          setData(undefined);
-        } else {
-          setError(null);
-          setData(data ?? []);
-        }
-      })
-      .finally(() => {
-        if (!cancelled) setIsLoading(false);
+  const query = useInfiniteQuery({
+    queryKey: aiChatKeys.conversations,
+    queryFn: async ({ pageParam }) => {
+      const { data, count, error } = await listConversations({
+        limit: CONVERSATIONS_PAGE_SIZE,
+        offset: pageParam,
       });
-    return () => {
-      cancelled = true;
-    };
-  }, [token]);
+      if (error || !data) {
+        throw error ?? new Error('Could not load conversations');
+      }
+      return { items: data, count: count ?? 0 } satisfies ConversationPage;
+    },
+    initialPageParam: 0,
+    getNextPageParam: (last, all) => {
+      const loaded = all.reduce((n, p) => n + p.items.length, 0);
+      return loaded < last.count ? loaded : undefined;
+    },
+    // Bounds the cost of refetch-all-pages on invalidate/window focus.
+    maxPages: 5,
+  });
 
-  const refetch = useCallback(() => setToken((t) => t + 1), []);
+  const data = useMemo(
+    () => (query.data ? flattenPages(query.data.pages) : undefined),
+    [query.data]
+  );
 
-  return { data, isLoading, error, refetch };
+  const refetch = () => void query.refetch();
+  const fetchNextPage = () => {
+    if (query.hasNextPage && !query.isFetchingNextPage) {
+      void query.fetchNextPage();
+    }
+  };
+
+  return {
+    data,
+    isLoading: query.isPending,
+    error: query.error ? query.error.message : null,
+    refetch,
+    fetchNextPage,
+    hasNextPage: query.hasNextPage,
+    isFetchingNextPage: query.isFetchingNextPage,
+  };
 }
