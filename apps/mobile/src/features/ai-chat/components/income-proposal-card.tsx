@@ -140,10 +140,7 @@ export function IncomeProposalCard({
         render={({ field }) => (
           <View>
             <FieldLabel>{t('proposal.source')}</FieldLabel>
-            <SourceSelect
-              value={field.value ?? ''}
-              onChange={field.onChange}
-            />
+            <SourceSelect value={field.value ?? ''} onChange={field.onChange} />
           </View>
         )}
       />

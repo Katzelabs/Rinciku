@@ -10,7 +10,10 @@ import type { CurrencyCode } from '@rinciku/core';
 import { useAuth } from '@/features/auth';
 
 import { deleteBudget, upsertBudget } from '@/features/budgets/api';
-import { BudgetMeter, StatusBadge } from '@/features/budgets/components/budget-meter';
+import {
+  BudgetMeter,
+  StatusBadge,
+} from '@/features/budgets/components/budget-meter';
 import { TargetDialog } from '@/features/budgets/components/target-dialog';
 import {
   useBudgets,

@@ -114,7 +114,9 @@ export function SourceSelect({ value, onChange }: SourceSelectProps) {
                         isSelected && { backgroundColor: c.muted },
                       ]}
                     >
-                      <Text style={[styles.optionText, { color: c.foreground }]}>
+                      <Text
+                        style={[styles.optionText, { color: c.foreground }]}
+                      >
                         {row.name}
                       </Text>
                       {isSelected ? (
@@ -133,7 +135,12 @@ export function SourceSelect({ value, onChange }: SourceSelectProps) {
 }
 
 const styles = StyleSheet.create({
-  triggerText: { flex: 1, fontFamily: Fonts.regular, fontSize: 16, paddingVertical: Spacing.three },
+  triggerText: {
+    flex: 1,
+    fontFamily: Fonts.regular,
+    fontSize: 16,
+    paddingVertical: Spacing.three,
+  },
   sheet: { flex: 1 },
   sheetHeader: {
     flexDirection: 'row',

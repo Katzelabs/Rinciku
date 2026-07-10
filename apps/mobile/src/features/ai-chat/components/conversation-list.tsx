@@ -51,7 +51,9 @@ function bucketFor(value: string | null): GroupLabel {
   if (!value) return 'older';
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return 'older';
-  const days = Math.round((startOfDay(new Date()) - startOfDay(date)) / MS_PER_DAY);
+  const days = Math.round(
+    (startOfDay(new Date()) - startOfDay(date)) / MS_PER_DAY
+  );
   if (days <= 0) return 'today';
   if (days === 1) return 'yesterday';
   if (days <= 7) return 'previous7Days';

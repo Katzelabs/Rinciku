@@ -27,8 +27,14 @@ function Dot({ delay }: { delay: number }) {
       delay,
       withRepeat(
         withSequence(
-          withTiming(1, { duration: DOT_DURATION, easing: Easing.inOut(Easing.ease) }),
-          withTiming(0, { duration: DOT_DURATION, easing: Easing.inOut(Easing.ease) })
+          withTiming(1, {
+            duration: DOT_DURATION,
+            easing: Easing.inOut(Easing.ease),
+          }),
+          withTiming(0, {
+            duration: DOT_DURATION,
+            easing: Easing.inOut(Easing.ease),
+          })
         ),
         -1
       )
@@ -40,7 +46,11 @@ function Dot({ delay }: { delay: number }) {
     transform: [{ translateY: v.value * -3 }],
   }));
 
-  return <Animated.View style={[styles.dot, { backgroundColor: c.mutedForeground }, style]} />;
+  return (
+    <Animated.View
+      style={[styles.dot, { backgroundColor: c.mutedForeground }, style]}
+    />
+  );
 }
 
 // Shown while a turn is in flight (one or more model round-trips + auto-executed

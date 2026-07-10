@@ -27,7 +27,9 @@ const SCROLL_DOWN_THRESHOLD = 240;
 // Stable list callbacks so rows don't re-create their render closure each turn
 // (paired with the `memo`'d ChatMessage).
 const keyExtractor = (item: ChatItem) => item.id;
-const renderItem = ({ item }: { item: ChatItem }) => <ChatMessage item={item} />;
+const renderItem = ({ item }: { item: ChatItem }) => (
+  <ChatMessage item={item} />
+);
 
 // The message list. Rendered upright (newest at the bottom) with LegendList's
 // chat mode — `alignItemsAtEnd` pins a short conversation to the bottom and
@@ -52,7 +54,8 @@ export function ChatThread({
 
   function handleScroll(e: NativeSyntheticEvent<NativeScrollEvent>) {
     const { contentOffset, contentSize, layoutMeasurement } = e.nativeEvent;
-    const distanceFromEnd = contentSize.height - layoutMeasurement.height - contentOffset.y;
+    const distanceFromEnd =
+      contentSize.height - layoutMeasurement.height - contentOffset.y;
     const next = distanceFromEnd > SCROLL_DOWN_THRESHOLD;
     setShowScrollDown((prev) => (prev === next ? prev : next));
   }
@@ -108,7 +111,10 @@ export function ChatThread({
         alignItemsAtEnd
         maintainScrollAtEnd
         ListFooterComponent={footer}
-        contentContainerStyle={{ paddingTop: topInset, paddingBottom: Spacing.five }}
+        contentContainerStyle={{
+          paddingTop: topInset,
+          paddingBottom: Spacing.five,
+        }}
         keyboardShouldPersistTaps='handled'
         keyboardDismissMode='interactive'
         showsVerticalScrollIndicator={false}

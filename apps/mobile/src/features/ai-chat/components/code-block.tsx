@@ -96,7 +96,9 @@ function tokenize(code: string, lang: string): Span[] {
           : null;
     if (!tree) return [{ text: code }];
     const out: Span[] = [];
-    (tree.children as HastNode[]).forEach((child) => collect(child, undefined, out));
+    (tree.children as HastNode[]).forEach((child) =>
+      collect(child, undefined, out)
+    );
     return out.length > 0 ? out : [{ text: code }];
   } catch {
     return [{ text: code }];
