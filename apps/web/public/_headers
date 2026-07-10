@@ -3,9 +3,13 @@
 # Prod-only — the Vite dev server ignores this file.
 #
 # CSP notes (all verified against the code):
-# - connect-src: only Supabase is called from the browser (the LLM goes through
-#   the ai-chat edge function — no openrouter.ai here). wss: covers realtime if
-#   ever enabled. Tighten *.supabase.co to the exact project ref at launch.
+# - connect-src: Supabase, plus open.er-api.com (FX rates, packages/core/fx.ts)
+#   and cloudflareinsights.com (Web Analytics beacon POST). The LLM goes
+#   through the ai-chat edge function — no openrouter.ai here. wss: covers
+#   realtime if ever enabled. Tighten *.supabase.co to the exact project ref
+#   at launch.
+# - script-src: static.cloudflareinsights.com — Cloudflare auto-injects the
+#   Web Analytics beacon script into served HTML.
 # - img-src: attachment previews use short-lived signed URLs on the Supabase
 #   host; data:/blob: cover local previews and AI-chat inline data: images.
 # - style-src 'unsafe-inline': required — Radix/shadcn set inline style attrs.
@@ -22,4 +26,4 @@
   Referrer-Policy: strict-origin-when-cross-origin
   X-Frame-Options: DENY
   Permissions-Policy: geolocation=(), microphone=(), camera=(), interest-cohort=()
-  Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://*.supabase.co; font-src 'self'; connect-src 'self' https://*.supabase.co wss://*.supabase.co; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'
+  Content-Security-Policy: default-src 'self'; script-src 'self' https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://*.supabase.co; font-src 'self'; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://open.er-api.com https://cloudflareinsights.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'
