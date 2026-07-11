@@ -1,5 +1,6 @@
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { corsHeaders } from '../_shared/cors.ts';
+import { getAuthedUser } from '../_shared/auth.ts';
 
 Deno.serve(async (req) => {
   const cors = corsHeaders(req);
@@ -7,32 +8,18 @@ Deno.serve(async (req) => {
     return new Response('ok', { headers: cors });
   }
 
-  // 1. Verify the caller is a signed-in Rinciku user. The anon client is scoped
-  //    to the caller's JWT so getUser() resolves to the account being deleted.
-  const authHeader = req.headers.get('Authorization');
-  if (!authHeader) {
+  // 1. Verify the caller is a signed-in Rinciku user. The JWT-scoped client
+  //    resolves getUser() to the account being deleted.
+  const authed = await getAuthedUser(req);
+  if (!authed) {
     return new Response('Unauthorized', { status: 401, headers: cors });
   }
-
-  const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-  const userClient = createClient(
-    supabaseUrl,
-    Deno.env.get('SUPABASE_ANON_KEY')!,
-    { global: { headers: { Authorization: authHeader } } }
-  );
-
-  const {
-    data: { user },
-    error: userErr,
-  } = await userClient.auth.getUser();
-  if (userErr || !user) {
-    return new Response('Unauthorized', { status: 401, headers: cors });
-  }
+  const { user } = authed;
 
   // 2. Delete the auth user with the service role. Every user-owned table FKs
   //    auth.users(id) ON DELETE CASCADE, so this removes all of their data too.
   const adminClient = createClient(
-    supabaseUrl,
+    Deno.env.get('SUPABASE_URL')!,
     Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
   );
 
