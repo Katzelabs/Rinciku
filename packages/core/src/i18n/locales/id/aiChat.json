@@ -101,6 +101,25 @@
       "tier": "tingkat"
     }
   },
+  "exportCard": {
+    "heading": "Ekspor transaksi",
+    "kinds": {
+      "expenses": "Pengeluaran",
+      "incomes": "Pemasukan",
+      "both": "Pengeluaran & pemasukan"
+    },
+    "range": "{{from}} – {{to}}",
+    "statsExpenses": "{{count}} pengeluaran · {{total}}",
+    "statsIncomes": "{{count}} pemasukan · {{total}}",
+    "statsUnavailable": "Tidak dapat menghitung jumlah baris — ekspor mungkin tetap berhasil.",
+    "empty": "Tidak ada transaksi dalam rentang ini — tidak ada yang diekspor.",
+    "format": "Format",
+    "formatExcel": "Excel (.xlsx)",
+    "formatCsv": "CSV",
+    "download": "Unduh",
+    "share": "Bagikan",
+    "preparing": "Menyiapkan…"
+  },
   "proposal": {
     "reviewExpense": "Tinjau pengeluaran",
     "reviewIncome": "Tinjau pemasukan",
@@ -154,6 +173,9 @@
     "somethingWrong": "Terjadi kesalahan.",
     "imageReadError": "Tidak dapat membaca gambar.",
     "sharedImage": "Membagikan gambar",
-    "done": "Selesai — {{summary}}"
+    "done": "Selesai — {{summary}}",
+    "exportDrafted": "Menyiapkan ekspor untuk kamu tinjau di bawah.",
+    "exportDone": "✓ Mengekspor {{files}}.",
+    "exportError": "Tidak dapat membuat ekspor. Silakan coba lagi."
   }
 }

@@ -12,11 +12,13 @@ import type {
 } from './types';
 
 // Bounds the read-tool loop so a misbehaving model can't spin forever. Each
-// step is one model round-trip; reads in between are auto-executed.
-export const MAX_STEPS = 6;
+// step is one model round-trip; reads in between are auto-executed. 8 gives
+// multi-tool analysis turns (overview → grouped query → compare_periods → …)
+// headroom without letting a loop run away.
+export const MAX_STEPS = 8;
 
 // Verbatim history sent per turn. 30 history + 1 new user message + up to
-// 2 × MAX_STEPS tool-loop messages = 43, safely under the edge function's
+// 2 × MAX_STEPS tool-loop messages = 47, safely under the edge function's
 // 60-message cap. Older context arrives via the running conversation summary
 // (params.summary). Always ≤ the thread page size, so the loaded tail suffices.
 export const HISTORY_WINDOW = 30;

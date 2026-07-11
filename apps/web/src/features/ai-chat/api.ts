@@ -30,6 +30,8 @@ export const {
   executeReadTool,
   applyProposedChange,
   resolveChangeTarget,
+  resolveExport,
+  buildExportFiles,
   runAgentTurn,
   confirmExpenseProposal,
   confirmIncomeProposal,
@@ -39,7 +41,9 @@ export const {
 export {
   extractText,
   parseProposal,
+  parseExport,
   summarizeProposal,
+  summarizeExport,
   conversationTitleFrom,
 } from '@rinciku/domain/ai-chat';
 export {

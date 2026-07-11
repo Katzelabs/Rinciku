@@ -23,4 +23,9 @@ export type {
   ChangeTarget,
   ChangeTargetRecord,
   ProposedChange,
+  ExportKind,
+  ExportFormat,
+  ExportStats,
+  ExportFile,
+  ProposedExport,
 } from '@rinciku/domain/ai-chat';

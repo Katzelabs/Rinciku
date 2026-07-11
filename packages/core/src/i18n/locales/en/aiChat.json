@@ -101,6 +101,25 @@
       "tier": "tier"
     }
   },
+  "exportCard": {
+    "heading": "Export transactions",
+    "kinds": {
+      "expenses": "Expenses",
+      "incomes": "Incomes",
+      "both": "Expenses & incomes"
+    },
+    "range": "{{from}} – {{to}}",
+    "statsExpenses": "{{count}} expenses · {{total}}",
+    "statsIncomes": "{{count}} incomes · {{total}}",
+    "statsUnavailable": "Could not count the matching rows — the export may still work.",
+    "empty": "No transactions in this range — nothing to export.",
+    "format": "Format",
+    "formatExcel": "Excel (.xlsx)",
+    "formatCsv": "CSV",
+    "download": "Download",
+    "share": "Share",
+    "preparing": "Preparing…"
+  },
   "proposal": {
     "reviewExpense": "Review expense",
     "reviewIncome": "Review income",
@@ -154,6 +173,9 @@
     "somethingWrong": "Something went wrong.",
     "imageReadError": "Could not read the image.",
     "sharedImage": "Shared an image",
-    "done": "Done — {{summary}}"
+    "done": "Done — {{summary}}",
+    "exportDrafted": "Prepared an export for you to review below.",
+    "exportDone": "✓ Exported {{files}}.",
+    "exportError": "Could not build the export. Please try again."
   }
 }

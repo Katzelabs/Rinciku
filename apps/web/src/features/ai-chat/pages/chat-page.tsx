@@ -130,11 +130,16 @@ export function ChatPage() {
           proposal={chat.proposal}
           pendingChange={chat.pendingChange}
           confirmingChange={chat.confirmingChange}
+          pendingExport={chat.pendingExport}
+          preparingExport={chat.preparingExport}
+          baseCurrency={chat.baseCurrency}
           onSendExample={chat.send}
           onProposalConfirmed={chat.noteConfirmation}
           onProposalCancel={chat.dismissProposal}
           onChangeConfirm={chat.confirmChange}
           onChangeCancel={chat.dismissChange}
+          onExportConfirm={chat.confirmExport}
+          onExportCancel={chat.dismissExport}
         />
 
         <MessageComposer

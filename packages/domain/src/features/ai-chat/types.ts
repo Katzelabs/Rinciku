@@ -176,3 +176,41 @@ export type ProposedChange = {
   // Set by resolveChangeTarget for update/delete; null for create.
   target?: ChangeTarget | null;
 };
+
+// --- Spreadsheet export (export_transactions) ------------------------------
+// A terminal (write-style) tool: the model only DESCRIBES the export; the file
+// is generated client-side after the user confirms a card. The spreadsheet is
+// never fed back into model context.
+
+export type ExportKind = 'expenses' | 'incomes' | 'both';
+
+export type ExportFormat = 'csv' | 'xlsx';
+
+// Ground-truth stats shown on the export card ("43 expenses · Rp 3.2jt"),
+// resolved from the DB (RLS-scoped) via resolveExport before the card renders.
+// null = the count lookup failed; the card degrades to "count unavailable" but
+// still allows export (nothing destructive here, unlike ChangeTarget).
+export type ExportStats = {
+  expenses: { count: number; total_base: number } | null;
+  incomes: { count: number; total_base: number } | null;
+};
+
+// Normalized output of an export_transactions tool call, enriched by
+// resolveExport with the resolved date window + row stats.
+export type ProposedExport = {
+  kind: ExportKind;
+  // Model-supplied YYYY-MM-DD bounds; null = default to the current cycle.
+  from: string | null;
+  to: string | null;
+  // Resolved by resolveExport (from/cycle), as YYYY-MM-DD; set before the card.
+  window?: { from: string; to: string } | null;
+  stats?: ExportStats | null;
+};
+
+// One generated file: CSV text or xlsx base64, per `kind`. Base64 is the
+// shared contract — web decodes it to a Blob, native writes it to a cache file.
+export type ExportFile = {
+  filename: string;
+  kind: ExportFormat;
+  data: string;
+};

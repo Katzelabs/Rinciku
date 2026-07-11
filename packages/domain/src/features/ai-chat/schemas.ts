@@ -103,3 +103,20 @@ export const changeToolInputSchema = z.object({
 });
 
 export type ChangeToolInput = z.infer<typeof changeToolInputSchema>;
+
+// Validates the raw `input` of an export_transactions tool call. Dates the
+// model mangles fall back to null (= current budget cycle) rather than
+// rejecting the whole proposal.
+const exportDate = z
+  .string()
+  .regex(/^\d{4}-\d{2}-\d{2}$/)
+  .nullish()
+  .catch(null);
+
+export const exportToolInputSchema = z.object({
+  kind: z.enum(['expenses', 'incomes', 'both']),
+  from: exportDate,
+  to: exportDate,
+});
+
+export type ExportToolInput = z.infer<typeof exportToolInputSchema>;

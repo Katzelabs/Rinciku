@@ -10,6 +10,7 @@ import { createCategoriesApi } from '../categories';
 import { createEssentialsApi } from '../essentials';
 import { createBudgetsApi } from '../budgets';
 import { createAgentTools } from './agent-tools';
+import { createExportTools } from './export';
 import {
   buildSummaryUserMessage,
   buildSystemPrompt,
@@ -114,14 +115,16 @@ export function createAiChatApi(db: TypedSupabaseClient) {
   const essentials = createEssentialsApi(db);
   const budgets = createBudgetsApi(db);
 
-  const { executeReadTool, applyProposedChange } = createAgentTools({
+  const apis = {
     dashboard,
     expenses,
     incomes,
     categories,
     essentials,
     budgets,
-  });
+  };
+  const { executeReadTool, applyProposedChange } = createAgentTools(apis);
+  const { resolveExport, buildExportFiles } = createExportTools(apis);
 
   // --- Conversations & messages (RLS-scoped) -------------------------------
 
@@ -639,6 +642,8 @@ export function createAiChatApi(db: TypedSupabaseClient) {
     executeReadTool,
     applyProposedChange,
     resolveChangeTarget,
+    resolveExport,
+    buildExportFiles,
     runAgentTurn,
     confirmExpenseProposal,
     confirmIncomeProposal,

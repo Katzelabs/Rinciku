@@ -13,6 +13,7 @@ import {
 import {
   appendMessage,
   buildBudgetContext,
+  buildExportFiles,
   chatImageUrls,
   conversationTitleFrom,
   createConversation,
@@ -23,9 +24,12 @@ import {
   getMessages,
   maybeSummarizeConversation,
   MESSAGES_PAGE_SIZE,
+  parseExport,
   parseProposal,
   resolveChangeTarget,
+  resolveExport,
   runAgentTurn,
+  summarizeExport,
   summarizeProposal,
   touchConversation,
   uploadChatImage,
@@ -33,13 +37,15 @@ import {
   type MessageCursor,
 } from '../api';
 import { applyProposedChange, parseChange } from '../agent-tools';
-import type { CurrencyCode } from '@rinciku/core';
+import { downloadCsv, type CurrencyCode } from '@rinciku/core';
 import type {
   ChatItem,
+  ExportFormat,
   ImageBlock,
   MessageParam,
   PendingAttachment,
   ProposedChange,
+  ProposedExport,
   ProposedTransaction,
   TextBlock,
   ToolChoice,
@@ -69,6 +75,10 @@ export type UseChatResult = {
   proposal: ActiveProposal | null;
   pendingChange: ProposedChange | null;
   confirmingChange: boolean;
+  pendingExport: ProposedExport | null;
+  preparingExport: boolean;
+  // The profile's base currency, for rendering export stats on the card.
+  baseCurrency: CurrencyCode;
   selectConversation: (id: string) => void;
   startNew: () => void;
   send: (text: string) => void;
@@ -76,6 +86,8 @@ export type UseChatResult = {
   dismissProposal: () => void;
   dismissChange: () => void;
   confirmChange: () => void;
+  dismissExport: () => void;
+  confirmExport: (format: ExportFormat) => void;
   noteConfirmation: (text: string) => void;
 };
 
@@ -119,6 +131,10 @@ export function useChat(options: UseChatOptions = {}): UseChatResult {
     null
   );
   const [confirmingChange, setConfirmingChange] = useState(false);
+  const [pendingExport, setPendingExport] = useState<ProposedExport | null>(
+    null
+  );
+  const [preparingExport, setPreparingExport] = useState(false);
 
   const currentIdRef = useRef<string | null>(null);
 
@@ -168,6 +184,7 @@ export function useChat(options: UseChatOptions = {}): UseChatResult {
     setActiveId(null);
     setProposal(null);
     setPendingChange(null);
+    setPendingExport(null);
     setError(null);
   }
 
@@ -179,6 +196,7 @@ export function useChat(options: UseChatOptions = {}): UseChatResult {
     setActiveId(id);
     setProposal(null);
     setPendingChange(null);
+    setPendingExport(null);
     setError(null);
   }
 
@@ -271,16 +289,20 @@ export function useChat(options: UseChatOptions = {}): UseChatResult {
       );
 
       // 5. Resolve the terminal response: a transaction proposal, a generic
-      //    change proposal, or a plain answer. Persist the assistant text.
+      //    change proposal, an export request, or a plain answer. Persist the
+      //    assistant text.
       const txProposal = parseProposal(res);
       const change = txProposal ? null : parseChange(res);
+      const exportProposal = txProposal || change ? null : parseExport(res);
       const text =
         extractText(res) ||
         (txProposal
           ? summarizeProposal(txProposal)
           : change
             ? change.summary
-            : i18n.t('aiChat:chat.genericResponse'));
+            : exportProposal
+              ? summarizeExport(exportProposal)
+              : i18n.t('aiChat:chat.genericResponse'));
 
       const assistantTempId = tempId();
       appendToThread(queryClient, convId, {
@@ -324,6 +346,10 @@ export function useChat(options: UseChatOptions = {}): UseChatResult {
         // Resolve the actual row the update/delete points at (RLS-scoped) so
         // the card shows ground truth, not just the model-written summary.
         setPendingChange(await resolveChangeTarget(change));
+      } else if (exportProposal) {
+        // Resolve the date window + real row counts so the card shows ground
+        // truth ("43 expenses · Rp 3.2jt"), not the model's claim.
+        setPendingExport(await resolveExport(exportProposal, profile));
       }
 
       // Re-sort the cached sidebar list in place (no refetch): the touched
@@ -413,6 +439,48 @@ export function useChat(options: UseChatOptions = {}): UseChatResult {
     setPendingChange(null);
   }
 
+  function dismissExport() {
+    setPendingExport(null);
+  }
+
+  // Generates and downloads the confirmed export. The heavy lifting (queries,
+  // CSV/xlsx building) lives in the domain layer; downloadXlsx is imported
+  // lazily alongside SheetJS so the library never loads until needed.
+  function confirmExport(format: ExportFormat) {
+    const exp = pendingExport;
+    if (!exp || !profile || preparingExport) return;
+    setPreparingExport(true);
+    setError(null);
+    void (async () => {
+      try {
+        const { data, error } = await buildExportFiles(exp, profile, format);
+        if (error || !data) {
+          throw error ?? new Error(i18n.t('aiChat:chat.exportError'));
+        }
+        for (const file of data) {
+          if (file.kind === 'csv') {
+            downloadCsv(file.filename, file.data);
+          } else {
+            const { downloadXlsx } = await import('@rinciku/core/xlsx');
+            downloadXlsx(file.filename, file.data);
+          }
+        }
+        setPendingExport(null);
+        noteConfirmation(
+          i18n.t('aiChat:chat.exportDone', {
+            files: data.map((f) => f.filename).join(', '),
+          })
+        );
+      } catch (err) {
+        setError(
+          err instanceof Error ? err.message : i18n.t('aiChat:chat.exportError')
+        );
+      } finally {
+        setPreparingExport(false);
+      }
+    })();
+  }
+
   // Applies a confirmed generic change (create/update/delete) via the owning
   // feature's api layer, then notes it in the thread. Read-auto / write-confirm:
   // nothing here runs until the user taps confirm.
@@ -489,6 +557,9 @@ export function useChat(options: UseChatOptions = {}): UseChatResult {
     proposal,
     pendingChange,
     confirmingChange,
+    pendingExport,
+    preparingExport,
+    baseCurrency: (profile?.base_currency ?? 'IDR') as CurrencyCode,
     selectConversation,
     startNew,
     send,
@@ -496,6 +567,8 @@ export function useChat(options: UseChatOptions = {}): UseChatResult {
     dismissProposal,
     dismissChange,
     confirmChange,
+    dismissExport,
+    confirmExport,
     noteConfirmation,
   };
 }

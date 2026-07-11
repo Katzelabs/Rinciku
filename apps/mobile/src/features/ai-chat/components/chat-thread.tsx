@@ -18,6 +18,7 @@ import type { ChatItem } from '../types';
 import { ActionProposalCard } from './action-proposal-card';
 import { ChatMessage } from './chat-message';
 import { ExpenseProposalCard } from './expense-proposal-card';
+import { ExportCard } from './export-card';
 import { IncomeProposalCard } from './income-proposal-card';
 import { TypingIndicator } from './typing-indicator';
 
@@ -101,6 +102,17 @@ export function ChatThread({
             confirming={chat.confirmingChange}
             onConfirm={chat.confirmChange}
             onCancel={chat.dismissChange}
+          />
+        </View>
+      ) : null}
+      {chat.pendingExport ? (
+        <View style={styles.card}>
+          <ExportCard
+            export_={chat.pendingExport}
+            baseCurrency={chat.baseCurrency}
+            preparing={chat.preparingExport}
+            onConfirm={chat.confirmExport}
+            onCancel={chat.dismissExport}
           />
         </View>
       ) : null}

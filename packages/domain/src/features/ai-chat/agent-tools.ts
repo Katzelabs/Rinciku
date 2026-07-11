@@ -202,12 +202,64 @@ export const READ_TOOLS: ToolDef[] = [
   {
     name: 'list_budgets',
     description:
-      'List per-category and per-tier budget targets for a calendar month, with target vs actual spend (base currency). Defaults to the current month.',
+      'List per-category and per-tier budget targets for a calendar month, with target vs actual spend (base currency). Defaults to the current month. Use this when you need budget ids for editing; for pure analysis prefer get_budget_vs_actual.',
     input_schema: {
       type: 'object',
       properties: {
         year: { type: 'number', description: 'Calendar year, e.g. 2026.' },
         month: { type: 'number', description: 'Month 1-12.' },
+      },
+    },
+  },
+  {
+    name: 'get_spend_trend',
+    description:
+      'Spending and income over time (bucketed by day/week/month depending on the range) to spot trends, spikes, and trajectory. Use for "is my spending going up?", "which week was expensive?".',
+    input_schema: {
+      type: 'object',
+      properties: {
+        ...DATE_RANGE_PROPS,
+        category_ids: {
+          type: 'array',
+          items: { type: 'string' },
+          description: 'Optional filter to specific category ids.',
+        },
+      },
+    },
+  },
+  {
+    name: 'get_budget_vs_actual',
+    description:
+      'Per-category budget target vs actual spend (base currency) for a date range. Use for "am I over budget?", "which categories are on pace to overshoot?". Analysis only — use list_budgets when you need budget ids for editing.',
+    input_schema: {
+      type: 'object',
+      properties: DATE_RANGE_PROPS,
+    },
+  },
+  {
+    name: 'compare_periods',
+    description:
+      'Compare spending and income between two periods, with per-category deltas computed for you (top movers). One call answers "am I spending more than last month, and on what?". Defaults: period A = the current budget cycle, period B = the equal-length period right before it.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        a_from: {
+          type: 'string',
+          description: 'Period A start (YYYY-MM-DD). Omit for current cycle.',
+        },
+        a_to: {
+          type: 'string',
+          description: 'Period A end (YYYY-MM-DD), inclusive.',
+        },
+        b_from: {
+          type: 'string',
+          description:
+            'Period B start (YYYY-MM-DD). Omit for the equal-length period immediately before A.',
+        },
+        b_to: {
+          type: 'string',
+          description: 'Period B end (YYYY-MM-DD), inclusive.',
+        },
       },
     },
   },
@@ -245,7 +297,7 @@ export const CHANGE_TOOL: ToolDef = {
       data: {
         type: 'object',
         description:
-          'Fields to set (create/update). Examples — category: {name, tier_id?, color?}; essential: {name, estimated_amount, currency, category_id?}; budget: {category_id|tier_id, period_year, period_month, amount, currency}; expense: {amount?, currency?, category_id?, occurred_at?, note?}.',
+          'Fields to set (create/update). Examples — category: {name, tier_id?, color?}; essential: {name, estimated_amount, currency, category_id?}; budget: {category_id|tier_id, period_year, period_month, amount, currency}; expense: {amount?, currency?, category_id?, occurred_at?, note?}. To copy ALL budgets from the previous month: entity "budget", action "create", data {copy_from_previous: true, period_year, period_month}.',
       },
       summary: {
         type: 'string',
@@ -257,11 +309,36 @@ export const CHANGE_TOOL: ToolDef = {
   },
 };
 
+// --- Terminal export tool (spreadsheet download / share) -------------------
+// Write-STYLE routing (ends the turn with a card) even though it mutates
+// nothing: feeding a spreadsheet back into model context as a tool_result
+// would waste tokens for data the model must not paraphrase anyway. The app
+// generates the file client-side after the user confirms.
+
+export const EXPORT_TOOL: ToolDef = {
+  name: 'export_transactions',
+  description:
+    "Prepare a spreadsheet (Excel/CSV) of the user's expenses and/or incomes for them to download or share. Use when the user asks to export, download, or get a spreadsheet/Excel/CSV of their transactions. Resolve month names to concrete dates using today's date. The file is generated on the user's device AFTER they confirm a card — never claim the export already happened.",
+  input_schema: {
+    type: 'object',
+    properties: {
+      kind: {
+        type: 'string',
+        enum: ['expenses', 'incomes', 'both'],
+        description: 'Which transactions to include.',
+      },
+      ...DATE_RANGE_PROPS,
+    },
+    required: ['kind'],
+  },
+};
+
 // All tools handed to the model each turn: create-transaction cards, the
-// generic change proposal, then the read tools.
+// generic change proposal, the export card, then the read tools.
 export const AGENT_TOOLS: ToolDef[] = [
   ...TRANSACTION_TOOLS,
   CHANGE_TOOL,
+  EXPORT_TOOL,
   ...READ_TOOLS,
 ];
 
@@ -270,6 +347,7 @@ const WRITE_TOOL_NAMES = new Set([
   'propose_expense',
   'propose_income',
   'propose_change',
+  'export_transactions',
 ]);
 
 export function isReadTool(name: string): boolean {
@@ -301,8 +379,8 @@ function isoDay(d: Date): string {
 
 // Resolves the [from, to] window from optional YYYY-MM-DD inputs, defaulting to
 // the user's current budget cycle. occurred_at is timestamptz, so we return ISO
-// timestamps spanning whole days.
-function resolveWindow(
+// timestamps spanning whole days. Exported for the export tool (export.ts).
+export function resolveWindow(
   profile: Profile,
   input: Input
 ): { startISO: string; endInclusiveISO: string; endExclusiveISO: string } {
@@ -691,6 +769,171 @@ export function createAgentTools(apis: AgentToolApis) {
         };
       }
 
+      case 'get_spend_trend': {
+        await ensureRates();
+        const win = resolveWindow(profile, input);
+        const { data, error } = await dashboard.getSpendTrend(profile, {
+          from: new Date(win.startISO),
+          to: new Date(win.endInclusiveISO),
+          categoryIds: Array.isArray(input.category_ids)
+            ? (input.category_ids as string[])
+            : [],
+        });
+        if (error) throw error;
+        return {
+          base_currency: base,
+          // Drop the display label — the bucket date is enough for reasoning.
+          points: (data ?? []).map((p) => ({
+            bucket: p.bucket,
+            spent: p.spent,
+            income: p.income,
+          })),
+        };
+      }
+
+      case 'get_budget_vs_actual': {
+        await ensureRates();
+        const win = resolveWindow(profile, input);
+        const { data, error } = await dashboard.getBudgetVsActual(profile, {
+          from: new Date(win.startISO),
+          to: new Date(win.endInclusiveISO),
+          categoryIds: [],
+        });
+        if (error) throw error;
+        return {
+          base_currency: base,
+          items: (data ?? []).map((item) => ({
+            name: item.name,
+            target: item.target,
+            actual: item.actual,
+          })),
+        };
+      }
+
+      case 'compare_periods': {
+        await ensureRates();
+        // Period A defaults to the current cycle; period B to the equal-length
+        // window immediately before it. Deltas are computed HERE so the model
+        // never does the arithmetic itself.
+        const winA = resolveWindow(profile, {
+          from: input.a_from,
+          to: input.a_to,
+        });
+        const aStart = new Date(winA.startISO);
+        const aEndExclusive = new Date(winA.endExclusiveISO);
+        let bStartISO: string;
+        let bEndInclusiveISO: string;
+        let bEndExclusiveISO: string;
+        if (
+          typeof input.b_from === 'string' ||
+          typeof input.b_to === 'string'
+        ) {
+          const winB = resolveWindow(profile, {
+            from: input.b_from,
+            to: input.b_to,
+          });
+          bStartISO = winB.startISO;
+          bEndInclusiveISO = winB.endInclusiveISO;
+          bEndExclusiveISO = winB.endExclusiveISO;
+        } else {
+          const len = aEndExclusive.getTime() - aStart.getTime();
+          bEndExclusiveISO = winA.startISO;
+          bEndInclusiveISO = new Date(aStart.getTime() - 1).toISOString();
+          bStartISO = new Date(aStart.getTime() - len).toISOString();
+        }
+
+        const sumBase = (
+          rows: { amount: unknown; currency: string }[] | null
+        ): number =>
+          round2(
+            (rows ?? []).reduce(
+              (s, r) =>
+                s +
+                convertToBase(
+                  Number(r.amount),
+                  r.currency as CurrencyCode,
+                  base
+                ).amount_base,
+              0
+            )
+          );
+
+        const windowStats = async (
+          fromISO: string,
+          toInclusiveISO: string,
+          toExclusiveISO: string
+        ) => {
+          const [expRes, incRes, actualsRes] = await Promise.all([
+            expenses.sumExpenses({ from: fromISO, to: toInclusiveISO }),
+            incomes.sumIncomes({ from: fromISO, to: toInclusiveISO }),
+            budgets.getBudgetActuals(
+              fromISO,
+              toExclusiveISO,
+              base,
+              getCurrentRates()
+            ),
+          ]);
+          if (expRes.error) throw expRes.error;
+          if (incRes.error) throw incRes.error;
+          if (actualsRes.error) throw actualsRes.error;
+          return {
+            spent: sumBase(expRes.data),
+            income: sumBase(incRes.data),
+            byCategory: actualsRes.data?.by_category ?? {},
+          };
+        };
+
+        const [a, b, catsRes] = await Promise.all([
+          windowStats(
+            winA.startISO,
+            winA.endInclusiveISO,
+            winA.endExclusiveISO
+          ),
+          windowStats(bStartISO, bEndInclusiveISO, bEndExclusiveISO),
+          categories.listCategories(),
+        ]);
+        const catName = new Map(
+          (catsRes.data ?? []).map((c) => [c.id, c.name])
+        );
+        const categoryIds = new Set([
+          ...Object.keys(a.byCategory),
+          ...Object.keys(b.byCategory),
+        ]);
+        const topMovers = [...categoryIds]
+          .map((id) => {
+            const aAmt = round2(a.byCategory[id] ?? 0);
+            const bAmt = round2(b.byCategory[id] ?? 0);
+            return {
+              category: catName.get(id) ?? '(unknown)',
+              a: aAmt,
+              b: bAmt,
+              delta: round2(aAmt - bAmt),
+            };
+          })
+          .filter((m) => m.delta !== 0)
+          .sort((x, y) => Math.abs(y.delta) - Math.abs(x.delta))
+          .slice(0, 8);
+
+        return {
+          base_currency: base,
+          a: {
+            from: isoDay(aStart),
+            to: isoDay(new Date(winA.endInclusiveISO)),
+            spent: a.spent,
+            income: a.income,
+          },
+          b: {
+            from: isoDay(new Date(bStartISO)),
+            to: isoDay(new Date(bEndInclusiveISO)),
+            spent: b.spent,
+            income: b.income,
+          },
+          delta_spent: round2(a.spent - b.spent),
+          delta_income: round2(a.income - b.income),
+          top_movers: topMovers,
+        };
+      }
+
       default:
         return { error: `Unknown tool: ${name}` };
     }
@@ -876,6 +1119,18 @@ export function createAgentTools(apis: AgentToolApis) {
           const now = new Date();
           const period_year = num(data.period_year) ?? now.getFullYear();
           const period_month = num(data.period_month) ?? now.getMonth() + 1;
+
+          // Special case: seed the period from the previous month's budgets
+          // ("set up this month like last month"). Signalled by a flag rather
+          // than a separate tool — the existing card handles it as a create.
+          if (action === 'create' && data.copy_from_previous === true) {
+            const { error } = await budgets.copyFromPreviousPeriod(
+              period_year,
+              period_month
+            );
+            return { error };
+          }
+
           const amount = num(data.amount);
           if (amount === undefined) throw new Error('Budget needs an amount.');
           const currency = asCurrency(data.currency, base);
