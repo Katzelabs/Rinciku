@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { StyleSheet, View } from 'react-native';
 
-import { AppText, Card } from '@/components/ui';
+import { AppText, Card, Skeleton } from '@/components/ui';
 import { Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
@@ -45,7 +45,7 @@ export function ChartCard({
       </View>
 
       {loading ? (
-        <View style={[styles.placeholder, { backgroundColor: c.muted }]} />
+        <Skeleton height={CHART_HEIGHT} radius={Radius.lg} />
       ) : empty ? (
         <View
           style={[styles.placeholder, styles.empty, { borderColor: c.border }]}

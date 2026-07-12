@@ -9,6 +9,7 @@ import { convertToBase, formatDate, type CurrencyCode } from '@rinciku/core';
 import { EmptyState } from '@/components/empty-state';
 import { Pagination } from '@/components/pagination';
 import { TransactionDayGroups } from '@/components/transaction-day-groups';
+import { TransactionListSkeleton } from '@/components/transaction-list-skeleton';
 import { AppText, Notice, ScreenScroll } from '@/components/ui';
 import { deleteExpense } from '@/features/expenses/api';
 import { ExpenseFilters } from '@/features/expenses/components/expense-filters';
@@ -123,7 +124,9 @@ export default function ExpensesListScreen() {
 
       {error ? <Notice tone='error'>{error}</Notice> : null}
 
-      {initialLoading ? null : expenses.length === 0 ? (
+      {initialLoading ? (
+        <TransactionListSkeleton />
+      ) : expenses.length === 0 ? (
         filtersActive ? (
           <EmptyState
             icon={SearchX}

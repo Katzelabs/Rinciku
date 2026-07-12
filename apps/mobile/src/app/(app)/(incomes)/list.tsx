@@ -9,6 +9,7 @@ import { convertToBase, formatDate, type CurrencyCode } from '@rinciku/core';
 import { EmptyState } from '@/components/empty-state';
 import { Pagination } from '@/components/pagination';
 import { TransactionDayGroups } from '@/components/transaction-day-groups';
+import { TransactionListSkeleton } from '@/components/transaction-list-skeleton';
 import { AppText, Notice, ScreenScroll } from '@/components/ui';
 import { deleteIncome } from '@/features/incomes/api';
 import { IncomeFilters } from '@/features/incomes/components/income-filters';
@@ -119,7 +120,9 @@ export default function IncomesListScreen() {
 
       {error ? <Notice tone='error'>{error}</Notice> : null}
 
-      {initialLoading ? null : incomes.length === 0 ? (
+      {initialLoading ? (
+        <TransactionListSkeleton />
+      ) : incomes.length === 0 ? (
         filtersActive ? (
           <EmptyState
             icon={SearchX}

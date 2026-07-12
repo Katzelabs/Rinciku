@@ -12,4 +12,5 @@ export { Card, Divider } from './card';
 export { Screen, ScreenScroll } from './screen';
 export { Sheet } from './sheet';
 export { SectionHeader } from './section-header';
+export { Skeleton } from './skeleton';
 export { Pill, IconButton } from './pill';
