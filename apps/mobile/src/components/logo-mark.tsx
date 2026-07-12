@@ -1,54 +1,37 @@
-import { StyleSheet, View } from 'react-native';
-
-import { useTheme } from '@/hooks/use-theme';
+import Svg, {
+  Circle,
+  Defs,
+  Path,
+  RadialGradient,
+  Rect,
+  Stop,
+} from 'react-native-svg';
 
 /**
- * Rinciku brand mark — three descending lines inside a rounded square.
- * Ported 1:1 from the web `LogoMark` (apps/web/src/components/shared/logo.tsx):
- * the square uses `primary` and the bars `primaryForeground`, so it tracks the
- * palette and flips automatically in dark mode. Built from plain Views (no SVG
- * dependency); proportions mirror the web 100×100 viewBox.
+ * Rinciku brand mark — lowercase “r.” (cream glyph + lime full stop) on the
+ * warm dark ground, mirroring the app icon 1:1 (same geometry as the web
+ * `LogoMark` in apps/web/src/components/shared/logo.tsx). Colors are fixed
+ * brand values rather than theme tokens so the mark reads identically on
+ * light and dark grounds, like the app icon does on a home screen.
  */
 export function LogoMark({ size = 44 }: { size?: number }) {
-  const c = useTheme();
-  const bar = (width: number, opacity: number) => (
-    <View
-      style={{
-        width: size * width,
-        height: size * 0.12,
-        borderRadius: size * 0.06,
-        borderCurve: 'continuous',
-        backgroundColor: c.primaryForeground,
-        opacity,
-      }}
-    />
-  );
-
   return (
-    <View
-      style={[
-        styles.square,
-        {
-          width: size,
-          height: size,
-          borderRadius: size * 0.25,
-          paddingLeft: size * 0.16,
-          gap: size * 0.06,
-          backgroundColor: c.primary,
-        },
-      ]}
-    >
-      {bar(0.68, 0.93)}
-      {bar(0.48, 0.65)}
-      {bar(0.3, 0.37)}
-    </View>
+    <Svg width={size} height={size} viewBox='0 0 100 100'>
+      <Defs>
+        <RadialGradient id='rk-mark-ground' cx='50%' cy='38%' r='80%'>
+          <Stop offset='0%' stopColor='#26261C' />
+          <Stop offset='100%' stopColor='#131310' />
+        </RadialGradient>
+      </Defs>
+      <Rect width='100' height='100' rx='25' fill='url(#rk-mark-ground)' />
+      <Path
+        d='M 41 68.4 V 46.9 Q 41 38.7 49.2 38.7 H 54.7'
+        fill='none'
+        stroke='#FBFBF9'
+        strokeWidth='10.2'
+        strokeLinecap='round'
+      />
+      <Circle cx='65.2' cy='63.3' r='5.1' fill='#9AE600' />
+    </Svg>
   );
 }
-
-const styles = StyleSheet.create({
-  square: {
-    alignItems: 'flex-start',
-    justifyContent: 'center',
-    borderCurve: 'continuous',
-  },
-});

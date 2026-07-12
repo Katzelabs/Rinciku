@@ -1,7 +1,7 @@
 ---
-// Rinciku brand lockup — mark (rounded square + three descending bars) + wordmark.
-// Brand colors are fixed (lime #9ae600 + forest green #35530e), ported from the
-// web app's LogoMark / favicon so it matches exactly.
+// Rinciku brand lockup — mark (lowercase “r.” on the warm dark ground) + wordmark.
+// Brand colors are fixed (cream #FBFBF9 glyph + lime #9AE600 full stop), ported
+// 1:1 from the web app's LogoMark / the mobile app icon so it matches exactly.
 interface Props {
   class?: string;
 }
@@ -10,38 +10,27 @@ const { class: className } = Astro.props;
 
 <span class:list={['logo', className]}>
   <svg
-    viewBox='0 0 32 32'
+    viewBox='0 0 100 100'
     width='28'
     height='28'
     role='img'
     aria-label='Rinciku'
     class='mark'
   >
-    <rect x='0' y='0' width='32' height='32' rx='8' fill='#9ae600'></rect>
-    <rect
-      x='5'
-      y='8'
-      width='22'
-      height='5'
-      rx='2.5'
-      fill='#35530e'
-      opacity='0.93'></rect>
-    <rect
-      x='5'
-      y='16'
-      width='15'
-      height='5'
-      rx='2.5'
-      fill='#35530e'
-      opacity='0.65'></rect>
-    <rect
-      x='5'
-      y='24'
-      width='9'
-      height='5'
-      rx='2.5'
-      fill='#35530e'
-      opacity='0.37'></rect>
+    <defs>
+      <radialGradient id='rk-mark-ground' cx='50%' cy='38%' r='80%'>
+        <stop offset='0%' stop-color='#26261C'></stop>
+        <stop offset='100%' stop-color='#131310'></stop>
+      </radialGradient>
+    </defs>
+    <rect width='100' height='100' rx='25' fill='url(#rk-mark-ground)'></rect>
+    <path
+      d='M 41 68.4 V 46.9 Q 41 38.7 49.2 38.7 H 54.7'
+      fill='none'
+      stroke='#FBFBF9'
+      stroke-width='10.2'
+      stroke-linecap='round'></path>
+    <circle cx='65.2' cy='63.3' r='5.1' fill='#9AE600'></circle>
   </svg>
   <span class='word'>Rinciku</span>
 </span>

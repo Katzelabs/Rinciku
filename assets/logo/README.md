@@ -1,5 +1,30 @@
 # Rinciku Logo Assets
 
+**This folder is the canonical source of the Rinciku brand mark.** Every other
+surface — the mobile app icon set, the web `LogoMark`, the landing `Logo.astro`,
+all favicons — is a copy/derivation of `mark.svg` and must match it exactly.
+
+The brand mark is a lowercase **“r.”** — cream glyph with a lime full stop — on
+the warm dark ground, inside a 25%-radius rounded square. The source geometry
+lives in a 100×100 viewBox (see `mark.svg`).
+
+## Changing the logo
+
+Always change **this folder first**, then propagate outward. The order:
+
+1. Update `mark.svg` (and the derived `favicon.svg` + lockup SVGs here).
+2. Port the same geometry into the three app components (they inline it —
+   see the list under **Usage in the app** below).
+3. Regenerate the mobile icon/splash set:
+   `node apps/mobile/scripts/generate-app-icons.mjs`
+   (update the glyph constants in that script to match `mark.svg` first).
+4. Copy `favicon.svg` over `apps/web/public/favicon.svg` and
+   `apps/landing/public/favicon.svg`; regenerate the landing PNGs
+   (`favicon-32`, `apple-touch-icon`, `icon-192/512`, `og.png`).
+
+Never edit a downstream copy on its own — that reintroduces the drift this
+setup exists to prevent.
+
 ## Files
 
 | File | Use |
@@ -12,20 +37,29 @@
 
 ## Colors
 
+Fixed brand values (from the app design tokens in
+`apps/mobile/src/constants/theme.ts`) — the mark does **not** theme-flip; like
+an app icon, it reads the same on light and dark grounds.
+
 | Token | Hex | Use |
 |---|---|---|
-| Brand green (dark) | `#4a7a42` | Mark background (light mode) |
-| Brand green (light) | `#5a9050` | Mark background (dark mode) |
-| Wordmark dark | `#2e4e28` | Wordmark on light backgrounds |
-| Wordmark light | `#d8eecc` | Wordmark on dark backgrounds |
-| Tagline | `#8aaa80` | Tagline on light backgrounds |
-| Tagline dark | `#5a8050` | Tagline on dark backgrounds |
+| Ground (gradient start) | `#26261C` | Mark background, radial gradient center |
+| Ground (gradient end) | `#131310` | Mark background, radial gradient edge |
+| Glyph cream | `#FBFBF9` | The “r” stroke |
+| Lime accent | `#9AE600` | The full stop (the theme `primary`) |
+| Wordmark ink | `#0C0C09` | Wordmark on light backgrounds |
+| Wordmark cream | `#FBFBF9` | Wordmark on dark backgrounds |
+| Tagline | `#6B6B5C` | Tagline on light backgrounds |
+| Tagline dark | `#A6A695` | Tagline on dark backgrounds |
 
 ## Usage in the app
 
-In-app surfaces (sidebar header, auth pages, favicon) render the mark through a
-**theme-aware** React component rather than these static SVGs, so the brand tracks
-the app palette and flips automatically in dark mode:
+In-app surfaces render the mark through components that carry the same fixed
+geometry and colors:
+
+- Web: `Logo` / `LogoMark` in `apps/web/src/components/shared/logo.tsx`
+- Mobile: `LogoMark` in `apps/mobile/src/components/logo-mark.tsx` (react-native-svg)
+- Landing: `Logo.astro` in `apps/landing/src/components/`
 
 ```tsx
 import { Logo, LogoMark } from '@/components/shared/logo'
@@ -34,11 +68,10 @@ import { Logo, LogoMark } from '@/components/shared/logo'
 <LogoMark />    // mark only
 ```
 
-`LogoMark` draws the square with `--primary` and the lines with `--primary-foreground`.
-The app's `--primary` is the theme **lime**, so the in-app mark and `public/favicon.svg`
-are lime + dark green — they intentionally differ from the **forest-green** files in this
-folder. The `logo/*.svg` files are the standalone brand assets (README headers, marketing,
-app-store listings) and keep the forest-green palette below.
+The mobile app icon set (`apps/mobile/assets/images/icon.png`,
+`ios-icon-*.png`, `android-icon-*.png`, `splash-icon*.png`) is generated from
+this mark; the iOS dark/tinted variants and the Android monochrome icon are the
+bare glyph without the ground.
 
 The favicon is already wired in `index.html`:
 
