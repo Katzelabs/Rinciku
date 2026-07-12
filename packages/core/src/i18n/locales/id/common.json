@@ -134,6 +134,8 @@
     "openDocument": "Buka dokumen",
     "open": "Buka",
     "openError": "Tidak dapat membuka lampiran.",
+    "share": "Bagikan lampiran",
+    "shareError": "Tidak dapat membagikan lampiran.",
     "unknownType": "Tipe tidak diketahui"
   },
   "scan": {

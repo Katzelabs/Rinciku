@@ -134,6 +134,8 @@
     "openDocument": "Open document",
     "open": "Open",
     "openError": "Could not open the attachment.",
+    "share": "Share attachment",
+    "shareError": "Could not share the attachment.",
     "unknownType": "Unknown type"
   },
   "scan": {

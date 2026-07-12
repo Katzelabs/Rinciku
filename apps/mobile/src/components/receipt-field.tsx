@@ -1,18 +1,22 @@
 import { useEffect, useState } from 'react';
 import { Image } from 'expo-image';
+import * as WebBrowser from 'expo-web-browser';
 import { FileText, ImagePlus, X } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
 import {
   ActionSheetIOS,
   ActivityIndicator,
   Alert,
-  Linking,
   Platform,
   Pressable,
   StyleSheet,
   View,
 } from 'react-native';
 
+import {
+  AttachmentViewer,
+  type SignedUrlResult,
+} from '@/components/attachment-viewer';
 import { AppText, FieldLabel } from '@/components/ui';
 import { Border, Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
@@ -25,20 +29,17 @@ import {
   type PickSource,
 } from '@/lib/attachments';
 
-type SignedUrlResult = Promise<{
-  data: { signedUrl: string } | null;
-  error: unknown;
-}>;
-
 export type ExistingAttachment = {
   storage_path: string;
   mime_type: string | null;
 };
 
 // Read-only attachment chip for detail screens. Shows the file name; tapping
-// resolves a short-lived signed URL (the buckets are private) and opens the file
-// in the browser. We deliberately don't render a thumbnail — a fixed-height row
-// keeps the layout stable and avoids a full-size image load.
+// resolves a fresh short-lived signed URL (the buckets are private) and opens
+// the file in the in-app browser sheet (SFSafariViewController / Custom Tab —
+// the user never leaves the app, and gets native PDF rendering + share for
+// free). We deliberately don't render a thumbnail — a fixed-height row keeps
+// the layout stable and avoids a full-size image load.
 export function ReceiptPreview({
   storagePath,
   getSignedUrl,
@@ -50,24 +51,19 @@ export function ReceiptPreview({
 }) {
   const c = useTheme();
   const { t } = useTranslation('common');
-  const [url, setUrl] = useState<string | null>(null);
 
-  useEffect(() => {
-    let cancelled = false;
-    void getSignedUrl(storagePath).then((res) => {
-      if (!cancelled) setUrl(res.data?.signedUrl ?? null);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [storagePath, getSignedUrl]);
-
-  function open() {
+  async function open() {
     if (onPress) return onPress();
-    if (url) {
-      void Linking.openURL(url).catch(() =>
-        Alert.alert(t('receiptPicker.openError'))
-      );
+    const res = await getSignedUrl(storagePath);
+    const url = res.data?.signedUrl;
+    if (!url) {
+      Alert.alert(t('receiptPicker.openError'));
+      return;
+    }
+    try {
+      await WebBrowser.openBrowserAsync(url);
+    } catch {
+      Alert.alert(t('receiptPicker.openError'));
     }
   }
 
@@ -75,7 +71,7 @@ export function ReceiptPreview({
     <Pressable
       accessibilityRole='button'
       accessibilityLabel={t('attachment.open')}
-      onPress={open}
+      onPress={() => void open()}
       style={({ pressed }) => [
         styles.chip,
         styles.chipShrink,
@@ -97,8 +93,8 @@ export function ReceiptPreview({
 
 // Bounded image preview for detail screens. Resolves a signed URL and renders
 // the receipt at a fixed height (contain, so the whole receipt is visible);
-// tapping opens it full-size in the browser. Non-image attachments (PDFs) and
-// load failures fall back to the openable file-name chip.
+// tapping opens the in-app fullscreen viewer (zoom + share/download). Non-image
+// attachments (PDFs) and load failures fall back to the openable file-name chip.
 export function ReceiptImage({
   storagePath,
   mimeType,
@@ -112,6 +108,7 @@ export function ReceiptImage({
   const { t } = useTranslation('common');
   const [url, setUrl] = useState<string | null>(null);
   const [failed, setFailed] = useState(false);
+  const [viewerOpen, setViewerOpen] = useState(false);
 
   const isImage = !!mimeType && mimeType.startsWith('image/');
 
@@ -134,35 +131,37 @@ export function ReceiptImage({
     );
   }
 
-  function open() {
-    if (url) {
-      void Linking.openURL(url).catch(() =>
-        Alert.alert(t('receiptPicker.openError'))
-      );
-    }
-  }
-
   return (
-    <Pressable
-      accessibilityRole='imagebutton'
-      accessibilityLabel={t('attachment.openFullSize')}
-      onPress={open}
-      style={[
-        styles.imageWrap,
-        { borderColor: c.border, backgroundColor: c.muted },
-      ]}
-    >
-      {url ? (
-        <Image
-          source={{ uri: url }}
-          style={styles.image}
-          contentFit='contain'
-          onError={() => setFailed(true)}
-        />
-      ) : (
-        <ActivityIndicator color={c.mutedForeground} />
-      )}
-    </Pressable>
+    <>
+      <Pressable
+        accessibilityRole='imagebutton'
+        accessibilityLabel={t('attachment.openFullSize')}
+        onPress={() => setViewerOpen(true)}
+        style={[
+          styles.imageWrap,
+          { borderColor: c.border, backgroundColor: c.muted },
+        ]}
+      >
+        {url ? (
+          <Image
+            source={{ uri: url }}
+            style={styles.image}
+            contentFit='contain'
+            onError={() => setFailed(true)}
+          />
+        ) : (
+          <ActivityIndicator color={c.mutedForeground} />
+        )}
+      </Pressable>
+
+      <AttachmentViewer
+        visible={viewerOpen}
+        onClose={() => setViewerOpen(false)}
+        storagePath={storagePath}
+        mimeType={mimeType}
+        getSignedUrl={getSignedUrl}
+      />
+    </>
   );
 }
 
