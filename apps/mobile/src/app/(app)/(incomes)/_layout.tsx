@@ -1,6 +1,7 @@
 import { Stack } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 
+import { useStackScreenOptions } from '@/hooks/use-stack-screen-options';
 import { resetStackOnTabBlur } from '@/lib/navigation';
 
 export default function IncomesLayout() {
@@ -8,10 +9,7 @@ export default function IncomesLayout() {
   return (
     <Stack
       screenListeners={resetStackOnTabBlur}
-      screenOptions={{
-        headerLargeTitle: true,
-        headerBackButtonDisplayMode: 'minimal',
-      }}
+      screenOptions={useStackScreenOptions()}
     >
       <Stack.Screen name='index' options={{ title: t('nav.items.incomes') }} />
       <Stack.Screen name='list' options={{ title: t('incomes:list.title') }} />

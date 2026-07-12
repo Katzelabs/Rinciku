@@ -24,6 +24,7 @@ import type { ListPeriod } from '@/features/expenses/components/expense-filters'
 import { useExpenses } from '@/features/expenses/hooks/use-expenses';
 import { useTheme } from '@/hooks/use-theme';
 import { headerIcon } from '@/lib/header-icons';
+import { headerItems } from '@/lib/header-items';
 import { setPendingScan } from '@/lib/pending-scan';
 import { promptScanImage } from '@/lib/scan';
 
@@ -119,7 +120,7 @@ export default function ExpensesScreen() {
     >
       <Stack.Screen
         options={{
-          unstable_headerRightItems: () => [
+          ...headerItems('right', () => [
             {
               label: t('common:nav.scanReceipt'),
               type: 'button',
@@ -136,7 +137,7 @@ export default function ExpensesScreen() {
               icon: headerIcon.add,
               onPress: () => router.push('/(app)/(expenses)/new'),
             },
-          ],
+          ]),
         }}
       />
 

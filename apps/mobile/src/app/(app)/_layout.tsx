@@ -2,8 +2,11 @@ import MaterialDesignIcons from '@react-native-vector-icons/material-design-icon
 import { useSegments } from 'expo-router';
 import { NativeTabs } from 'expo-router/unstable-native-tabs';
 import { useTranslation } from 'react-i18next';
+import { Platform } from 'react-native';
 
+import { Fonts } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import { withAlpha } from '@/lib/color';
 
 // The tab bar's display order comes from the <NativeTabs.Trigger> order below,
 // but the *initially focused* tab on cold start is the first route group by
@@ -67,14 +70,51 @@ export default function AppLayout() {
   // `useSegments()` keeps the route-group names (e.g. `(z-ai)`) that
   // `usePathname` strips; the cast loosens the typed-routes union, which doesn't
   // model groups.
+  //
+  // iOS-ONLY: on Android, react-native-screens sets the hidden bar to GONE but
+  // leaves its frame in the Fabric shadow tree, so the bar's ~80dp strip keeps
+  // swallowing every React touch — the AI composer's send/attach buttons sit
+  // exactly there and go dead (TextInput still works because native EditText
+  // dispatch skips GONE views). Until that's fixed upstream, Android keeps the
+  // Material bar visible on the AI tab and the composer pads above it.
   const segments = useSegments() as string[];
-  const aiFocused = segments.includes('(z-ai)');
+  const aiFocused = segments.includes('(z-ai)') && Platform.OS === 'ios';
+
+  // Android's Material 3 bar needs explicit theming: `auto` label visibility
+  // hides unselected labels at 4+ destinations (we have 5), and the selected
+  // item uses foreground ink over a translucent lime indicator — lime stays an
+  // accent wash, never a fill. `backgroundColor`/`iconColor`/`labelStyle` are
+  // cross-platform props, so the whole object is gated to keep the iOS Liquid
+  // Glass bar untouched (`tintColor` alone drives iOS).
+  const androidTabBar =
+    Platform.OS === 'android'
+      ? ({
+          labelVisibilityMode: 'labeled',
+          backgroundColor: c.card,
+          indicatorColor: withAlpha(c.primary, '33'),
+          rippleColor: withAlpha(c.primary, '1F'),
+          iconColor: { default: c.mutedForeground, selected: c.foreground },
+          labelStyle: {
+            default: {
+              fontFamily: Fonts.medium,
+              fontSize: 12,
+              color: c.mutedForeground,
+            },
+            selected: {
+              fontFamily: Fonts.semibold,
+              fontSize: 12,
+              color: c.foreground,
+            },
+          },
+        } as const)
+      : null;
 
   return (
     <NativeTabs
       hidden={aiFocused}
       minimizeBehavior='onScrollDown'
       tintColor={c.primary}
+      {...androidTabBar}
     >
       <NativeTabs.Trigger name='(dashboard)'>
         <NativeTabs.Trigger.Icon src={icons.home} renderingMode='template' />

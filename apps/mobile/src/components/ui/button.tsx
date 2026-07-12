@@ -28,8 +28,8 @@ interface ButtonProps {
  * Note: a native SwiftUI button was tried here but couldn't be made to stretch
  * full-width dependably via the @expo/ui `Host` (it either stayed compact or
  * grew vertically), so this stays RN. Native SwiftUI is used for the compact
- * controls where it's reliable — `HeaderAction`, `Segmented`, and the
- * `systemImage` path of `Pill`/`IconButton`.
+ * controls where it's reliable — `Segmented` and the `systemImage` path of
+ * `Pill`/`IconButton`.
  */
 export function Button({
   label,

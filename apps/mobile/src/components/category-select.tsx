@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import {
   ActivityIndicator,
   Modal,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -111,11 +112,23 @@ export function CategorySelect({
       <Modal
         visible={open}
         animationType='slide'
+        // pageSheet is iOS-only; Android renders fullscreen — the translucent
+        // flags avoid an opaque bar block and the header inset clears the
+        // status bar (same treatment as the ui/Sheet primitive).
         presentationStyle='pageSheet'
+        statusBarTranslucent
+        navigationBarTranslucent
         onRequestClose={() => setOpen(false)}
       >
         <View style={[styles.sheet, { backgroundColor: c.background }]}>
-          <View style={styles.sheetHeader}>
+          <View
+            style={[
+              styles.sheetHeader,
+              Platform.OS === 'android' && {
+                paddingTop: insets.top + Spacing.two,
+              },
+            ]}
+          >
             <Text style={[styles.sheetTitle, { color: c.foreground }]}>
               {placeholder ?? t('tier.selectCategory', 'Pick a category')}
             </Text>

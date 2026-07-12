@@ -116,12 +116,17 @@ export function PeriodPicker({
 }
 
 const styles = StyleSheet.create({
+  // The pill is transparent, so generous padding grows the touch target
+  // invisibly — the MenuView wrapper owns tap handling, and hitSlop on this
+  // plain View child isn't reliable, so the padding IS the hit area.
   pill: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     gap: Spacing.one,
-    paddingHorizontal: Spacing.two,
-    paddingVertical: Spacing.half,
+    paddingHorizontal: Spacing.three,
+    paddingVertical: Spacing.two,
+    minHeight: 40,
     borderRadius: Radius.pill,
     borderCurve: 'continuous',
   },

@@ -62,14 +62,27 @@ export function Sheet({
     <Modal
       visible={visible}
       animationType='slide'
+      // pageSheet is iOS-only; Android falls back to a fullscreen dialog. The
+      // translucent flags let it draw edge-to-edge there (no opaque bar block
+      // over the status/navigation areas) — the header's top inset below keeps
+      // content clear of the status bar.
       presentationStyle='pageSheet'
+      statusBarTranslucent
+      navigationBarTranslucent
       onRequestClose={onClose}
     >
       <KeyboardAvoidingView
         style={[styles.sheet, { backgroundColor: c.background }]}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
-        <View style={styles.header}>
+        <View
+          style={[
+            styles.header,
+            Platform.OS === 'android' && {
+              paddingTop: insets.top + Spacing.two,
+            },
+          ]}
+        >
           <AppText variant='sheetTitle'>{title}</AppText>
           <View style={styles.headerActions}>
             {headerRight}

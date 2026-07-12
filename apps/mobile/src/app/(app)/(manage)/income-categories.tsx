@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { ScreenScroll } from '@/components/ui';
 import { Spacing } from '@/constants/theme';
 import { headerIcon } from '@/lib/header-icons';
+import { headerItems } from '@/lib/header-items';
 import { useTheme } from '@/hooks/use-theme';
 import {
   IncomeSourcesManager,
@@ -23,7 +24,7 @@ export default function IncomeCategoriesScreen() {
     <ScreenScroll gap={Spacing.four}>
       <Stack.Screen
         options={{
-          unstable_headerRightItems: () => [
+          ...headerItems('right', () => [
             {
               label: t('categories.addCategory'),
               type: 'button',
@@ -33,7 +34,7 @@ export default function IncomeCategoriesScreen() {
               sharesBackground: false,
               onPress: () => managerRef.current?.openCreate(),
             },
-          ],
+          ]),
         }}
       />
       <IncomeSourcesManager ref={managerRef} />

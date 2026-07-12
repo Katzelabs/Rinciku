@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { ScreenScroll } from '@/components/ui';
 import { Spacing } from '@/constants/theme';
 import { headerIcon } from '@/lib/header-icons';
+import { headerItems } from '@/lib/header-items';
 import { useTheme } from '@/hooks/use-theme';
 import {
   EssentialsManager,
@@ -20,7 +21,7 @@ export default function EssentialsScreen() {
     <ScreenScroll gap={Spacing.four}>
       <Stack.Screen
         options={{
-          unstable_headerRightItems: () => [
+          ...headerItems('right', () => [
             {
               label: t('common:actions.add'),
               type: 'button',
@@ -30,7 +31,7 @@ export default function EssentialsScreen() {
               sharesBackground: false,
               onPress: () => managerRef.current?.openCreate(),
             },
-          ],
+          ]),
         }}
       />
       <EssentialsManager ref={managerRef} inlineAdd={false} />

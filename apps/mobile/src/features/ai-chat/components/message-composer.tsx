@@ -16,7 +16,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { IconButton } from '@/components/ui';
-import { Border, Radius, Spacing } from '@/constants/theme';
+import { Border, BottomTabInset, Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { pickImage, type PickedImage, type PickSource } from '../lib/image';
 
@@ -43,10 +43,14 @@ export function MessageComposer({
 
   const canSend = !disabled && (staged !== null || text.trim().length > 0);
 
-  // The AI screen hides the tab bar, so when the keyboard is closed we only
-  // need to clear the bottom safe area (home indicator). When it's open the
-  // KeyboardAvoidingView already lifts the composer, so collapse the padding to
-  // avoid a gap above the keyboard.
+  // iOS hides the tab bar on the AI screen, so when the keyboard is closed we
+  // only need to clear the bottom safe area (home indicator); when it's open
+  // the KeyboardAvoidingView already lifts the composer, so collapse the
+  // padding to avoid a gap above the keyboard. Android keeps the Material tab
+  // bar visible (hiding it leaves a touch-stealing ghost strip — see the
+  // (app)/_layout.tsx comment), so the composer always clears the bar height
+  // there; the bar stays bottom-docked in the window, riding above the
+  // keyboard when it opens.
   useEffect(() => {
     const showEvent =
       Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
@@ -64,9 +68,10 @@ export function MessageComposer({
     };
   }, []);
 
+  const barClearance = Platform.OS === 'android' ? BottomTabInset : 0;
   const paddingBottom = keyboardVisible
-    ? Spacing.two
-    : Math.max(insets.bottom, Spacing.two);
+    ? Spacing.two + barClearance
+    : Math.max(insets.bottom, Spacing.two) + barClearance;
 
   function handleSend() {
     if (!canSend) return;

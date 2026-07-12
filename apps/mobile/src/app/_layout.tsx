@@ -15,6 +15,7 @@ import {
 } from '@expo-google-fonts/figtree';
 import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
+import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
@@ -113,6 +114,13 @@ function NavChrome({ children }: { children: ReactNode }) {
   const scheme = useColorScheme();
   return (
     <ThemeProvider value={scheme === 'dark' ? navDark : navLight}>
+      {/* Icon color for the edge-to-edge status bar (dark-on-light /
+          light-on-dark). Without this Android leaves the default light icons,
+          which vanish over the light header. `auto` resolves through
+          useColorScheme, so it tracks the in-app theme override (which goes
+          through Appearance.setColorScheme) as well as the OS. Screens can
+          still override locally (the attachment viewer forces `light`). */}
+      <StatusBar style='auto' />
       {children}
     </ThemeProvider>
   );

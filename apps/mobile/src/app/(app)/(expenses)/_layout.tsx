@@ -1,6 +1,7 @@
 import { Stack } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 
+import { useStackScreenOptions } from '@/hooks/use-stack-screen-options';
 import { resetStackOnTabBlur } from '@/lib/navigation';
 
 export default function ExpensesLayout() {
@@ -8,10 +9,7 @@ export default function ExpensesLayout() {
   return (
     <Stack
       screenListeners={resetStackOnTabBlur}
-      screenOptions={{
-        headerLargeTitle: true,
-        headerBackButtonDisplayMode: 'minimal',
-      }}
+      screenOptions={useStackScreenOptions()}
     >
       <Stack.Screen
         name='index'

@@ -24,6 +24,7 @@ import { TopCategories } from '@/features/dashboard/components/top-categories';
 import { useAnalytics } from '@/features/dashboard/hooks/use-analytics';
 import { useMonthlySummary } from '@/features/dashboard/hooks/use-monthly-summary';
 import { useTheme } from '@/hooks/use-theme';
+import { headerItems } from '@/lib/header-items';
 
 const PERIOD_LABEL_KEY: Record<PeriodPreset, string> = {
   today: 'period.today',
@@ -102,7 +103,7 @@ export default function DashboardScreen() {
     >
       <Stack.Screen
         options={{
-          unstable_headerLeftItems: () => [
+          ...headerItems('left', () => [
             {
               type: 'custom',
               hidesSharedBackground: true,
@@ -113,7 +114,7 @@ export default function DashboardScreen() {
                 />
               ),
             },
-          ],
+          ]),
           headerRight: () => (
             <PeriodPicker
               period={period}

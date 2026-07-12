@@ -15,6 +15,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { Screen } from '@/components/ui';
 import { Spacing } from '@/constants/theme';
 import { headerIcon } from '@/lib/header-icons';
+import { headerItems } from '@/lib/header-items';
 import { deleteConversation, touchConversation } from '@/features/ai-chat/api';
 import {
   patchConversationInCache,
@@ -103,7 +104,7 @@ export default function AiScreen() {
       <Stack.Screen
         options={{
           headerTitle: '',
-          unstable_headerLeftItems: () => [
+          ...headerItems('left', () => [
             {
               label: t('common:nav.items.home'),
               accessibilityLabel: t('common:nav.items.home'),
@@ -111,8 +112,8 @@ export default function AiScreen() {
               icon: headerIcon.home,
               onPress: () => router.navigate('/(app)/(dashboard)'),
             },
-          ],
-          unstable_headerRightItems: () => [
+          ]),
+          ...headerItems('right', () => [
             {
               label: t('header.openHistory'),
               accessibilityLabel: t('header.openHistory'),
@@ -127,7 +128,7 @@ export default function AiScreen() {
               icon: headerIcon.add,
               onPress: chat.startNew,
             },
-          ],
+          ]),
         }}
       />
       <KeyboardAvoidingView
