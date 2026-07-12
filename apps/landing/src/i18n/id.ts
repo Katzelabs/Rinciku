@@ -4,7 +4,7 @@ export const id: Copy = {
   meta: {
     title: 'Rinciku — Tahu kamu mampu beli atau nggak, sebelum belanja',
     description:
-      'Teman keuangan AI untuk penghasilan campur IDR/USD. Catat pengeluaran lewat chat atau foto, lihat budget aslimu, lalu tanya AI “boleh nggak aku beli ini?” — berdasar angka nyatamu.',
+      'Teman keuangan AI untuk penghasilan IDR/USD. Catat pengeluaran lewat chat atau foto, lihat budget aslimu, dan tanya AI “boleh beli ini?” dari angka nyatamu.',
     ogAlt:
       'Rinciku — keuangan pribadi bertenaga AI untuk penghasilan multi-mata uang',
   },

@@ -4,7 +4,7 @@ export const en: Copy = {
   meta: {
     title: 'Rinciku — Know if you can afford it, before you buy',
     description:
-      'An AI money companion for mixed IDR/USD income. Log expenses by chat or photo, see your real budget, and ask the AI “can I buy this?” — grounded in your actual numbers.',
+      'An AI money companion for mixed IDR/USD income. Log expenses by chat or photo, see your real budget, and ask “can I buy this?” — grounded in your numbers.',
     ogAlt: 'Rinciku — AI-powered personal finance for mixed-currency income',
   },
   nav: {
