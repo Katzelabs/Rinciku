@@ -5,7 +5,23 @@ interface Props {
 }
 const { copy } = Astro.props;
 const { faq } = copy;
+
+const faqStructuredData = {
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  mainEntity: faq.items.map((item) => ({
+    '@type': 'Question',
+    name: item.q,
+    acceptedAnswer: { '@type': 'Answer', text: item.a },
+  })),
+};
 ---
+
+<script
+  type='application/ld+json'
+  set:html={JSON.stringify(faqStructuredData)}
+  is:inline
+/>
 
 <section id='faq' class='section'>
   <div class='inner'>
