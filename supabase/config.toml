@@ -238,14 +238,16 @@ token_verifications = 30
 web3 = 30
 
 # Configure one of the supported captcha providers: `hcaptcha`, `turnstile`.
-# TODO(launch-blocker): enable with Turnstile keys before public launch.
-# The WEB client is already wired (auth forms render the widget when
-# VITE_TURNSTILE_SITE_KEY is set and pass captchaToken through the domain auth
-# api). DO NOT enable this until the MOBILE app also serves a Turnstile widget
-# — captcha applies to signup/signin/recover/resend for ALL clients, so
-# enabling it now would break mobile sign-in.
+# DECISION 2026-07-12 (ClickUp 86ey87u65): Turnstile is WEB-ONLY at launch as a
+# client-side gate — the web auth forms render the widget when
+# VITE_TURNSTILE_SITE_KEY is set and block submit until solved, but server-side
+# enforcement stays OFF because it applies to signup/signin/recover/resend for
+# ALL clients and the mobile app serves no widget. Enabling this would break
+# mobile sign-in. Flip to true only after the mobile Turnstile task ships
+# (post-launch follow-up task in ClickUp) and SUPABASE_AUTH_CAPTCHA_SECRET is
+# set. Until then, [auth.rate_limit] above is the abuse backstop.
 [auth.captcha]
-enabled = true
+enabled = false
 provider = "turnstile"
 secret = "env(SUPABASE_AUTH_CAPTCHA_SECRET)"
 
