@@ -136,6 +136,13 @@
     "openError": "Could not open the attachment.",
     "unknownType": "Unknown type"
   },
+  "scan": {
+    "analyzing": "Reading your receipt…",
+    "analyzingHint": "The AI is extracting the amount, merchant, and date.",
+    "prefilled": "Filled in from your photo — check the values before saving.",
+    "failed": "Couldn't read a transaction from that photo. You can fill it in manually or try again.",
+    "retry": "Try again"
+  },
   "receiptPicker": {
     "add": "Add receipt",
     "change": "Change",

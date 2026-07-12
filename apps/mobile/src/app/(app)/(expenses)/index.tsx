@@ -24,6 +24,8 @@ import type { ListPeriod } from '@/features/expenses/components/expense-filters'
 import { useExpenses } from '@/features/expenses/hooks/use-expenses';
 import { useTheme } from '@/hooks/use-theme';
 import { headerIcon } from '@/lib/header-icons';
+import { setPendingScan } from '@/lib/pending-scan';
+import { promptScanImage } from '@/lib/scan';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 // How many recent expenses to preview on the overview before "See all".
@@ -88,6 +90,19 @@ export default function ExpensesScreen() {
     refetch();
   }, [refetch]);
 
+  // Scan-to-prefill: pick the photo here (stable screen, no modal-transition
+  // race), stash it in the pending-scan holder — base64 can't ride route
+  // params — and open the new-expense modal in scan mode.
+  const onScan = useCallback(async () => {
+    const asset = await promptScanImage(t);
+    if (!asset) return;
+    setPendingScan(asset);
+    router.push({
+      pathname: '/(app)/(expenses)/new',
+      params: { scan: '1' },
+    });
+  }, [router, t]);
+
   const days = Math.max(
     1,
     Math.round((filters.to.getTime() - filters.from.getTime()) / DAY_MS) + 1
@@ -110,7 +125,7 @@ export default function ExpensesScreen() {
               type: 'button',
               sharesBackground: false,
               icon: headerIcon.camera,
-              onPress: () => router.push('/(app)/(expenses)/new'),
+              onPress: () => void onScan(),
             },
             {
               label: `+ ${t('common:actions.add')}`,

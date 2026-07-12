@@ -22,6 +22,7 @@ export const {
   maybeSummarizeConversation,
   buildBudgetContext,
   sendChat,
+  extractTransactionFromImage,
   executeReadTool,
   applyProposedChange,
   resolveChangeTarget,

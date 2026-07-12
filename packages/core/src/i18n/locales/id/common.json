@@ -136,6 +136,13 @@
     "openError": "Tidak dapat membuka lampiran.",
     "unknownType": "Tipe tidak diketahui"
   },
+  "scan": {
+    "analyzing": "Membaca strukmu…",
+    "analyzingHint": "AI sedang mengekstrak jumlah, merchant, dan tanggal.",
+    "prefilled": "Terisi dari fotomu — periksa nilainya sebelum menyimpan.",
+    "failed": "Tidak dapat membaca transaksi dari foto itu. Kamu bisa mengisi manual atau coba lagi.",
+    "retry": "Coba lagi"
+  },
   "receiptPicker": {
     "add": "Tambah struk",
     "change": "Ganti",

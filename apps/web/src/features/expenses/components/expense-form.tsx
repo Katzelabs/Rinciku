@@ -33,6 +33,7 @@ import { cn } from '@/lib/utils';
 import { formatDate } from '@rinciku/core';
 import { defineAttachmentConfig } from '@rinciku/core';
 import type { CurrencyCode } from '@rinciku/core';
+import type { ScanExtractionMeta } from '@rinciku/domain/ai-chat';
 import { CurrencyAmountInput } from '@/components/shared/currency-amount-input';
 import { useAuth } from '@/features/auth';
 import {
@@ -74,6 +75,12 @@ type ExpenseFormProps = {
   mode: 'create' | 'edit';
   defaultValues?: Partial<ExpenseInput> & { id?: string };
   existingAttachment?: ExistingAttachment | null;
+  // Scan-to-prefill: a file staged before the form opened, plus the AI
+  // extraction it came from. While the user keeps this exact file, the save
+  // is recorded as source 'image' and the extraction metadata lands on the
+  // attachment row; replacing/removing it falls back to a plain manual entry.
+  initialAttachment?: File | null;
+  extraction?: ScanExtractionMeta | null;
   onSuccess: () => void;
 };
 
@@ -81,6 +88,8 @@ export function ExpenseForm({
   mode,
   defaultValues,
   existingAttachment,
+  initialAttachment,
+  extraction,
   onSuccess,
 }: ExpenseFormProps) {
   const { t } = useTranslation('expenses');
@@ -92,7 +101,9 @@ export function ExpenseForm({
   } = useCategories();
   const { data: tiers } = useTiers();
   const [datePickerOpen, setDatePickerOpen] = useState(false);
-  const [attachment, setAttachment] = useState<File | null>(null);
+  const [attachment, setAttachment] = useState<File | null>(
+    initialAttachment ?? null
+  );
   const [removeExisting, setRemoveExisting] = useState(false);
 
   const grouped = useMemo(
@@ -136,6 +147,9 @@ export function ExpenseForm({
     }
     try {
       const trimmedNote = values.note?.trim();
+      // Only an unchanged scanned file counts as an image-sourced entry.
+      const scanned =
+        !!extraction && !!attachment && attachment === initialAttachment;
       const basePayload = {
         user_id: user.id,
         amount: values.amount,
@@ -143,7 +157,7 @@ export function ExpenseForm({
         category_id: values.category_id,
         occurred_at: toIsoDate(values.occurred_at),
         note: trimmedNote ? trimmedNote : null,
-        source: 'manual' as const,
+        source: scanned ? ('image' as const) : ('manual' as const),
       };
 
       if (mode === 'edit') {
@@ -241,6 +255,13 @@ export function ExpenseForm({
       const confirm = await updateAttachment(attachmentId, {
         expense_id: expenseInsert.data.id,
         confirmed: true,
+        ...(scanned && extraction
+          ? {
+              ai_raw_extraction: extraction.raw,
+              ai_confidence: extraction.confidence,
+              doc_type: extraction.docType,
+            }
+          : {}),
       });
       if (confirm.error) {
         console.warn('Attachment confirm step failed', confirm.error);

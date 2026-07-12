@@ -1,24 +1,58 @@
-import { useRouter } from 'expo-router';
+import { Image } from 'expo-image';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import {
+  ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
   StyleSheet,
+  View,
 } from 'react-native';
 
-import { AppText } from '@/components/ui';
-import { Spacing } from '@/constants/theme';
+import { clampScanDate } from '@rinciku/domain/ai-chat';
+
+import { AppText, Button, Notice } from '@/components/ui';
+import { Radius, Spacing } from '@/constants/theme';
 import { IncomeForm } from '@/features/incomes/components/income-form';
+import { useScanExtraction } from '@/hooks/use-scan-extraction';
 import { useTheme } from '@/hooks/use-theme';
 
-// New-income modal, launched from the Incomes header "+". On success the list
-// refetches on focus (see the incomes index screen). Keyboard-aware so lower
-// fields aren't hidden behind the keyboard.
+// New-income modal, launched from the Incomes header "+" (blank) or its Scan
+// button (`?scan=1`: the photo stashed in pending-scan is analyzed here and the
+// form opens prefilled for review). Keyboard-aware so lower fields aren't
+// hidden behind the keyboard.
 export default function NewIncomeScreen() {
   const c = useTheme();
   const router = useRouter();
   const { t } = useTranslation('incomes');
+  const { scan } = useLocalSearchParams<{ scan?: string }>();
+  const { asset, status, proposal, matchedId, retry } = useScanExtraction(
+    'income',
+    scan === '1'
+  );
+
+  // The form mounts only after the scan settles so react-hook-form sees the
+  // extracted defaultValues at mount (no reset plumbing needed).
+  if (status === 'analyzing') {
+    return (
+      <View style={[styles.analyzing, { backgroundColor: c.background }]}>
+        {asset ? (
+          <Image
+            source={{ uri: asset.uri }}
+            style={[styles.thumb, { backgroundColor: c.muted }]}
+            contentFit='cover'
+          />
+        ) : null}
+        <ActivityIndicator color={c.mutedForeground} />
+        <AppText variant='bodyMedium'>{t('common:scan.analyzing')}</AppText>
+        <AppText variant='caption' color='mutedForeground'>
+          {t('common:scan.analyzingHint')}
+        </AppText>
+      </View>
+    );
+  }
+
   return (
     <KeyboardAvoidingView
       style={[styles.flex, { backgroundColor: c.background }]}
@@ -28,10 +62,50 @@ export default function NewIncomeScreen() {
         keyboardShouldPersistTaps='handled'
         contentContainerStyle={styles.content}
       >
-        <AppText variant='caption' color='mutedForeground' style={styles.intro}>
-          {t('page.createDescription')}
-        </AppText>
-        <IncomeForm mode='create' onSuccess={() => router.back()} />
+        {status === 'failed' ? (
+          <View style={styles.scanFailed}>
+            <Notice tone='error'>{t('common:scan.failed')}</Notice>
+            <Button
+              label={t('common:scan.retry')}
+              variant='outline'
+              onPress={() => void retry()}
+            />
+          </View>
+        ) : (
+          <AppText
+            variant='caption'
+            color='mutedForeground'
+            style={styles.intro}
+          >
+            {status === 'done'
+              ? t('common:scan.prefilled')
+              : t('page.createDescription')}
+          </AppText>
+        )}
+        <IncomeForm
+          mode='create'
+          defaultValues={
+            proposal
+              ? {
+                  amount: proposal.amount,
+                  source_id: matchedId ?? undefined,
+                  occurred_at: clampScanDate(proposal.occurred_at),
+                  note: proposal.note ?? undefined,
+                }
+              : undefined
+          }
+          initialReceipt={asset}
+          extraction={
+            proposal
+              ? {
+                  raw: proposal.raw,
+                  confidence: proposal.confidence,
+                  docType: proposal.doc_type,
+                }
+              : null
+          }
+          onSuccess={() => router.back()}
+        />
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -41,4 +115,13 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   content: { padding: Spacing.four, paddingBottom: Spacing.six },
   intro: { marginBottom: Spacing.four },
+  scanFailed: { gap: Spacing.three, marginBottom: Spacing.four },
+  analyzing: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: Spacing.three,
+    padding: Spacing.four,
+  },
+  thumb: { width: 120, height: 160, borderRadius: Radius.md },
 });

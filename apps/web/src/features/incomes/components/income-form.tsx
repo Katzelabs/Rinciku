@@ -1,8 +1,8 @@
-// AI-driven income logging (chat / image source) plugs in later via the
-// ai-chat feature. This form covers only manual entry. The submit flow with an
-// attachment mirrors expense-form: upload → createIncomeAttachment →
-// createIncome (linking attachment_id) → updateIncomeAttachment (set
-// income_id + confirmed = true).
+// Manual entry form, also the review step for scan-to-prefill (see the
+// initialAttachment/extraction props). The submit flow with an attachment
+// mirrors expense-form: upload → createIncomeAttachment → createIncome
+// (linking attachment_id) → updateIncomeAttachment (set income_id +
+// confirmed = true).
 
 import { useMemo, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
@@ -38,6 +38,7 @@ import { cn } from '@/lib/utils';
 import { formatDate, activeDateFnsLocale } from '@rinciku/core';
 import { defineAttachmentConfig } from '@rinciku/core';
 import type { CurrencyCode } from '@rinciku/core';
+import type { ScanExtractionMeta } from '@rinciku/domain/ai-chat';
 import { CurrencyAmountInput } from '@/components/shared/currency-amount-input';
 import { useAuth } from '@/features/auth';
 
@@ -78,6 +79,12 @@ type IncomeFormProps = {
   mode: 'create' | 'edit';
   defaultValues?: Partial<IncomeInput> & { id?: string };
   existingAttachment?: ExistingAttachment | null;
+  // Scan-to-prefill: a file staged before the form opened, plus the AI
+  // extraction it came from. While the user keeps this exact file, the save
+  // is recorded as source 'image' and the extraction metadata lands on the
+  // attachment row; replacing/removing it falls back to a plain manual entry.
+  initialAttachment?: File | null;
+  extraction?: ScanExtractionMeta | null;
   onSuccess: () => void;
 };
 
@@ -85,6 +92,8 @@ export function IncomeForm({
   mode,
   defaultValues,
   existingAttachment,
+  initialAttachment,
+  extraction,
   onSuccess,
 }: IncomeFormProps) {
   const { t } = useTranslation('incomes');
@@ -99,7 +108,9 @@ export function IncomeForm({
   } = useIncomeCategories();
 
   const [datePickerOpen, setDatePickerOpen] = useState(false);
-  const [attachment, setAttachment] = useState<File | null>(null);
+  const [attachment, setAttachment] = useState<File | null>(
+    initialAttachment ?? null
+  );
   const [removeExisting, setRemoveExisting] = useState(false);
 
   const {
@@ -128,6 +139,9 @@ export function IncomeForm({
     }
     try {
       const trimmedNote = values.note?.trim();
+      // Only an unchanged scanned file counts as an image-sourced entry.
+      const scanned =
+        !!extraction && !!attachment && attachment === initialAttachment;
       const basePayload = {
         user_id: user.id,
         amount: values.amount,
@@ -135,7 +149,7 @@ export function IncomeForm({
         source_id: values.source_id ? values.source_id : null,
         occurred_at: toIsoDate(values.occurred_at),
         note: trimmedNote ? trimmedNote : null,
-        source: 'manual' as const,
+        source: scanned ? ('image' as const) : ('manual' as const),
       };
 
       if (mode === 'edit') {
@@ -236,6 +250,13 @@ export function IncomeForm({
       const confirm = await updateIncomeAttachment(attachmentId, {
         income_id: incomeInsert.data.id,
         confirmed: true,
+        ...(scanned && extraction
+          ? {
+              ai_raw_extraction: extraction.raw,
+              ai_confidence: extraction.confidence,
+              doc_type: extraction.docType,
+            }
+          : {}),
       });
       if (confirm.error) {
         console.warn('Attachment confirm step failed', confirm.error);

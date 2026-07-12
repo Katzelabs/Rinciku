@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { StyleSheet, View } from 'react-native';
 
 import { type CurrencyCode } from '@rinciku/core';
+import type { ScanExtractionMeta } from '@rinciku/domain/ai-chat';
 
 import { Spacing } from '@/constants/theme';
 import { AmountHeroField } from '@/components/amount-hero-field';
@@ -43,6 +44,12 @@ type Props = {
   mode: 'create' | 'edit';
   defaultValues?: Partial<IncomeInput> & { id?: string };
   existingAttachment?: ExistingReceipt | null;
+  // Scan-to-prefill: a photo staged before the form opened, plus the AI
+  // extraction it came from. While the user keeps this exact photo, the save
+  // is recorded as source 'image' and the extraction metadata lands on the
+  // attachment row; replacing/removing it falls back to a plain manual entry.
+  initialReceipt?: PickedImage | null;
+  extraction?: ScanExtractionMeta | null;
   onSuccess: () => void;
 };
 
@@ -54,6 +61,8 @@ export function IncomeForm({
   mode,
   defaultValues,
   existingAttachment,
+  initialReceipt,
+  extraction,
   onSuccess,
 }: Props) {
   const { t } = useTranslation('incomes');
@@ -62,7 +71,9 @@ export function IncomeForm({
 
   const schema = useMemo(() => makeIncomeSchema(t), [t]);
   const [submitError, setSubmitError] = useState<string | null>(null);
-  const [receipt, setReceipt] = useState<PickedImage | null>(null);
+  const [receipt, setReceipt] = useState<PickedImage | null>(
+    initialReceipt ?? null
+  );
   const [removeExisting, setRemoveExisting] = useState(false);
   const {
     control,
@@ -86,6 +97,8 @@ export function IncomeForm({
     }
     const note = values.note?.trim() ? values.note.trim() : null;
     const source_id = values.source_id ? values.source_id : null;
+    // Only an unchanged scanned photo counts as an image-sourced entry.
+    const scanned = !!extraction && !!receipt && receipt === initialReceipt;
     const basePayload = {
       user_id: user.id,
       source_id,
@@ -93,7 +106,7 @@ export function IncomeForm({
       currency: base,
       occurred_at: values.occurred_at.toISOString(),
       note,
-      source: 'manual' as const,
+      source: scanned ? ('image' as const) : ('manual' as const),
     };
 
     try {
@@ -163,6 +176,13 @@ export function IncomeForm({
       await updateIncomeAttachment(attachmentId, {
         income_id: created.data.id,
         confirmed: true,
+        ...(scanned && extraction
+          ? {
+              ai_raw_extraction: extraction.raw,
+              ai_confidence: extraction.confidence,
+              doc_type: extraction.docType,
+            }
+          : {}),
       });
 
       onSuccess();

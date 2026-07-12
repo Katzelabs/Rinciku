@@ -9,8 +9,9 @@ import { createIncomesApi } from '../incomes';
 import { createCategoriesApi } from '../categories';
 import { createEssentialsApi } from '../essentials';
 import { createBudgetsApi } from '../budgets';
-import { createAgentTools } from './agent-tools';
+import { createAgentTools, TRANSACTION_TOOLS } from './agent-tools';
 import { createExportTools } from './export';
+import { buildScanSystemPrompt, SCAN_USER_INSTRUCTION } from './extract';
 import {
   buildSummaryUserMessage,
   buildSystemPrompt,
@@ -28,6 +29,7 @@ import type {
   ConversationListItem,
   ImageBlock,
   MessageParam,
+  ProposalKind,
   ProposedChange,
   ProposedTransaction,
   TextBlock,
@@ -389,6 +391,55 @@ export function createAiChatApi(db: TypedSupabaseClient) {
     return data ?? { error: 'Empty response from the assistant.' };
   }
 
+  // --- One-shot scan extraction (bound) -------------------------------------
+
+  // Scan-to-prefill: send the image once with the matching propose_* tool
+  // FORCED, so the reply is a structured extraction rather than prose. No
+  // thread, no loop — the parsed proposal prefills the add form for review.
+  async function extractTransactionFromImage(params: {
+    kind: ProposalKind;
+    image: { media_type: string; data: string };
+    baseCurrency: CurrencyCode;
+  }): Promise<{ data: ProposedTransaction | null; error: string | null }> {
+    const toolName =
+      params.kind === 'income' ? 'propose_income' : 'propose_expense';
+    const tool = TRANSACTION_TOOLS.find((t) => t.name === toolName);
+    if (!tool) return { data: null, error: `Unknown tool: ${toolName}` };
+    const res = await sendChat({
+      system: buildScanSystemPrompt(params.baseCurrency),
+      messages: [
+        {
+          role: 'user',
+          content: [
+            {
+              type: 'image',
+              source: {
+                type: 'base64',
+                media_type: params.image.media_type,
+                data: params.image.data,
+              },
+            },
+            { type: 'text', text: SCAN_USER_INSTRUCTION },
+          ],
+        },
+      ],
+      tools: [tool],
+      tool_choice: { type: 'tool', name: toolName },
+      max_tokens: 1024,
+    });
+    if (res.error) return { data: null, error: res.error };
+    const proposal = parseProposal(res);
+    // amount <= 0 is the prompt's "unreadable / not a financial document"
+    // signal — treat it as a failed scan rather than prefilling zeros.
+    if (!proposal || proposal.amount <= 0) {
+      return {
+        data: null,
+        error: 'Could not read a transaction from the image.',
+      };
+    }
+    return { data: proposal, error: null };
+  }
+
   // --- Agentic loop (bound) ------------------------------------------------
 
   function runAgentTurn(
@@ -639,6 +690,7 @@ export function createAiChatApi(db: TypedSupabaseClient) {
     maybeSummarizeConversation,
     buildBudgetContext,
     sendChat,
+    extractTransactionFromImage,
     executeReadTool,
     applyProposedChange,
     resolveChangeTarget,

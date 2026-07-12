@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Outlet, useNavigate } from 'react-router';
-import { Download, Plus, Upload } from 'lucide-react';
+import { Download, Plus, ScanLine, Upload } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import type { PaginationState } from '@tanstack/react-table';
@@ -17,8 +17,22 @@ import {
 import { Spinner } from '@/components/ui/spinner';
 import type { DateRangeValue } from '@/components/shared/date-range-picker';
 import { useDebouncedValue } from '@/hooks/use-debounced-value';
-import { convertToBase, ensureRates, type CurrencyCode } from '@rinciku/core';
+import {
+  convertToBase,
+  defineAttachmentConfig,
+  ensureRates,
+  type CurrencyCode,
+} from '@rinciku/core';
+import {
+  clampScanDate,
+  matchCategoryId,
+  type ScanExtractionMeta,
+} from '@rinciku/domain/ai-chat';
 import { useAuth } from '@/features/auth';
+import {
+  extractTransactionFromImage,
+  fileToBase64,
+} from '@/features/ai-chat/api';
 import { getCurrentCycle, getCycleRange } from '@/features/expenses/lib/cycle';
 import {
   deleteIncome,
@@ -33,12 +47,33 @@ import { IncomeForm } from '../components/income-form';
 import { IncomeImportDialog } from '../components/income-import-dialog';
 import { IncomeSummary } from '../components/income-summary';
 import { IncomeTable } from '../components/income-table';
+import { useIncomeCategories } from '../hooks/use-income-categories';
+import type { IncomeInput } from '../schemas';
 
 const DEFAULT_PAGE_SIZE = 10;
 const MS_PER_DAY = 86_400_000;
 
+// Scan accepts photos only (no PDF — the extraction model reads images) and
+// no HEIC (iOS Safari hands over originals the model may reject).
+const SCAN_IMAGE = defineAttachmentConfig([
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+]);
+
+// The result of a completed scan, carried into the create dialog: the photo
+// pre-staged as the proof, the extracted defaults, and the metadata written
+// onto the attachment row on save (null when extraction failed but the user
+// still gets the form with the photo staged).
+type ScanPrefill = {
+  file: File;
+  defaults: Partial<IncomeInput>;
+  extraction: ScanExtractionMeta | null;
+};
+
 type DialogState =
-  | { kind: 'create' }
+  | { kind: 'create'; scan?: ScanPrefill }
+  | { kind: 'scan' }
   | { kind: 'export' }
   | { kind: 'import' }
   | { kind: 'delete'; row: IncomeWithRelations }
@@ -61,6 +96,11 @@ export function IncomesPage() {
   const [dialog, setDialog] = useState<DialogState>(null);
   const [deleting, setDeleting] = useState(false);
   const [refetchToken, setRefetchToken] = useState(0);
+  const { data: incomeCategories } = useIncomeCategories();
+  const scanInputRef = useRef<HTMLInputElement>(null);
+  // Bumped when the analyzing dialog is cancelled so a late extraction result
+  // becomes a no-op instead of reopening the create dialog.
+  const scanToken = useRef(0);
 
   const debouncedSearch = useDebouncedValue(search, 300);
   const { pageIndex, pageSize } = pagination;
@@ -159,6 +199,64 @@ export function IncomesPage() {
     setRefetchToken((n) => n + 1);
   }
 
+  async function handleScanFile(file: File) {
+    if (!SCAN_IMAGE.allowedMime.has(file.type)) {
+      toast.error(t('form.attachmentInvalidType'));
+      return;
+    }
+    if (file.size > SCAN_IMAGE.maxBytes) {
+      toast.error(t('form.attachmentOversized'));
+      return;
+    }
+    const token = ++scanToken.current;
+    setDialog({ kind: 'scan' });
+    try {
+      const image = await fileToBase64(file);
+      const { data } = await extractTransactionFromImage({
+        kind: 'income',
+        image,
+        baseCurrency,
+      });
+      if (token !== scanToken.current) return;
+      if (!data) {
+        toast.error(t('common:scan.failed'));
+        setDialog({
+          kind: 'create',
+          scan: { file, defaults: {}, extraction: null },
+        });
+        return;
+      }
+      setDialog({
+        kind: 'create',
+        scan: {
+          file,
+          defaults: {
+            amount: data.amount,
+            source_id:
+              matchCategoryId(
+                data.category_hint,
+                incomeCategories ?? undefined
+              ) ?? undefined,
+            occurred_at: clampScanDate(data.occurred_at),
+            note: data.note ?? undefined,
+          },
+          extraction: {
+            raw: data.raw,
+            confidence: data.confidence,
+            docType: data.doc_type,
+          },
+        },
+      });
+    } catch {
+      if (token !== scanToken.current) return;
+      toast.error(t('common:scan.failed'));
+      setDialog({
+        kind: 'create',
+        scan: { file, defaults: {}, extraction: null },
+      });
+    }
+  }
+
   async function handleConfirmDelete() {
     if (dialog?.kind !== 'delete') return;
     const { row } = dialog;
@@ -187,6 +285,30 @@ export function IncomesPage() {
           <p className='text-sm text-muted-foreground'>{t('page.subtitle')}</p>
         </div>
         <div className='flex items-center gap-2'>
+          <input
+            ref={scanInputRef}
+            type='file'
+            accept={SCAN_IMAGE.accept}
+            className='hidden'
+            onChange={(event) => {
+              const file = event.target.files?.[0];
+              // Reset so picking the same file again re-triggers onChange.
+              event.target.value = '';
+              if (file) void handleScanFile(file);
+            }}
+          />
+          <Button
+            variant='outline'
+            onClick={() => scanInputRef.current?.click()}
+            aria-label={t('common:nav.scanReceipt')}
+            title={t('common:nav.scanReceipt')}
+            className='w-9 px-0 sm:w-auto sm:px-4'
+          >
+            <ScanLine className='size-4' />
+            <span className='hidden sm:inline'>
+              {t('common:nav.scanReceipt')}
+            </span>
+          </Button>
           <Button
             variant='outline'
             onClick={() => setDialog({ kind: 'export' })}
@@ -295,21 +417,52 @@ export function IncomesPage() {
       />
 
       <Dialog
+        open={dialog?.kind === 'scan'}
+        onOpenChange={(open) => {
+          if (!open) {
+            scanToken.current++;
+            setDialog(null);
+          }
+        }}
+      >
+        <DialogContent className='sm:max-w-md'>
+          <DialogHeader>
+            <DialogTitle>{t('common:scan.analyzing')}</DialogTitle>
+            <DialogDescription>
+              {t('common:scan.analyzingHint')}
+            </DialogDescription>
+          </DialogHeader>
+          <div className='flex items-center justify-center py-6'>
+            <Spinner className='size-6' />
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
         open={dialog?.kind === 'create'}
         onOpenChange={(open) => !open && setDialog(null)}
       >
         <DialogContent className='sm:max-w-lg'>
           <DialogHeader>
             <DialogTitle>{t('page.createTitle')}</DialogTitle>
-            <DialogDescription>{t('page.createDescription')}</DialogDescription>
+            <DialogDescription>
+              {dialog?.kind === 'create' && dialog.scan?.extraction
+                ? t('common:scan.prefilled')
+                : t('page.createDescription')}
+            </DialogDescription>
           </DialogHeader>
-          <IncomeForm
-            mode='create'
-            onSuccess={() => {
-              setDialog(null);
-              refetch();
-            }}
-          />
+          {dialog?.kind === 'create' && (
+            <IncomeForm
+              mode='create'
+              defaultValues={dialog.scan?.defaults}
+              initialAttachment={dialog.scan?.file ?? null}
+              extraction={dialog.scan?.extraction ?? null}
+              onSuccess={() => {
+                setDialog(null);
+                refetch();
+              }}
+            />
+          )}
         </DialogContent>
       </Dialog>
 
