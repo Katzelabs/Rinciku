@@ -1,5 +1,6 @@
 import { Stack } from 'expo-router';
 import { useTranslation } from 'react-i18next';
+import { Platform } from 'react-native';
 
 import { useStackScreenOptions } from '@/hooks/use-stack-screen-options';
 import { resetStackOnTabBlur } from '@/lib/navigation';
@@ -19,6 +20,8 @@ export default function IncomesLayout() {
           presentation: 'modal',
           headerLargeTitle: false,
           title: t('nav.items.incomes'),
+          // Android has no native sheet; slide up instead of the stack's push.
+          ...(Platform.OS === 'android' && { animation: 'slide_from_bottom' }),
         }}
       />
       <Stack.Screen

@@ -152,7 +152,8 @@ function RootNavigator({ fontsLoaded }: { fontsLoaded: boolean }) {
   const onboarded = !!profile?.onboarded_at;
 
   return (
-    <Stack screenOptions={{ headerShown: false }}>
+    // ios_from_right replaces Android's system zoom transition; no-op on iOS.
+    <Stack screenOptions={{ headerShown: false, animation: 'ios_from_right' }}>
       <Stack.Protected guard={!signedIn}>
         <Stack.Screen name='(auth)' />
       </Stack.Protected>

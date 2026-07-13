@@ -30,7 +30,7 @@ export function WelcomeScreen({ onSend }: { onSend: (text: string) => void }) {
   const { t } = useTranslation('aiChat');
 
   return (
-    <div className='flex flex-1 flex-col items-center justify-start gap-8 px-6 pt-[clamp(2rem,12vh,7rem)] pb-10'>
+    <div className='flex min-h-0 flex-1 flex-col items-center justify-start gap-8 overflow-y-auto px-6 pt-[clamp(2rem,12vh,7rem)] pb-10'>
       <div className='flex flex-col items-center gap-4 text-center'>
         <div className='flex size-14 items-center justify-center rounded-2xl bg-muted'>
           <Sparkles className='size-7 text-primary' />
