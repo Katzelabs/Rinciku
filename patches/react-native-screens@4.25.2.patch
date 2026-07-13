@@ -1,0 +1,21 @@
+diff --git a/android/src/main/java/com/swmansion/rnscreens/gamma/tabs/appearance/TabsAppearanceApplicator.kt b/android/src/main/java/com/swmansion/rnscreens/gamma/tabs/appearance/TabsAppearanceApplicator.kt
+index 10cd91b2867dcbbc125df0797740e9b79eceb335..d91845a729aae004e728aac445e5369e56384cf7 100644
+--- a/android/src/main/java/com/swmansion/rnscreens/gamma/tabs/appearance/TabsAppearanceApplicator.kt
++++ b/android/src/main/java/com/swmansion/rnscreens/gamma/tabs/appearance/TabsAppearanceApplicator.kt
+@@ -36,6 +36,16 @@ internal class TabsAppearanceApplicator(
+         isTabBarHidden: Boolean,
+     ) {
+         bottomNavigationView.isVisible = !isTabBarHidden
++        if (isTabBarHidden) {
++            // PATCH(rinciku): React Native's TouchTargetHelper hit-tests by frame
++            // only and never checks visibility, so the GONE bar keeps its
++            // laid-out frame and keeps swallowing every React touch in its
++            // strip (native-handling views like EditText still work, so the
++            // symptom is "can type but buttons are dead"). Zero the frame while
++            // hidden; setVisibility(VISIBLE) requests a fresh layout pass that
++            // restores it when the bar comes back.
++            bottomNavigationView.layout(0, 0, 0, 0)
++        }
+         bottomNavigationView.setBackgroundColor(
+             tabBarAppearance?.tabBarBackgroundColor
+                 ?: resolveColorAttr(context, R.attr.colorSurfaceContainer),

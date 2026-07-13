@@ -11,3 +11,11 @@ allowBuilds:
 # package.json#pnpm.overrides location.
 overrides:
   linkify-it: ^5.0.2
+
+# Android fix: react-native-screens NativeTabs `hidden` sets the bottom bar to
+# GONE but leaves its laid-out frame, which RN's TouchTargetHelper (frame-only,
+# ignores visibility) keeps hit-testing — every React touch in the bar's strip
+# dies (the AI chat composer's send/attach buttons). The patch zeroes the bar's
+# frame while hidden. Re-check on react-native-screens upgrades.
+patchedDependencies:
+  react-native-screens@4.25.2: patches/react-native-screens@4.25.2.patch

@@ -17,6 +17,7 @@ import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { KeyboardProvider } from 'react-native-keyboard-controller';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { Colors } from '@/constants/theme';
@@ -90,19 +91,26 @@ export default function RootLayout() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <I18nextProvider i18n={i18n}>
-        <QueryClientProvider client={queryClient}>
-          <AppThemeProvider>
-            <SafeAreaProvider>
-              <NavChrome>
-                <AuthProvider>
-                  <RootNavigator fontsLoaded={fontsLoaded} />
-                </AuthProvider>
-              </NavChrome>
-            </SafeAreaProvider>
-          </AppThemeProvider>
-        </QueryClientProvider>
-      </I18nextProvider>
+      {/* Keyboard signal for edge-to-edge Android: SDK 56 forces edge-to-edge,
+          which kills adjustResize AND React Native's own Keyboard events
+          (verified: keyboardDidShow never fires, safe-area insets exclude the
+          IME). react-native-keyboard-controller reads the IME window insets
+          directly; screens use its KeyboardAvoidingView / KeyboardEvents. */}
+      <KeyboardProvider>
+        <I18nextProvider i18n={i18n}>
+          <QueryClientProvider client={queryClient}>
+            <AppThemeProvider>
+              <SafeAreaProvider>
+                <NavChrome>
+                  <AuthProvider>
+                    <RootNavigator fontsLoaded={fontsLoaded} />
+                  </AuthProvider>
+                </NavChrome>
+              </SafeAreaProvider>
+            </AppThemeProvider>
+          </QueryClientProvider>
+        </I18nextProvider>
+      </KeyboardProvider>
     </GestureHandlerRootView>
   );
 }

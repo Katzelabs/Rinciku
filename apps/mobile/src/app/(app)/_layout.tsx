@@ -71,14 +71,13 @@ export default function AppLayout() {
   // `usePathname` strips; the cast loosens the typed-routes union, which doesn't
   // model groups.
   //
-  // iOS-ONLY: on Android, react-native-screens sets the hidden bar to GONE but
-  // leaves its frame in the Fabric shadow tree, so the bar's ~80dp strip keeps
-  // swallowing every React touch — the AI composer's send/attach buttons sit
-  // exactly there and go dead (TextInput still works because native EditText
-  // dispatch skips GONE views). Until that's fixed upstream, Android keeps the
-  // Material bar visible on the AI tab and the composer pads above it.
+  // Android relies on the react-native-screens patch (patches/, wired in
+  // pnpm-workspace.yaml): stock RNS leaves the GONE bar's frame in place and
+  // RN's TouchTargetHelper (frame-only, ignores visibility) keeps routing every
+  // React touch in the bar's strip to it — which killed the AI composer's
+  // send/attach buttons. Re-verify those buttons if the patch is ever dropped.
   const segments = useSegments() as string[];
-  const aiFocused = segments.includes('(z-ai)') && Platform.OS === 'ios';
+  const aiFocused = segments.includes('(z-ai)');
 
   // Android's Material 3 bar needs explicit theming: `auto` label visibility
   // hides unselected labels at 4+ destinations (we have 5), and the selected

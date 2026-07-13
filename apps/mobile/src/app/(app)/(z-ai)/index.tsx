@@ -1,14 +1,8 @@
 import { Stack, useRouter } from 'expo-router';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import {
-  ActivityIndicator,
-  Alert,
-  KeyboardAvoidingView,
-  Platform,
-  StyleSheet,
-  View,
-} from 'react-native';
+import { ActivityIndicator, Alert, StyleSheet, View } from 'react-native';
+import { useKeyboardState } from 'react-native-keyboard-controller';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useQueryClient } from '@tanstack/react-query';
 
@@ -51,6 +45,17 @@ export default function AiScreen() {
   // floating header items, so we inset content by the header bar height (~52)
   // plus the safe-area top.
   const headerClearance = insets.top + 52;
+
+  // Keyboard clearance for the composer. Neither the core KeyboardAvoidingView
+  // (RN's Keyboard events never fire under SDK 56's mandatory edge-to-edge on
+  // Android) nor react-native-keyboard-controller's KAV component (its
+  // reanimated-driven translation stayed at 0 here) lifted the composer, but
+  // RNKC's *state* is reliable on both platforms — so pad the screen column by
+  // the reported keyboard height directly. `height` is in dp and excludes
+  // nothing we handle elsewhere; the composer collapses its own safe-area
+  // padding while the keyboard is open so it rests flush on top of it.
+  const kb = useKeyboardState();
+  const keyboardClearance = kb.isVisible ? kb.height : 0;
 
   const showWelcome =
     chat.messages.length === 0 &&
@@ -131,16 +136,7 @@ export default function AiScreen() {
           ]),
         }}
       />
-      <KeyboardAvoidingView
-        style={styles.flex}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        // The KeyboardAvoidingView fills the whole screen (transparent header,
-        // hidden tab bar), so its bottom edge sits at the screen bottom. For
-        // `behavior='padding'` that means the inserted padding already equals the
-        // keyboard height — any positive offset here just floats the composer
-        // that many px ABOVE the keyboard. Keep it at 0 so the input rests flush.
-        keyboardVerticalOffset={0}
-      >
+      <View style={[styles.flex, { paddingBottom: keyboardClearance }]}>
         {chat.error ? (
           <View style={[styles.notice]}>
             <Notice tone='error'>{chat.error}</Notice>
@@ -162,7 +158,7 @@ export default function AiScreen() {
           onSendImage={chat.sendImage}
           disabled={chat.sending}
         />
-      </KeyboardAvoidingView>
+      </View>
 
       <ConversationList
         visible={historyOpen}
