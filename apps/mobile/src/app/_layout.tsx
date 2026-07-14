@@ -135,10 +135,12 @@ function NavChrome({ children }: { children: ReactNode }) {
 }
 
 // Auth-driven navigation guards. Lives below AuthProvider so it can read the
-// session/profile. The splash stays up until fonts AND the initial auth state
-// resolve, so the first frame is already on the correct guarded branch.
+// session. The splash stays up until fonts AND the initial auth state resolve,
+// so the first frame is already on the correct guarded branch — but `loading`
+// is deliberately bounded so a slow/offline profile fetch can't hold it (see
+// AuthProvider); routing then falls back to the cached `onboarded` flag.
 function RootNavigator({ fontsLoaded }: { fontsLoaded: boolean }) {
-  const { session, profile, loading } = useAuth();
+  const { session, onboarded, loading } = useAuth();
   const { hydrated: themeHydrated } = useThemePreference();
   const ready = fontsLoaded && !loading && themeHydrated;
 
@@ -149,7 +151,6 @@ function RootNavigator({ fontsLoaded }: { fontsLoaded: boolean }) {
   if (!ready) return null;
 
   const signedIn = !!session;
-  const onboarded = !!profile?.onboarded_at;
 
   return (
     // ios_from_right replaces Android's system zoom transition; no-op on iOS.
