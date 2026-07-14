@@ -12,7 +12,7 @@ concurrency:
 
 jobs:
   check:
-    name: typecheck · lint · build
+    name: typecheck · lint · build · unit tests
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -32,6 +32,28 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       # Turborepo runs each task across every workspace that defines it,
-      # and caches results so unchanged packages are skipped.
-      - name: Typecheck, lint, build
-        run: pnpm turbo run typecheck lint build
+      # and caches results so unchanged packages are skipped. `test` covers the
+      # pure Vitest suites in packages/* (no DB, no browser) — fast on every push.
+      - name: Typecheck, lint, build, unit tests
+        run: pnpm turbo run typecheck lint build test
+
+  database:
+    name: pgTAP (RLS + grants)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      # Boots the local Postgres/Auth/Storage stack (Docker is preinstalled on
+      # ubuntu runners), replaying the full declarative schema + migration
+      # history, then runs the pgTAP suites in supabase/tests/.
+      - name: Start Supabase
+        run: supabase start
+
+      - name: Run database tests
+        run: supabase test db

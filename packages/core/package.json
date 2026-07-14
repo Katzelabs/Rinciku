@@ -11,7 +11,8 @@
   },
   "scripts": {
     "lint": "eslint .",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
   },
   "dependencies": {
     "@rinciku/db": "workspace:*",
@@ -29,6 +30,7 @@
     "@rinciku/config": "workspace:*",
     "@types/papaparse": "^5.5.2",
     "@types/react": "^19.2.14",
-    "react": "^19.2.6"
+    "react": "^19.2.6",
+    "vitest": "^4.1.10"
   }
 }

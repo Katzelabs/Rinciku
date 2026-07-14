@@ -12,6 +12,8 @@
     "dev": "turbo run dev",
     "build": "turbo run build",
     "lint": "turbo run lint",
+    "test": "turbo run test",
+    "test:db": "supabase test db",
     "typecheck": "turbo run typecheck",
     "preview": "turbo run preview",
     "format": "prettier --write .",

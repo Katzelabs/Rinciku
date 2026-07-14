@@ -643,7 +643,7 @@ One row per message. Designed for Supabase Realtime row-level subscriptions filt
 - `messages (user_id)` — RLS
 
 ### RLS
-Standard pattern on `user_id` (not joined through `conversations` — that's why `user_id` is denormalized here).
+Standard pattern on `user_id` for select/update/delete (not joined through `conversations` — that's why `user_id` is denormalized here). **Insert additionally requires owning the target conversation** (`conversation_id in (select id from conversations where user_id = auth.uid())`): FK checks run as the table owner and bypass `conversations`' RLS, so without this a user could append rows to another user's thread (found by `supabase/tests/01_rls_isolation.sql`, fixed 2026-07-14).
 
 ### Notes
 - Token columns let us bill / cap usage later without re-parsing the API response.

@@ -21,6 +21,8 @@ Package manager is **pnpm** (see `pnpm-workspace.yaml`), orchestrated by **Turbo
 - `pnpm lint` — `turbo run lint` across all workspaces
 - `pnpm format` — Prettier write across the repo
 - `pnpm gen:types` — regenerate `packages/db/src/database.types.ts` from the local DB
+- `pnpm test` — `turbo run test` → Vitest unit suites in `packages/*` (pure logic; no DB/browser)
+- `pnpm test:db` — `supabase test db` → pgTAP RLS/grants suites in `supabase/tests/` (needs `supabase start` first)
 
 **Dev servers are per-app — target the workspace** (a bare `pnpm dev` runs `turbo run dev`, which now fans out to the web Vite server, the Expo bundler, *and* the Astro landing server at once):
 
@@ -29,7 +31,7 @@ Package manager is **pnpm** (see `pnpm-workspace.yaml`), orchestrated by **Turbo
 - `pnpm --filter @rinciku/mobile ios` / `... android` — native run via local Xcode/Gradle (no EAS yet)
 - `pnpm --filter @rinciku/landing dev` — Astro dev server for the landing page (`:4321`)
 
-Target any single workspace with `pnpm --filter @rinciku/<web|mobile|landing> <script>` (or `@rinciku/core`, `@rinciku/domain`, etc. for packages). There is no test runner configured yet. Turborepo **remote** caching is not set up yet (local caching works).
+Target any single workspace with `pnpm --filter @rinciku/<web|mobile|landing> <script>` (or `@rinciku/core`, `@rinciku/domain`, etc. for packages). Testing is Vitest (unit, `packages/*`) + pgTAP (DB policies, `supabase/tests/`); see `docs/testing.md` for what's covered, what's deliberately not, and how to add tests. Turborepo **remote** caching is not set up yet (local caching works).
 
 ## Architecture
 

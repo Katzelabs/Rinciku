@@ -21,8 +21,17 @@ alter table public.messages enable row level security;
 
 create policy "messages: select own" on public.messages for select to authenticated
   using ( user_id = (select auth.uid()) );
+-- Insert requires owning BOTH the row and the target conversation. The FK to
+-- conversations is checked as table owner (bypassing its RLS), so without the
+-- subquery any authenticated user could append rows to another user's thread.
 create policy "messages: insert own" on public.messages for insert to authenticated
-  with check ( user_id = (select auth.uid()) );
+  with check (
+    user_id = (select auth.uid())
+    and conversation_id in (
+      select id from public.conversations
+      where user_id = (select auth.uid())
+    )
+  );
 create policy "messages: update own" on public.messages for update to authenticated
   using ( user_id = (select auth.uid()) )
   with check ( user_id = (select auth.uid()) );
