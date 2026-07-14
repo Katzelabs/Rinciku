@@ -1,7 +1,7 @@
 import { forwardRef, useImperativeHandle, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, Alert, StyleSheet, View } from 'react-native';
-import { Plus } from 'lucide-react-native';
+import { Plus } from '@/lib/icons';
 
 import { formatCurrency, type CurrencyCode } from '@rinciku/core';
 

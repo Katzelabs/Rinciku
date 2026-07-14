@@ -10,7 +10,7 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ChevronDown, X } from 'lucide-react-native';
+import { ChevronDown, X } from '@/lib/icons';
 
 import { Fonts, Radius, Spacing } from '@/constants/theme';
 import { CategoryIcon } from '@/features/categories/components/category-icon';

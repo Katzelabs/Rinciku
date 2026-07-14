@@ -7,7 +7,7 @@ import {
   StyleSheet,
   View,
 } from 'react-native';
-import { Pencil, Plus } from 'lucide-react-native';
+import { Pencil, Plus } from '@/lib/icons';
 import type { Tables } from '@rinciku/db';
 
 import { Radius, Spacing } from '@/constants/theme';

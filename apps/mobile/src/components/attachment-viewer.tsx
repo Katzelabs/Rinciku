@@ -3,7 +3,7 @@ import { Image } from 'expo-image';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
 import { StatusBar } from 'expo-status-bar';
-import { Share, X } from 'lucide-react-native';
+import { Share, X } from '@/lib/icons';
 import { useTranslation } from 'react-i18next';
 import {
   ActivityIndicator,

@@ -1,6 +1,6 @@
 import type { ComponentType } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
-import { ChevronRight } from 'lucide-react-native';
+import { ChevronRight } from '@/lib/icons';
 
 import { Radius, Spacing } from '@/constants/theme';
 import { AppText } from '@/components/ui';

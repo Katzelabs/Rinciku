@@ -28,7 +28,7 @@ import {
   Sparkles,
   Wallet,
   type LucideIcon,
-} from 'lucide-react-native';
+} from '@/lib/icons';
 
 import {
   CURRENCY_CODES,
@@ -487,7 +487,7 @@ function BudgetStep() {
 }
 
 // The four grounding signals the AI consultation reasons over (welcome) and the
-// first-action tips (all set). Icons via lucide-react-native (cross-platform),
+// first-action tips (all set). Icons via @/lib/icons (cross-platform),
 // matching the web onboarding intro/outro.
 const WELCOME_POINTS: { key: string; Icon: LucideIcon }[] = [
   { key: 'income', Icon: Wallet },

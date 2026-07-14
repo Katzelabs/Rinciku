@@ -3,7 +3,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import ReanimatedSwipeable, {
   type SwipeableMethods,
 } from 'react-native-gesture-handler/ReanimatedSwipeable';
-import { Trash2 } from 'lucide-react-native';
+import { Trash2 } from '@/lib/icons';
 
 import { formatCurrency, type CurrencyCode } from '@rinciku/core';
 

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Image } from 'expo-image';
 import * as WebBrowser from 'expo-web-browser';
-import { FileText, ImagePlus, X } from 'lucide-react-native';
+import { FileText, ImagePlus, X } from '@/lib/icons';
 import { useTranslation } from 'react-i18next';
 import {
   ActionSheetIOS,

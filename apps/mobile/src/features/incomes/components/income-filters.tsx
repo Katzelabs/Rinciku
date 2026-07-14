@@ -13,7 +13,7 @@ import {
   ChevronDown,
   Search,
   Wallet,
-} from 'lucide-react-native';
+} from '@/lib/icons';
 
 import { formatDate } from '@rinciku/core';
 

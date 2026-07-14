@@ -1,6 +1,6 @@
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
-import { Sparkles } from 'lucide-react-native';
+import { Sparkles } from '@/lib/icons';
 
 import { AppText } from '@/components/ui';
 import { Border, Radius, Spacing } from '@/constants/theme';

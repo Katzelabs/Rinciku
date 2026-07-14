@@ -1,6 +1,6 @@
 import { Image } from 'expo-image';
 import { GlassView, isLiquidGlassAvailable } from 'expo-glass-effect';
-import { ArrowUp, ImagePlus, X } from 'lucide-react-native';
+import { ArrowUp, ImagePlus, X } from '@/lib/icons';
 import { useEffect, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import {

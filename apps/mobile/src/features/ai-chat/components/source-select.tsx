@@ -11,7 +11,7 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Check, ChevronDown, X } from 'lucide-react-native';
+import { Check, ChevronDown, X } from '@/lib/icons';
 
 import { Fonts, Radius, Spacing } from '@/constants/theme';
 import { listIncomeCategories } from '@/features/incomes/api';

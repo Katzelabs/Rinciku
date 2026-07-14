@@ -3,7 +3,7 @@ import { Pressable, StyleSheet } from 'react-native';
 import ReanimatedSwipeable, {
   type SwipeableMethods,
 } from 'react-native-gesture-handler/ReanimatedSwipeable';
-import { Trash2 } from 'lucide-react-native';
+import { Trash2 } from '@/lib/icons';
 
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';

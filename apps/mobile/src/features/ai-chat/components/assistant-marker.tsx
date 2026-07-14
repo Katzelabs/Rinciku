@@ -1,5 +1,5 @@
 import { StyleSheet, View } from 'react-native';
-import { Sparkles } from 'lucide-react-native';
+import { Sparkles } from '@/lib/icons';
 
 import { AppText } from '@/components/ui';
 import { Radius, Spacing } from '@/constants/theme';

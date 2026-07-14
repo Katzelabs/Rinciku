@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { DateTimePicker } from '@expo/ui/community/datetime-picker';
-import { Calendar, ChevronDown } from 'lucide-react-native';
+import { Calendar, ChevronDown } from '@/lib/icons';
 
 import { formatDate } from '@rinciku/core';
 

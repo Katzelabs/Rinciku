@@ -1,6 +1,6 @@
 import { LegendList } from '@legendapp/list/react-native';
 import { formatRelativeTime } from '@rinciku/core';
-import { MessagesSquare } from 'lucide-react-native';
+import { MessagesSquare } from '@/lib/icons';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, StyleSheet, TextInput, View } from 'react-native';

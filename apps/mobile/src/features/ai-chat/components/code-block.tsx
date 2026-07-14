@@ -1,13 +1,41 @@
-import { common, createLowlight } from 'lowlight';
+import { createLowlight } from 'lowlight';
 import { useMemo } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
+
+// Explicit grammar list, NOT lowlight's `common`. `common` registers 37
+// grammars (~1.8MB of the RN bundle, all evaluated at module scope because
+// Metro does not tree-shake), and auto-detect below walks every registered one.
+// These are the languages an assistant reply in a finance app actually emits.
+import bash from 'highlight.js/lib/languages/bash';
+import css from 'highlight.js/lib/languages/css';
+import javascript from 'highlight.js/lib/languages/javascript';
+import json from 'highlight.js/lib/languages/json';
+import markdown from 'highlight.js/lib/languages/markdown';
+import plaintext from 'highlight.js/lib/languages/plaintext';
+import python from 'highlight.js/lib/languages/python';
+import sql from 'highlight.js/lib/languages/sql';
+import typescript from 'highlight.js/lib/languages/typescript';
+import xml from 'highlight.js/lib/languages/xml';
+import yaml from 'highlight.js/lib/languages/yaml';
 
 import { Fonts, Radius, Spacing, type CodeScope } from '@/constants/theme';
 import { useCodeSyntax, useTheme } from '@/hooks/use-theme';
 import { withAlpha } from '@/lib/color';
 import { CopyButton } from './copy-button';
 
-const lowlight = createLowlight(common);
+const lowlight = createLowlight({
+  bash,
+  css,
+  javascript,
+  json,
+  markdown,
+  plaintext,
+  python,
+  sql,
+  typescript,
+  xml,
+  yaml,
+});
 
 // Auto-detection walks every registered grammar, so skip it for very long
 // blocks — they still render, just without highlighting.

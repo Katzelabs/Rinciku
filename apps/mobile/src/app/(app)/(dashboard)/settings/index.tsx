@@ -1,7 +1,7 @@
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { StyleSheet, View } from 'react-native';
-import { Lock, SlidersHorizontal, Wallet } from 'lucide-react-native';
+import { Lock, SlidersHorizontal, Wallet } from '@/lib/icons';
 
 import { Card, ScreenScroll } from '@/components/ui';
 import { SettingsRow } from '@/components/settings-row';

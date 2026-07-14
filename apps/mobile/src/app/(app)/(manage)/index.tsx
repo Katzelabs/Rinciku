@@ -1,6 +1,6 @@
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
-import { Coins, Repeat, Tags, Target } from 'lucide-react-native';
+import { Coins, Repeat, Tags, Target } from '@/lib/icons';
 
 import { Card, ScreenScroll } from '@/components/ui';
 import { SettingsRow } from '@/components/settings-row';

@@ -1,5 +1,9 @@
 import { format as formatDateFn } from 'date-fns';
-import { enUS, id as idLocale } from 'date-fns/locale';
+// Per-locale deep imports, NOT the `date-fns/locale` barrel: Metro does not
+// tree-shake, so the barrel ships all ~180 locales (~1.9MB of the RN bundle)
+// when the app only ever resolves en-US and id. Keep these paths deep.
+import { enUS } from 'date-fns/locale/en-US';
+import { id as idLocale } from 'date-fns/locale/id';
 import type { Locale } from 'date-fns';
 import i18n from 'i18next';
 

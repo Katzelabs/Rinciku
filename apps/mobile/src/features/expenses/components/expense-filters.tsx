@@ -13,7 +13,7 @@ import {
   ChevronDown,
   Search,
   Shapes,
-} from 'lucide-react-native';
+} from '@/lib/icons';
 import type { Tables } from '@rinciku/db';
 
 import { formatDate } from '@rinciku/core';

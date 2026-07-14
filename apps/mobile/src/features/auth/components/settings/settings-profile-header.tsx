@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import { Pressable, StyleSheet, View } from 'react-native';
-import { ChevronRight } from 'lucide-react-native';
+import { ChevronRight } from '@/lib/icons';
 
 import { AppText, Card } from '@/components/ui';
 import { ProfileAvatar } from '@/components/profile-avatar';

@@ -1,5 +1,5 @@
 import { LegendList, type LegendListRef } from '@legendapp/list/react-native';
-import { ChevronDown } from 'lucide-react-native';
+import { ChevronDown } from '@/lib/icons';
 import { useCallback, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
