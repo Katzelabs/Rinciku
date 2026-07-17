@@ -1,7 +1,8 @@
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
-import { StyleSheet, View } from 'react-native';
-import { Lock, SlidersHorizontal, Wallet } from '@/lib/icons';
+import { Alert, Linking, StyleSheet, View } from 'react-native';
+import { SUPPORT_EMAIL, supportMailtoUrl } from '@rinciku/core';
+import { LifeBuoy, Lock, SlidersHorizontal, Wallet } from '@/lib/icons';
 
 import { Card, ScreenScroll } from '@/components/ui';
 import { SettingsRow } from '@/components/settings-row';
@@ -42,6 +43,17 @@ export default function SettingsHubScreen() {
           title={t('settings.pages.security')}
           subtitle={t('settings.rows.security')}
           onPress={() => router.push('/(app)/(dashboard)/settings/security')}
+          topBorder
+        />
+        <SettingsRow
+          icon={LifeBuoy}
+          title={t('settings.pages.help')}
+          subtitle={t('settings.rows.help')}
+          onPress={() => {
+            Linking.openURL(supportMailtoUrl(t('help.emailSubject'))).catch(
+              () => Alert.alert(t('help.openError', { email: SUPPORT_EMAIL }))
+            );
+          }}
           topBorder
         />
       </Card>

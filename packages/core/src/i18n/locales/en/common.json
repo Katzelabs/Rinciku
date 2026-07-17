@@ -42,13 +42,21 @@
       "profile": "Profile",
       "finances": "Finances",
       "preferences": "Preferences",
-      "security": "Security"
+      "security": "Security",
+      "help": "Help & support"
     },
     "rows": {
       "finances": "Currency, income, and cycle",
       "preferences": "Language and appearance",
-      "security": "Password and account safety"
+      "security": "Password and account safety",
+      "help": "Questions, feedback, and bug reports"
     }
+  },
+  "help": {
+    "title": "Help & support",
+    "description": "Stuck, found a bug, or have an idea? Email us — we read every message.",
+    "emailSubject": "Rinciku support",
+    "openError": "Could not open your email app. Write to {{email}}."
   },
   "appearance": {
     "title": "Appearance",

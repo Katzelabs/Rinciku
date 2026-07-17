@@ -3,6 +3,7 @@ import { AppearanceSection } from '../components/appearance-section';
 import { ChangePasswordSection } from '../components/change-password-section';
 import { DangerZoneSection } from '../components/danger-zone-section';
 import { FinancialSection } from '../components/financial-section';
+import { HelpSection } from '../components/help-section';
 import { ProfileDetailsSection } from '../components/profile-details-section';
 
 export function SettingsPage() {
@@ -21,6 +22,7 @@ export function SettingsPage() {
         <AppearanceSection />
         <FinancialSection />
         <ChangePasswordSection />
+        <HelpSection />
       </div>
 
       <DangerZoneSection />

@@ -42,13 +42,21 @@
       "profile": "Profil",
       "finances": "Keuangan",
       "preferences": "Preferensi",
-      "security": "Keamanan"
+      "security": "Keamanan",
+      "help": "Bantuan & dukungan"
     },
     "rows": {
       "finances": "Mata uang, pemasukan, dan siklus",
       "preferences": "Bahasa dan tampilan",
-      "security": "Kata sandi dan keamanan akun"
+      "security": "Kata sandi dan keamanan akun",
+      "help": "Pertanyaan, masukan, dan laporan masalah"
     }
+  },
+  "help": {
+    "title": "Bantuan & dukungan",
+    "description": "Mengalami kendala, menemukan bug, atau punya ide? Kirim email — kami membaca setiap pesan.",
+    "emailSubject": "Dukungan Rinciku",
+    "openError": "Tidak dapat membuka aplikasi email. Kirim ke {{email}}."
   },
   "appearance": {
     "title": "Tampilan",

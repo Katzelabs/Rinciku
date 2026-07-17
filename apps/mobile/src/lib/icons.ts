@@ -22,6 +22,7 @@ export { default as Coins } from 'lucide-react-native/icons/coins';
 export { default as Copy } from 'lucide-react-native/icons/copy';
 export { default as FileText } from 'lucide-react-native/icons/file-text';
 export { default as ImagePlus } from 'lucide-react-native/icons/image-plus';
+export { default as LifeBuoy } from 'lucide-react-native/icons/life-buoy';
 export { default as LineChart } from 'lucide-react-native/icons/chart-line';
 export { default as Lock } from 'lucide-react-native/icons/lock';
 export { default as MessageSquarePlus } from 'lucide-react-native/icons/message-square-plus';
