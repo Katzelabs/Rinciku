@@ -1,11 +1,12 @@
 ---
 import Logo from './Logo.astro';
-import type { Copy } from '../i18n/types';
-import { githubUrl, privacyUrl, termsUrl, contactUrl } from '../i18n/utils';
+import type { Copy, Locale } from '../i18n/types';
+import { githubUrl, privacyHref, termsHref, contactUrl } from '../i18n/utils';
 interface Props {
+  locale: Locale;
   copy: Copy;
 }
-const { copy } = Astro.props;
+const { locale, copy } = Astro.props;
 const { footer } = copy;
 const year = new Date().getFullYear();
 ---
@@ -19,13 +20,9 @@ const year = new Date().getFullYear();
     <div class='meta'>
       <p class='made'>{footer.madeWith}</p>
       <nav class='links' aria-label='Footer'>
-        <a href={privacyUrl} target='_blank' rel='noopener noreferrer'
-          >{footer.privacy}</a
-        >
+        <a href={privacyHref(locale)}>{footer.privacy}</a>
         <span class='dot' aria-hidden='true'>·</span>
-        <a href={termsUrl} target='_blank' rel='noopener noreferrer'
-          >{footer.terms}</a
-        >
+        <a href={termsHref(locale)}>{footer.terms}</a>
         <span class='dot' aria-hidden='true'>·</span>
         <a href={contactUrl}>{footer.contact}</a>
         <span class='dot' aria-hidden='true'>·</span>

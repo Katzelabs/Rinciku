@@ -56,7 +56,9 @@
     "title": "Help & support",
     "description": "Stuck, found a bug, or have an idea? Email us — we read every message.",
     "emailSubject": "Rinciku support",
-    "openError": "Could not open your email app. Write to {{email}}."
+    "openError": "Could not open your email app. Write to {{email}}.",
+    "privacy": "Privacy Policy",
+    "terms": "Terms of Service"
   },
   "appearance": {
     "title": "Appearance",

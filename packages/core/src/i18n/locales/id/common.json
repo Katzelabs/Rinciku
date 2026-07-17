@@ -56,7 +56,9 @@
     "title": "Bantuan & dukungan",
     "description": "Mengalami kendala, menemukan bug, atau punya ide? Kirim email — kami membaca setiap pesan.",
     "emailSubject": "Dukungan Rinciku",
-    "openError": "Tidak dapat membuka aplikasi email. Kirim ke {{email}}."
+    "openError": "Tidak dapat membuka aplikasi email. Kirim ke {{email}}.",
+    "privacy": "Kebijakan Privasi",
+    "terms": "Ketentuan Layanan"
   },
   "appearance": {
     "title": "Tampilan",

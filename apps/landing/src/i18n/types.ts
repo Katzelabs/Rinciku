@@ -107,3 +107,29 @@ export interface Copy {
     rights: string;
   };
 }
+
+export interface LegalSection {
+  heading: string;
+  /** Paragraphs, rendered in order. */
+  body: string[];
+  /** Optional bullet list rendered after the paragraphs. */
+  list?: string[];
+}
+
+/**
+ * Copy shape for the legal pages (`/privacy`, `/terms`, and their `/id/`
+ * variants). Both locales in `privacy.ts` / `terms.ts` must satisfy this,
+ * same drift-guard as `Copy`.
+ */
+export interface LegalCopy {
+  meta: Copy['meta'];
+  title: string;
+  /** e.g. "Last updated: July 17, 2026" */
+  updated: string;
+  intro: string[];
+  sections: LegalSection[];
+  contactHeading: string;
+  /** Rendered with the support email appended as a mailto link. */
+  contactBody: string;
+  backHome: string;
+}

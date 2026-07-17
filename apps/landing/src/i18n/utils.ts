@@ -27,9 +27,13 @@ export const webAppUrl: string = (
 /** Where the "Try free" CTA sends visitors. */
 export const signUpUrl = `${webAppUrl}/sign-up`;
 
-/** Legal pages live on the web app. */
-export const privacyUrl = `${webAppUrl}/privacy`;
-export const termsUrl = `${webAppUrl}/terms`;
+/** Legal pages live on this site (store listings link to them). */
+export function privacyHref(locale: Locale): string {
+  return locale === 'en' ? '/privacy/' : `/${locale}/privacy/`;
+}
+export function termsHref(locale: Locale): string {
+  return locale === 'en' ? '/terms/' : `/${locale}/terms/`;
+}
 
 /** Optional public repo link for the footer. */
 export const githubUrl: string =

@@ -1,10 +1,15 @@
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
-import { Alert, Linking, StyleSheet, View } from 'react-native';
-import { SUPPORT_EMAIL, supportMailtoUrl } from '@rinciku/core';
+import { Alert, Linking, Pressable, StyleSheet, View } from 'react-native';
+import {
+  SUPPORT_EMAIL,
+  supportMailtoUrl,
+  privacyPolicyUrl,
+  termsOfServiceUrl,
+} from '@rinciku/core';
 import { LifeBuoy, Lock, SlidersHorizontal, Wallet } from '@/lib/icons';
 
-import { Card, ScreenScroll } from '@/components/ui';
+import { AppText, Card, ScreenScroll } from '@/components/ui';
 import { SettingsRow } from '@/components/settings-row';
 import { SettingsProfileHeader } from '@/features/auth/components/settings/settings-profile-header';
 import { SignOutButton } from '@/features/auth/components/settings/sign-out-button';
@@ -16,7 +21,7 @@ import { Spacing } from '@/constants/theme';
 // actions (sign out, delete account) at the bottom. Mirrors the Manage hub.
 export default function SettingsHubScreen() {
   const router = useRouter();
-  const { t } = useTranslation('common');
+  const { t, i18n } = useTranslation('common');
 
   return (
     <ScreenScroll gap={Spacing.four}>
@@ -62,10 +67,44 @@ export default function SettingsHubScreen() {
         <SignOutButton />
         <DangerZoneButton />
       </View>
+
+      <View style={styles.legal}>
+        <Pressable
+          style={styles.legalLink}
+          accessibilityRole='link'
+          onPress={() => void Linking.openURL(privacyPolicyUrl(i18n.language))}
+        >
+          <AppText variant='caption' color='mutedForeground'>
+            {t('help.privacy')}
+          </AppText>
+        </Pressable>
+        <AppText variant='caption' color='mutedForeground'>
+          ·
+        </AppText>
+        <Pressable
+          style={styles.legalLink}
+          accessibilityRole='link'
+          onPress={() =>
+            void Linking.openURL(termsOfServiceUrl(i18n.language))
+          }
+        >
+          <AppText variant='caption' color='mutedForeground'>
+            {t('help.terms')}
+          </AppText>
+        </Pressable>
+      </View>
     </ScreenScroll>
   );
 }
 
 const styles = StyleSheet.create({
   actions: { gap: Spacing.two },
+  legal: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: Spacing.two,
+  },
+  // Padding brings the small caption links up to the 44pt touch-target floor.
+  legalLink: { paddingVertical: 13, paddingHorizontal: Spacing.one },
 });

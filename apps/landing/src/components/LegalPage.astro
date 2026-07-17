@@ -1,0 +1,203 @@
+---
+// Shared shell for the legal pages (privacy + terms, both locales). Slim
+// header instead of Nav — the landing Nav's section anchors (#features etc.)
+// don't exist here, and its language toggle points at the other locale's
+// *home*, not this page.
+import Base from '../layouts/Base.astro';
+import Logo from './Logo.astro';
+import Button from './Button.astro';
+import Footer from './Footer.astro';
+import type { Locale } from '../i18n/types';
+import { getPrivacyCopy } from '../i18n/privacy';
+import { getTermsCopy } from '../i18n/terms';
+import {
+  getCopy,
+  otherLocale,
+  localeHref,
+  privacyHref,
+  termsHref,
+  signUpUrl,
+  contactUrl,
+  contactEmail,
+} from '../i18n/utils';
+
+interface Props {
+  locale: Locale;
+  page: 'privacy' | 'terms';
+}
+const { locale, page } = Astro.props;
+const copy = getCopy(locale);
+const legal = page === 'privacy' ? getPrivacyCopy(locale) : getTermsCopy(locale);
+const selfHref = page === 'privacy' ? privacyHref : termsHref;
+const altHref = selfHref(otherLocale(locale));
+---
+
+<Base locale={locale} meta={legal.meta}>
+  <a class='skip-link' href='#main'>{copy.nav.skipToContent}</a>
+  <header class='header'>
+    <div class='header-inner'>
+      <a href={localeHref(locale)} class='brand' aria-label='Rinciku home'>
+        <Logo />
+      </a>
+      <nav class='actions'>
+        <a
+          href={altHref}
+          class='lang'
+          aria-label={`Switch language to ${copy.nav.switchLang}`}
+        >
+          {copy.nav.switchLang}
+        </a>
+        <Button href={signUpUrl}>{copy.nav.tryFree}</Button>
+      </nav>
+    </div>
+  </header>
+
+  <main id='main' class='page'>
+    <article class='policy'>
+      <a class='back' href={localeHref(locale)}>{legal.backHome}</a>
+      <h1>{legal.title}</h1>
+      <p class='updated'>{legal.updated}</p>
+      {legal.intro.map((p) => <p class='lead'>{p}</p>)}
+
+      {
+        legal.sections.map((section) => (
+          <section>
+            <h2>{section.heading}</h2>
+            {section.body.map((p) => (
+              <p>{p}</p>
+            ))}
+            {section.list && (
+              <ul>
+                {section.list.map((item) => (
+                  <li>{item}</li>
+                ))}
+              </ul>
+            )}
+          </section>
+        ))
+      }
+
+      <section>
+        <h2>{legal.contactHeading}</h2>
+        <p>
+          {legal.contactBody}{' '}
+          <a class='email' href={contactUrl}>{contactEmail}</a>.
+        </p>
+      </section>
+    </article>
+  </main>
+
+  <Footer locale={locale} copy={copy} />
+</Base>
+
+<style>
+  .header {
+    background-color: var(--color-background);
+    border-bottom: 1px solid var(--color-border);
+  }
+  .header-inner {
+    max-width: 72rem;
+    margin: 0 auto;
+    padding: 0.75rem 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .brand {
+    text-decoration: none;
+  }
+  .actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .lang {
+    padding: 0.5rem 0.75rem;
+    border-radius: 9999px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--color-muted-foreground);
+    text-decoration: none;
+    transition:
+      color 0.15s ease,
+      background-color 0.15s ease;
+  }
+  .lang:hover {
+    color: var(--color-foreground);
+    background-color: var(--color-muted);
+  }
+
+  .page {
+    padding: 3rem 1.5rem 5rem;
+  }
+  .policy {
+    max-width: 44rem;
+    margin: 0 auto;
+  }
+  .back {
+    display: inline-block;
+    margin-bottom: 2rem;
+    font-size: 0.9375rem;
+    font-weight: 600;
+    color: var(--color-muted-foreground);
+    text-decoration: none;
+  }
+  .back:hover {
+    color: var(--color-foreground);
+  }
+  h1 {
+    font-family: var(--font-heading);
+    font-size: clamp(2rem, 5vw, 2.75rem);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    line-height: 1.1;
+  }
+  .updated {
+    margin-top: 0.75rem;
+    font-size: 0.875rem;
+    color: var(--color-muted-foreground);
+  }
+  .lead {
+    margin-top: 1.25rem;
+    font-size: 1.0625rem;
+    line-height: 1.65;
+  }
+  section {
+    margin-top: 2.5rem;
+  }
+  h2 {
+    font-family: var(--font-heading);
+    font-size: 1.375rem;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+  section p {
+    margin-top: 0.875rem;
+    font-size: 0.9688rem;
+    line-height: 1.65;
+    color: var(--color-accent-foreground);
+  }
+  ul {
+    margin-top: 0.875rem;
+    padding-left: 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    list-style: disc;
+  }
+  li {
+    font-size: 0.9688rem;
+    line-height: 1.6;
+    color: var(--color-accent-foreground);
+  }
+  li::marker {
+    color: var(--color-primary);
+  }
+  .email {
+    font-weight: 600;
+    color: var(--color-foreground);
+    text-decoration: underline;
+    text-decoration-color: var(--color-primary);
+    text-underline-offset: 3px;
+  }
+</style>
