@@ -2,7 +2,7 @@ import { Stack, useRouter } from 'expo-router';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, Alert, StyleSheet, View } from 'react-native';
-import { useKeyboardState } from 'react-native-keyboard-controller';
+import Animated, { useAnimatedStyle } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useQueryClient } from '@tanstack/react-query';
 
@@ -22,6 +22,7 @@ import { WelcomeScreen } from '@/features/ai-chat/components/welcome-screen';
 import { useChat } from '@/features/ai-chat/hooks/use-chat';
 import { useConversations } from '@/features/ai-chat/hooks/use-conversations';
 import { Notice } from '@/features/auth/components/notice';
+import { useKeyboardAnimation } from '@/hooks/use-keyboard-animation';
 import { useTheme } from '@/hooks/use-theme';
 
 // The AI chat tab: budget-grounded consultation + expense/income/change
@@ -49,13 +50,16 @@ export default function AiScreen() {
   // Keyboard clearance for the composer. Neither the core KeyboardAvoidingView
   // (RN's Keyboard events never fire under SDK 56's mandatory edge-to-edge on
   // Android) nor react-native-keyboard-controller's KAV component (its
-  // reanimated-driven translation stayed at 0 here) lifted the composer, but
-  // RNKC's *state* is reliable on both platforms — so pad the screen column by
-  // the reported keyboard height directly. `height` is in dp and excludes
-  // nothing we handle elsewhere; the composer collapses its own safe-area
-  // padding while the keyboard is open so it rests flush on top of it.
-  const kb = useKeyboardState();
-  const keyboardClearance = kb.isVisible ? kb.height : 0;
+  // reanimated-driven translation stayed at 0 here) lifted the composer, so
+  // pad the screen column by the keyboard height directly — as a frame-synced
+  // shared value, so the composer rides the keyboard's own animation both ways
+  // (discrete useKeyboardState only flipped after the hide animation finished,
+  // leaving the composer hanging, then snapping down). The composer collapses
+  // its own safe-area padding in step so it rests flush on top of the keyboard.
+  const { height: keyboardHeight } = useKeyboardAnimation();
+  const keyboardPad = useAnimatedStyle(() => ({
+    paddingBottom: keyboardHeight.value,
+  }));
 
   const showWelcome =
     chat.messages.length === 0 &&
@@ -136,7 +140,7 @@ export default function AiScreen() {
           ]),
         }}
       />
-      <View style={[styles.flex, { paddingBottom: keyboardClearance }]}>
+      <Animated.View style={[styles.flex, keyboardPad]}>
         {chat.error ? (
           <View style={[styles.notice]}>
             <Notice tone='error'>{chat.error}</Notice>
@@ -158,7 +162,7 @@ export default function AiScreen() {
           onSendImage={chat.sendImage}
           disabled={chat.sending}
         />
-      </View>
+      </Animated.View>
 
       <ConversationList
         visible={historyOpen}

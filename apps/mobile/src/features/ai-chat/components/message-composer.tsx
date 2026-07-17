@@ -1,7 +1,7 @@
 import { Image } from 'expo-image';
 import { GlassView, isLiquidGlassAvailable } from 'expo-glass-effect';
 import { ArrowUp, ImagePlus, X } from '@/lib/icons';
-import { useEffect, useState, type ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   ActionSheetIOS,
@@ -12,11 +12,15 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { KeyboardEvents } from 'react-native-keyboard-controller';
+import Animated, {
+  interpolate,
+  useAnimatedStyle,
+} from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { IconButton } from '@/components/ui';
 import { Border, Radius, Spacing } from '@/constants/theme';
+import { useKeyboardAnimation } from '@/hooks/use-keyboard-animation';
 import { useTheme } from '@/hooks/use-theme';
 import { pickImage, type PickedImage, type PickSource } from '../lib/image';
 
@@ -39,38 +43,26 @@ export function MessageComposer({
   const insets = useSafeAreaInsets();
   const [text, setText] = useState('');
   const [staged, setStaged] = useState<PickedImage | null>(null);
-  const [keyboardVisible, setKeyboardVisible] = useState(false);
 
   const canSend = !disabled && (staged !== null || text.trim().length > 0);
 
   // The AI screen hides the tab bar (Android needs the react-native-screens
   // patch for taps here to work — see (app)/_layout.tsx), so when the keyboard
   // is closed we only need to clear the bottom safe area (home indicator).
-  // When it's open the KeyboardAvoidingView already lifts the composer, so
-  // collapse the padding to avoid a gap above the keyboard.
-  // KeyboardEvents comes from react-native-keyboard-controller, NOT RN's
-  // Keyboard module: under edge-to-edge Android (mandatory since SDK 56) the
-  // core events never fire, so `keyboardVisible` would stay false forever.
-  useEffect(() => {
-    const showEvent =
-      Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
-    const hideEvent =
-      Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
-    const show = KeyboardEvents.addListener(showEvent, () =>
-      setKeyboardVisible(true)
-    );
-    const hide = KeyboardEvents.addListener(hideEvent, () =>
-      setKeyboardVisible(false)
-    );
-    return () => {
-      show.remove();
-      hide.remove();
-    };
-  }, []);
-
-  const paddingBottom = keyboardVisible
-    ? Spacing.two
-    : Math.max(insets.bottom, Spacing.two);
+  // When it's open the screen column already lifts the composer by the
+  // keyboard height, so collapse the padding to avoid a gap above the
+  // keyboard — interpolated on the same frame-synced keyboard progress the
+  // screen uses, so both paddings move together with the keyboard animation
+  // instead of one of them jumping at the start or end of it.
+  const { progress } = useKeyboardAnimation();
+  const restingPad = Math.max(insets.bottom, Spacing.two);
+  const barPad = useAnimatedStyle(() => ({
+    paddingBottom: interpolate(
+      progress.value,
+      [0, 1],
+      [restingPad, Spacing.two]
+    ),
+  }));
 
   function handleSend() {
     if (!canSend) return;
@@ -185,7 +177,7 @@ export function MessageComposer({
   );
 
   return (
-    <View style={[styles.bar, { paddingBottom }]}>
+    <Animated.View style={[styles.bar, barPad]}>
       {/* Transparent bar — no full-width strip. Only the rounded shell below is
           visible, floating directly over the chat. On iOS 26+ the shell is a
           Liquid Glass surface; elsewhere it falls back to a solid `card` fill. */}
@@ -208,7 +200,7 @@ export function MessageComposer({
           {shellChildren}
         </View>
       )}
-    </View>
+    </Animated.View>
   );
 }
 
